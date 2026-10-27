@@ -14,7 +14,17 @@ from pydantic import ValidationError
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
-from app.contracts import ImageItem, ImageSource, ImageStatus, ImageUpdate, OutputFile, ProcessOptions
+from app.contracts import (
+    ApproveRequest,
+    BulkImagesRequest,
+    ImageItem,
+    ImageSource,
+    ImageStatus,
+    ImageUpdate,
+    LayerLines,
+    OutputFile,
+    ProcessOptions,
+)
 from app.db.models import BatchRow, ImageRow, OutputRow
 from app.db.session import get_session
 from app.db.settings_store import load_settings
@@ -30,6 +40,8 @@ _MAX_ARCHIVE_BYTES = 2 * 1024**3
 _MAX_CSV_BYTES = 2 * 1024**2
 _MAX_CSV_ROWS = 2000
 _IMAGE_EXTENSIONS = {"JPEG": "jpg", "PNG": "png", "WEBP": "webp"}
+_APPROVABLE = {"done", "review", "approved"}
+_REPROCESSABLE = {"done", "review", "failed", "approved"}
 
 
 @dataclass(frozen=True)
@@ -63,6 +75,7 @@ def _image_response(row: ImageRow) -> ImageItem:
         outputs=[OutputFile.model_validate(output) for output in latest.values()],
         error=row.error,
         mask_path=row.mask_path,
+        selected_variant=cast(LayerLines | None, row.selected_variant),
     )
 
 
@@ -248,7 +261,7 @@ def _filename_key(value: str) -> str:
 
 
 def _enqueue_reprocess(row: ImageRow, session: Session) -> None:
-    if row.status not in {"done", "review", "failed", "approved"}:
+    if row.status not in _REPROCESSABLE:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="La imagen debe terminar su proceso actual antes de reprocesarla.",
@@ -256,6 +269,7 @@ def _enqueue_reprocess(row: ImageRow, session: Session) -> None:
     row.status = "pending"
     row.error = None
     row.review_reasons = []
+    row.selected_variant = None
     row.batch.status = "queued"
     row.batch.finished_at = None
     get_job_queue().enqueue("reprocess", image_id=row.id, batch_id=row.batch_id, session=session)
@@ -451,19 +465,72 @@ def update_image(image_id: str, payload: ImageUpdate, session: SessionDep) -> Im
     return _image_response(row)
 
 
+def _approve(row: ImageRow, variant: LayerLines | None) -> None:
+    if variant is not None and not any(output.variant == variant for output in row.outputs):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=f"La imagen no tiene la variante '{variant}'.",
+        )
+    row.status = "approved"
+    row.selected_variant = variant
+
+
 @router.post("/images/{image_id}/approve", response_model=ImageItem)
-def approve_image(image_id: str, session: SessionDep) -> ImageItem:
+def approve_image(
+    image_id: str,
+    session: SessionDep,
+    payload: Annotated[ApproveRequest | None, Body()] = None,
+) -> ImageItem:
     row = _get_image(session, image_id)
-    if row.status not in {"done", "review", "approved"}:
+    if row.status not in _APPROVABLE:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="La imagen debe estar procesada antes de aprobarla.",
         )
-    if row.status != "approved":
-        row.status = "approved"
-        session.commit()
-        session.refresh(row)
+    _approve(row, payload.variant if payload else None)
+    session.commit()
+    session.refresh(row)
     return _image_response(row)
+
+
+def _batch_images(session: Session, batch_id: str, image_ids: list[str]) -> list[ImageRow]:
+    if session.get(BatchRow, batch_id) is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lote no encontrado.")
+    rows = session.scalars(
+        select(ImageRow)
+        .where(ImageRow.batch_id == batch_id, ImageRow.id.in_(set(image_ids)))
+        .options(selectinload(ImageRow.outputs))
+        .order_by(ImageRow.position, ImageRow.created_at)
+    ).all()
+    if len(rows) != len(set(image_ids)):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Alguna imagen no existe o es de otro lote."
+        )
+    return list(rows)
+
+
+@router.post("/batches/{batch_id}/images/approve", response_model=list[ImageItem])
+def approve_images(batch_id: str, payload: BulkImagesRequest, session: SessionDep) -> list[ImageItem]:
+    """Aprueba las imágenes procesadas (conservando la variante elegida) y omite las demás."""
+    rows = _batch_images(session, batch_id, payload.image_ids)
+    for row in rows:
+        if row.status in _APPROVABLE:
+            _approve(row, cast(LayerLines | None, row.selected_variant))
+    session.commit()
+    return [_image_response(row) for row in rows]
+
+
+@router.post("/batches/{batch_id}/images/reprocess", response_model=list[ImageItem])
+def reprocess_images(batch_id: str, payload: BulkImagesRequest, session: SessionDep) -> list[ImageItem]:
+    """Reprocesa las imágenes terminadas; con `options`, esas opciones pasan a ser las de cada imagen."""
+    rows = _batch_images(session, batch_id, payload.image_ids)
+    for row in rows:
+        if row.status in _REPROCESSABLE:
+            _enqueue_reprocess(row, session)
+            if payload.options is not None:
+                row.options_override = payload.options.model_dump(mode="json")
+    session.commit()
+    return [_image_response(row) for row in rows]
 
 
 @router.post("/images/{image_id}/reprocess", response_model=ImageItem)

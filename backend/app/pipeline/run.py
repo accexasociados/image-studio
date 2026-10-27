@@ -11,13 +11,14 @@ from contextlib import contextmanager
 from pathlib import Path
 
 import numpy as np
-from PIL import Image, ImageOps
+from PIL import Image, ImageFilter, ImageOps
 
 from app.config import get_settings
 from app.contracts import PRESETS, AppSettings, LayerLines, OutputFile, Preset, ProcessOptions, ProcessResult
 from app.pipeline.color import correct_color
 from app.pipeline.compose import Crop, compose_on_canvas, crop_to_piece, decontaminate_edges, piece_bounds
 from app.pipeline.export import encode, output_path, resolve_preset
+from app.pipeline.geometry import forward, plan, restore
 from app.pipeline.layers import smooth_layer_lines
 from app.pipeline.quality import review_reasons
 from app.pipeline.segment import SegmentationParams, load_birefnet, segment
@@ -128,18 +129,21 @@ def _process_real(
     pipeline = settings.pipeline
 
     with timer.stage("load"):
-        rgb = _load_rgb(input_path)
+        original = _load_rgb(input_path)
+        geometry = plan(original.shape[:2], options.rotate, options.crop)
+        rgb = forward(original, geometry)
 
     with timer.stage("segment"):
         if mask_override is not None:
-            alpha = _load_mask(mask_override, rgb.shape[:2])
+            alpha = forward(_load_mask(mask_override, original.shape[:2]), geometry)
             components = 1
         else:
             model = load_birefnet(models_dir / "birefnet", device)
             result = segment(rgb, model, device, SegmentationParams(size=pipeline.segmentation_size))
             alpha, components = result.alpha, result.components
+        # Se guarda en coordenadas del original: el pincel de la web no depende del recorte.
         mask_path = out_dir / f"{base_name}_mask.png"
-        Image.fromarray(to_uint8(alpha), "L").save(mask_path)
+        Image.fromarray(to_uint8(restore(alpha, geometry)), "L").save(mask_path)
 
     if not (alpha > 0.5).any():
         raise ValueError("No se encontró ninguna pieza en la imagen.")
@@ -221,15 +225,35 @@ def _process_stub(
 ) -> ProcessResult:
     started = time.perf_counter()
     out_dir.mkdir(parents=True, exist_ok=True)
-    with Image.open(input_path) as opened:
-        source = ImageOps.exif_transpose(opened).convert("RGB")
+    original = _load_rgb(input_path)
+    source = Image.fromarray(forward(original, plan(original.shape[:2], options.rotate, options.crop)))
 
-    outputs = [_render_preset(source, preset, options, out_dir, base_name) for preset in options.presets]
+    variants: list[LayerLines] = (
+        ["keep", "smooth"] if options.generate_both_layer_variants else [options.layer_lines]
+    )
+    outputs = [
+        _render_preset(
+            # Simulación del suavizado: un desenfoque leve, para que la web distinga las variantes.
+            source.filter(ImageFilter.GaussianBlur(2)) if variant == "smooth" else source,
+            preset,
+            options,
+            out_dir,
+            base_name + (_VARIANT_SUFFIX[variant] if len(variants) > 1 else ""),
+            variant,
+        )
+        for variant in variants
+        for preset in options.presets
+    ]
     return ProcessResult(outputs=outputs, timings_ms={"total": (time.perf_counter() - started) * 1000})
 
 
 def _render_preset(
-    source: Image.Image, preset: Preset, options: ProcessOptions, out_dir: Path, base_name: str
+    source: Image.Image,
+    preset: Preset,
+    options: ProcessOptions,
+    out_dir: Path,
+    base_name: str,
+    variant: LayerLines,
 ) -> OutputFile:
     spec = PRESETS[preset]
     fill = options.fill_ratio or spec.default_fill_ratio
@@ -257,5 +281,5 @@ def _render_preset(
         width=canvas.width,
         height=canvas.height,
         bytes=path.stat().st_size,
-        variant=options.layer_lines,
+        variant=variant,
     )

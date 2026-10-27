@@ -64,6 +64,9 @@ class ImageItem(_ReadModel):
     outputs: list[OutputFile] = Field(default_factory=list)
     error: str | None = None
     mask_path: str | None = None
+    selected_variant: LayerLines | None = Field(
+        default=None, description="Variante elegida al aprobar; la descarga exporta solo esa."
+    )
 
 
 class ImageUpdate(BaseModel):
@@ -72,6 +75,23 @@ class ImageUpdate(BaseModel):
     product_name: str | None = Field(default=None, max_length=200)
     sku: str | None = Field(default=None, max_length=80, pattern=r"^[A-Za-z0-9._-]+$")
     options_override: ProcessOptions | None = None
+
+
+class ApproveRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    variant: LayerLines | None = Field(
+        default=None, description="Variante a exportar cuando la imagen tiene las dos (keep y smooth)."
+    )
+
+
+class BulkImagesRequest(BaseModel):
+    """Aprobar o reprocesar varias imágenes del mismo lote; se omiten las que aún están en proceso."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    image_ids: list[str] = Field(min_length=1, max_length=1000)
+    options: ProcessOptions | None = Field(default=None, description="Solo para reprocesar.")
 
 
 class Job(_ReadModel):

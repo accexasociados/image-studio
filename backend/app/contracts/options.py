@@ -6,8 +6,26 @@ Preset = Literal["storefront", "instagram_feed", "instagram_square", "original_h
 LayerLines = Literal["keep", "smooth"]
 ShadowMode = Literal["none", "soft", "strong", "auto"]
 UpscaleFactor = Literal[1, 2, 4]
+Rotation = Literal[0, 90, 180, 270]
 
 _DEFAULT_PRESETS: list[Preset] = ["storefront", "instagram_feed"]
+
+
+class CropBox(BaseModel):
+    """Recorte en fracciones (0 a 1) de la foto ya rotada. Se elige por imagen desde la web."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    x: float = Field(ge=0, lt=1)
+    y: float = Field(ge=0, lt=1)
+    width: float = Field(gt=0, le=1)
+    height: float = Field(gt=0, le=1)
+
+    @model_validator(mode="after")
+    def _inside(self) -> "CropBox":
+        if self.x + self.width > 1.0001 or self.y + self.height > 1.0001:
+            raise ValueError("El recorte se sale de la foto.")
+        return self
 
 
 class ProcessOptions(BaseModel):
@@ -33,6 +51,8 @@ class ProcessOptions(BaseModel):
     upscale: UpscaleFactor = 2
     white_balance: bool = True
     generate_both_layer_variants: bool = False
+    rotate: Rotation = Field(default=0, description="Giro en grados, en sentido horario, antes de recortar.")
+    crop: CropBox | None = Field(default=None, description="Recorte previo; None = foto completa.")
 
     @model_validator(mode="after")
     def _unique_presets(self) -> "ProcessOptions":

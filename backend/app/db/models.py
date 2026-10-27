@@ -46,6 +46,7 @@ class ImageRow(Base):
     review_reasons: Mapped[list[str]] = mapped_column(JSON, default=list)
     error: Mapped[str | None] = mapped_column(Text)
     mask_path: Mapped[str | None] = mapped_column(Text)
+    selected_variant: Mapped[str | None] = mapped_column(String(10))
     position: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 

@@ -33,7 +33,12 @@ def _safe_name(value: str, *, fallback: str) -> str:
 
 
 def _selected_outputs(image: ImageRow, preset: Preset) -> list[OutputRow]:
-    candidates = [output for output in image.outputs if output.preset == preset]
+    # Con una variante elegida al aprobar, solo se exporta esa.
+    candidates = [
+        output
+        for output in image.outputs
+        if output.preset == preset and image.selected_variant in (None, output.variant)
+    ]
     if not candidates:
         return []
     latest_version = max(output.version for output in candidates)
@@ -70,7 +75,7 @@ def _archive_name(
         candidate = image.sku or image.product_name or original_stem
     base = _safe_name(candidate, fallback=image.id)
     variant = _safe_name(output.variant, fallback="variant")
-    suffix = f"_{variant}" if output.variant != "keep" else ""
+    suffix = f"_{variant}" if output.variant != "keep" and image.selected_variant is None else ""
     return f"{base}{suffix}.{extension}"
 
 

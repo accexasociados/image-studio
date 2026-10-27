@@ -2,10 +2,12 @@
 Cambiarlos exige una nota en "Registro de cambios de contrato" de PLAN_EJECUCION.md."""
 
 from app.contracts.models import (
+    ApproveRequest,
     Batch,
     BatchCounts,
     BatchCreate,
     BatchStatus,
+    BulkImagesRequest,
     Event,
     EventType,
     GpuInfo,
@@ -20,7 +22,15 @@ from app.contracts.models import (
     OutputFile,
     ProcessResult,
 )
-from app.contracts.options import LayerLines, Preset, ProcessOptions, ShadowMode, UpscaleFactor
+from app.contracts.options import (
+    CropBox,
+    LayerLines,
+    Preset,
+    ProcessOptions,
+    Rotation,
+    ShadowMode,
+    UpscaleFactor,
+)
 from app.contracts.presets import PRESETS, OutputFormat, PresetSpec
 from app.contracts.settings import (
     SECRET_FIELDS,
@@ -35,10 +45,13 @@ __all__ = [
     "SECRET_FIELDS",
     "AppSettings",
     "AppSettingsPublic",
+    "ApproveRequest",
     "Batch",
     "BatchCounts",
     "BatchCreate",
     "BatchStatus",
+    "BulkImagesRequest",
+    "CropBox",
     "Event",
     "EventType",
     "GpuInfo",
@@ -57,6 +70,7 @@ __all__ = [
     "PresetSpec",
     "ProcessOptions",
     "ProcessResult",
+    "Rotation",
     "SettingsSection",
     "ShadowMode",
     "TelegramTestResult",
