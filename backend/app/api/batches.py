@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
-from app.contracts import Batch, BatchCounts, BatchCreate, BatchStatus, ProcessOptions
+from app.contracts import Batch, BatchCounts, BatchCreate, BatchStatus, ImportRequest, ProcessOptions
 from app.db.models import BatchRow, utcnow
 from app.db.session import get_session
 from app.queue import get_job_queue
@@ -54,6 +54,20 @@ def create_batch(payload: BatchCreate, session: SessionDep) -> Batch:
     session.commit()
     session.refresh(row)
     return _batch_response(row)
+
+
+@router.post("/{batch_id}/imports", status_code=status.HTTP_202_ACCEPTED)
+def import_batch(batch_id: str, payload: ImportRequest, session: SessionDep) -> dict[str, str]:
+    row = _get_batch(session, batch_id)
+    if row.status not in {"draft", "failed", "queued"}:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="El lote no admite nuevas importaciones."
+        )
+    job = get_job_queue().enqueue("import", batch_id=batch_id, payload={"url": payload.url}, session=session)
+    row.status = "queued"
+    row.finished_at = None
+    session.commit()
+    return {"job_id": job.id, "status": "queued"}
 
 
 @router.get("", response_model=list[Batch])
