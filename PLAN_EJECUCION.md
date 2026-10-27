@@ -321,7 +321,7 @@ Todo texto visible en **español e inglés** (i18next), sin textos fijos en el c
 - [x] F3.4 Tabla editable de nombre y SKU por imagen, más carga de CSV. — (codex, 2026-10-27)
 - [x] F3.5 Vista del lote en proceso: barra de progreso en vivo (SSE), miniaturas que cambian de estado y filtros (todas, listas, para revisar, fallidas). — (codex, 2026-10-27)
 - [x] F3.6 Pantalla de **Ajustes** con una pestaña por sección de `AppSettings`: General, Procesamiento por defecto, Formatos de salida, Telegram (con botón "Probar"), Avisos, Carpeta vigilada, Importadores, Calidad y Modelos. Los secretos se muestran como "Configurado" y se reemplazan sin revelarse. — (codex, 2026-10-27)
-- [ ] F3.7 Tests de componentes con Vitest + Testing Library.
+- [x] F3.7 Tests de componentes con Vitest + Testing Library. — (codex, 2026-10-27)
 
 **Criterio de salida:** flujo completo desde la web: crear lote → subir → ver el progreso → descargar el `.zip`.
 
