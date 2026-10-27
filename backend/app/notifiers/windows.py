@@ -1,9 +1,10 @@
 """Notificaciones nativas de Windows sin hacer obligatorio el extra visual."""
 
 import logging
+from collections.abc import Callable
 from typing import Protocol
 
-from app.contracts import Event
+from app.contracts import AppSettings, Event
 
 logger = logging.getLogger(__name__)
 
@@ -13,7 +14,7 @@ class EventSink(Protocol):
 
 
 class WindowsNotifier:
-    def __init__(self, sink: EventSink, settings_loader) -> None:
+    def __init__(self, sink: EventSink, settings_loader: Callable[[], AppSettings]) -> None:
         self.sink = sink
         self.settings_loader = settings_loader
 

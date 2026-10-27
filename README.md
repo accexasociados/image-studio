@@ -63,3 +63,7 @@ proceso se guardan en una carpeta temporal que el script muestra al arrancar.
 npm run lint ; npm run test ; npm run build
 npm run gen:api   # regenera src/shared/api/schema.d.ts (API corriendo en 8090)
 ```
+### Avisos de Windows
+
+Para mostrar notificaciones nativas instala el extra opcional: `pip install -e ".[notify]"`.
+

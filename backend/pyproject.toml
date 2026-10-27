@@ -41,6 +41,9 @@ dev = [
   "ruff>=0.8",
   "mypy>=1.13",
 ]
+notify = [
+  "win11toast>=0.35",
+]
 
 [tool.setuptools.packages.find]
 include = ["app*", "scripts*"]
@@ -65,7 +68,7 @@ plugins = ["pydantic.mypy"]
 exclude = ["alembic/", "app/pipeline/vendor/"]
 
 [[tool.mypy.overrides]]
-module = ["cv2.*", "torch.*", "torchvision.*", "transformers.*", "spandrel.*", "huggingface_hub.*"]
+module = ["cv2.*", "torch.*", "torchvision.*", "transformers.*", "spandrel.*", "huggingface_hub.*", "win11toast.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

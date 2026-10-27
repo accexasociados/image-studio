@@ -365,7 +365,7 @@ Pasan los 91 tests, pero **mypy falla con 7 errores**, `ruff format` falla en `t
 ### Correcciones tras la revisión del 2026-10-27 (claude, sobre `733e908`)
 
 - [x] F5.5 Telegram manda el `id` del lote y el `dict` crudo de conteos (`{'total': 3, ...}`). Usar el nombre del lote y "X listas, Y para revisar, Z fallidas" más el enlace a la galería (`general.public_base_url`), como dice F5.1. El progreso cuenta `done` sin `review`, así que nunca llega al 100 % si alguna queda para revisar. — (codex, 2026-10-27)
-- [ ] F5.6 `win11toast` no está en las dependencias: la notificación de Windows nunca aparece y solo queda un log. Agregarlo a un extra opcional (`notify`) y documentarlo en el README, o usar otra vía sin dependencia. Tipar `settings_loader` (mypy).
+- [x] F5.6 `win11toast` no está en las dependencias: la notificación de Windows nunca aparece y solo queda un log. Agregarlo a un extra opcional (`notify`) y documentarlo en el README, o usar otra vía sin dependencia. Tipar `settings_loader` (mypy). — (codex, 2026-10-27)
 - [ ] F5.7 Navegador: `BatchDetailPanel` abre un segundo `EventSource` que vuelve a pedir la lista en cada evento (`useBatchImages` ya escucha y agrupa), avisa al terminar **cualquier** lote (no filtra `batch_id`) y pide el permiso dentro de un evento SSE, cosa que Chrome rechaza sin un clic del usuario. Pedir el permiso con un botón y mover el aviso a un hook global para que funcione aunque el detalle del lote no esté abierto.
 - [ ] F5.8 Antes de marcar `[x]`: `ruff check`, `ruff format --check`, `mypy app`, `tsc -b`, `eslint` y una prueba real (importar un enlace y terminar un lote con el worker corriendo).
 
