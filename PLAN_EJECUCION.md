@@ -287,7 +287,7 @@ Puede empezar con `PIPELINE_MODE=stub`.
 - [x] F2.7 SSE `/api/v1/events` con progreso por lote e imagen. — (codex)
 - [x] F2.8 Descarga `.zip` por lote y por preset (solo aprobadas, o todas), con nombres por SKU. — (codex)
 - [x] F2.9 Router `settings` sobre `settings_store`: `GET /settings` (secretos enmascarados como `{configured: true}`), `PUT /settings/{section}` por sección (un secreto vacío u omitido conserva el actual; `null` explícito lo borra) y `POST /settings/telegram/test`. Cubre **todas** las secciones de `AppSettings`. — (codex)
-- [ ] F2.10 Tests de API (`httpx` + BD temporal) y del worker con el stub.
+- [x] F2.10 Tests de API (`httpx` + BD temporal) y del worker con el stub. — (codex)
 - [ ] F2.11 Script `scripts/dev.ps1` que levanta API + worker + web.
 
 **Criterio de salida:** subir 100 imágenes en `.zip` crea un lote, el worker las procesa (stub o real), el progreso llega por SSE y el `.zip` de salida se descarga con nombres correctos.
