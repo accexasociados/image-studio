@@ -25,6 +25,7 @@ from app.importers.direct_url import download_image
 from app.importers.google_drive import download_drive
 from app.importers.google_photos import download_album
 from app.notifiers.telegram import TelegramNotifier
+from app.notifiers.windows import WindowsNotifier
 from app.pipeline.run import process_image
 from app.queue import JobQueue, get_job_queue
 from app.storage import Storage, get_storage
@@ -432,15 +433,16 @@ def main() -> None:
 
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     event_store = get_event_store()
+    telegram = TelegramNotifier(
+        event_store,
+        _runtime_settings,
+    )
     worker = Worker(
         worker_id=_worker_id(),
         queue=get_job_queue(),
         storage=get_storage(),
         processor=PipelineProcessor(),
-        publisher=TelegramNotifier(
-            event_store,
-            _runtime_settings,
-        ),
+        publisher=WindowsNotifier(telegram, _runtime_settings),
     )
     try:
         worker.run(poll_seconds=args.poll_seconds, once=args.once)
