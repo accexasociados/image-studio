@@ -333,7 +333,7 @@ Todo texto visible en **español e inglés** (i18next), sin textos fijos en el c
 
 - [x] F4.1 `direct_url.py`: descarga de una URL de imagen con validación de tipo, límite de tamaño y bloqueo de IPs privadas. — (codex, 2026-10-27)
 - [x] F4.2 `google_photos.py`: seguir la redirección de `photos.app.goo.gl/...`, extraer del HTML del álbum compartido las URLs `lh3.googleusercontent.com` y descargarlas en resolución original (sufijo `=d`). Quitar duplicados. **No hay API oficial para álbumes compartidos**: dejar el lector aislado y con test de contrato sobre un HTML guardado, para ajustarlo fácil si Google cambia la página. — (codex, 2026-10-27)
-- [ ] F4.3 `google_drive.py`: carpeta o archivo público de Drive. Para carpetas, usar la API de Drive con una API key guardada en `settings` (`gdown` limita las carpetas a 50 archivos).
+- [x] F4.3 `google_drive.py`: carpeta o archivo público de Drive. Para carpetas, usar la API de Drive con una API key guardada en `settings` (`gdown` limita las carpetas a 50 archivos). — (codex, 2026-10-27)
 - [ ] F4.4 Endpoint `POST /api/v1/batches/{id}/imports` con `{ url }`: detecta el tipo de enlace, crea un trabajo `import` y reporta progreso por SSE.
 - [ ] F4.5 Conexión con la pestaña "Desde enlace" de la web.
 - [ ] F4.6 Tests con respuestas simuladas.
