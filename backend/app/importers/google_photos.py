@@ -11,12 +11,14 @@ _PHOTO_URL = re.compile(r"https://lh3\.googleusercontent\.com/[A-Za-z0-9_/?=&%-]
 
 
 def extract_photo_urls(html: str) -> list[str]:
-    """Extrae URLs de resolución original y elimina el primer identificador del álbum."""
+    """Extrae fotos reales del álbum y normaliza el sufijo de resolución original."""
     seen: set[str] = set()
     result: list[str] = []
     for raw in _PHOTO_URL.findall(html):
         url = raw.split('"', 1)[0]
-        original = url if url.endswith("=d") else f"{url}=d"
+        if "/pw/" not in url or "w600-h315-p-k" in url:
+            continue
+        original = f"{url.split('=', 1)[0]}=d"
         if original not in seen:
             seen.add(original)
             result.append(original)
@@ -31,7 +33,12 @@ def fetch_album_urls(url: str, *, client: httpx.Client | None = None) -> list[st
     try:
         response = session.get(url, headers={"User-Agent": "Mozilla/5.0"})
         response.raise_for_status()
-        return extract_photo_urls(response.text)
+        urls = extract_photo_urls(response.text)
+        if not urls:
+            raise ValueError(
+                "Google Photos no expuso las fotos del álbum; vuelve a intentarlo o usa enlaces directos."
+            )
+        return urls
     finally:
         if owns_client:
             session.close()
