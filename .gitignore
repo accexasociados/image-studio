@@ -1,0 +1,28 @@
+# Datos y modelos locales
+data/
+models/
+samples/
+
+# Entorno
+.env
+.env.local
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+
+# Web
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Editor / SO
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store

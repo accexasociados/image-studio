@@ -1,0 +1,71 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "image-studio"
+version = "0.1.0"
+description = "Fotos de piezas de impresión 3D a fondo blanco, listas para storefront e Instagram"
+requires-python = ">=3.11,<3.12"
+dependencies = [
+  "fastapi>=0.115",
+  "uvicorn[standard]>=0.32",
+  "pydantic>=2.9",
+  "pydantic-settings>=2.6",
+  "sqlalchemy>=2.0.36",
+  "alembic>=1.14",
+  "python-multipart>=0.0.17",
+  "httpx>=0.28",
+  "pillow>=11.0",
+  "numpy>=2.1,<2.4",
+  "opencv-python-headless>=4.10",
+  "cryptography>=43",
+]
+
+[project.optional-dependencies]
+# Modelos de IA. torch y torchvision se instalan ANTES desde el índice de CUDA
+# (ver README): pip install torch torchvision --index-url https://download.pytorch.org/whl/cu126
+ml = [
+  "torch>=2.6",
+  "torchvision>=0.21",
+  "transformers>=4.46,<5",
+  "huggingface-hub>=0.26",
+  "timm>=1.0",
+  "kornia>=0.7",
+  "einops>=0.8",
+  "spandrel>=0.4",
+]
+dev = [
+  "pytest>=8.3",
+  "ruff>=0.8",
+  "mypy>=1.13",
+]
+
+[tool.setuptools.packages.find]
+include = ["app*", "scripts*"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py311"
+extend-exclude = ["alembic/versions"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM", "RUF"]
+
+[tool.ruff.lint.isort]
+# La carpeta alembic/ del proyecto no debe confundirse con el paquete alembic.
+known-third-party = ["alembic"]
+known-first-party = ["app", "scripts"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+plugins = ["pydantic.mypy"]
+exclude = ["alembic/"]
+
+[[tool.mypy.overrides]]
+module = ["cv2.*", "torch.*", "torchvision.*", "transformers.*", "spandrel.*", "huggingface_hub.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
