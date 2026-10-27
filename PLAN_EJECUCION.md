@@ -278,17 +278,17 @@ Bloquea todo lo demás. Debe quedar corta.
 
 Puede empezar con `PIPELINE_MODE=stub`.
 
-- [ ] F2.1 Routers `batches`: crear, listar, ver, cancelar, reintentar fallidas y cambiar `default_options`.
-- [ ] F2.2 Router `images`: subida múltiple (`multipart`, hasta 200 archivos) y `.zip` (descomprimir con límites de tamaño y validar tipo real del archivo). Editar `product_name`, `sku` y `options_override`. Aprobar.
-- [ ] F2.3 Importar metadatos por CSV (`archivo,nombre,sku`) para asociar nombre y SKU en bloque.
-- [ ] F2.4 `queue/`: interfaz `JobQueue` + implementación SQLite (tomar trabajo con bloqueo, reintentos x2 y recuperación de trabajos que quedaron "processing" tras un reinicio).
-- [ ] F2.5 Worker como proceso aparte (`python -m app.queue.worker`) con concurrencia 1. Carga los modelos una sola vez y libera VRAM si hay error de memoria (reintento con tiles más pequeños).
-- [ ] F2.6 Reprocesar una imagen con otras opciones o con máscara editada (`kind=reprocess`), conservando versiones anteriores.
-- [ ] F2.7 SSE `/api/v1/events` con progreso por lote e imagen.
-- [ ] F2.8 Descarga `.zip` por lote y por preset (solo aprobadas, o todas), con nombres por SKU.
-- [ ] F2.9 Router `settings` sobre `settings_store`: `GET /settings` (secretos enmascarados como `{configured: true}`), `PUT /settings/{section}` por sección (un secreto vacío u omitido conserva el actual; `null` explícito lo borra) y `POST /settings/telegram/test`. Cubre **todas** las secciones de `AppSettings`.
-- [ ] F2.10 Tests de API (`httpx` + BD temporal) y del worker con el stub.
-- [ ] F2.11 Script `scripts/dev.ps1` que levanta API + worker + web.
+- [x] F2.1 Routers `batches`: crear, listar, ver, cancelar, reintentar fallidas y cambiar `default_options`. — (codex)
+- [x] F2.2 Router `images`: subida múltiple (`multipart`, hasta 200 archivos) y `.zip` (descomprimir con límites de tamaño y validar tipo real del archivo). Editar `product_name`, `sku` y `options_override`. Aprobar. — (codex)
+- [x] F2.3 Importar metadatos por CSV (`archivo,nombre,sku`) para asociar nombre y SKU en bloque. — (codex)
+- [x] F2.4 `queue/`: interfaz `JobQueue` + implementación SQLite (tomar trabajo con bloqueo, reintentos x2 y recuperación de trabajos que quedaron "processing" tras un reinicio). — (codex)
+- [x] F2.5 Worker como proceso aparte (`python -m app.queue.worker`) con concurrencia 1. Carga los modelos una sola vez y libera VRAM si hay error de memoria (reintento con tiles más pequeños). — (codex)
+- [x] F2.6 Reprocesar una imagen con otras opciones o con máscara editada (`kind=reprocess`), conservando versiones anteriores. — (codex)
+- [x] F2.7 SSE `/api/v1/events` con progreso por lote e imagen. — (codex)
+- [x] F2.8 Descarga `.zip` por lote y por preset (solo aprobadas, o todas), con nombres por SKU. — (codex)
+- [x] F2.9 Router `settings` sobre `settings_store`: `GET /settings` (secretos enmascarados como `{configured: true}`), `PUT /settings/{section}` por sección (un secreto vacío u omitido conserva el actual; `null` explícito lo borra) y `POST /settings/telegram/test`. Cubre **todas** las secciones de `AppSettings`. — (codex)
+- [x] F2.10 Tests de API (`httpx` + BD temporal) y del worker con el stub. — (codex)
+- [x] F2.11 Script `scripts/dev.ps1` que levanta API + worker + web. — (codex)
 
 **Criterio de salida:** subir 100 imágenes en `.zip` crea un lote, el worker las procesa (stub o real), el progreso llega por SSE y el `.zip` de salida se descarga con nombres correctos.
 
@@ -298,7 +298,7 @@ Puede empezar con `PIPELINE_MODE=stub`.
 
 Todo texto visible en **español e inglés** (i18next), sin textos fijos en el código.
 
-- [ ] F3.1 Layout base, selector de idioma, tema claro/oscuro y lista de lotes con estado y contadores.
+- [x] F3.1 Layout base, selector de idioma, tema claro/oscuro y lista de lotes con estado y contadores. — (codex)
 - [ ] F3.2 Crear lote: nombre, opciones por defecto (presets, líneas de capa, sombra) y zona de arrastrar y soltar para fotos o `.zip`, con progreso de subida.
 - [ ] F3.3 Pestaña "Desde enlace" en el mismo formulario (se conecta en la Fase 4).
 - [ ] F3.4 Tabla editable de nombre y SKU por imagen, más carga de CSV.
@@ -406,9 +406,13 @@ _(Agregar aquí cualquier hallazgo que cambie el plan, con fecha y agente.)_
 - **2026-10-26 · claude · BiRefNet necesita `trust_remote_code`.** El modelo de Hugging Face trae su arquitectura como código Python del repositorio. Los pesos ya están descargados con la revisión fijada, pero **no se ha ejecutado**: el usuario debe decidir antes de la Fase 1 entre (a) revisar y permitir ese código de la revisión fijada `e2bf8e4…`, o (b) usar la versión ONNX de BiRefNet (`onnxruntime-gpu`, sin código remoto, quizá algo más lenta). Real-ESRGAN carga con `spandrel` sin código remoto.
 - **2026-10-26 · claude · `openapi-typescript` y TypeScript 6.** `openapi-typescript@7` declara TS 5 como dependencia par; se resolvió con `overrides` en `web/package.json`. Funciona: `npm run gen:api` genera los tipos.
 - **2026-10-26 · claude · Consola de Windows.** Los scripts imprimen tildes que la consola cp1252 muestra mal; es solo visual.
+- **2026-10-27 · claude · Pista para F4.2 (Google Photos), probada a mano.** `photos.app.goo.gl/...` redirige (302) a `photos.google.com/share/<id>?key=...`. El HTML (con User-Agent de navegador) trae en `AF_initDataCallback({key: 'ds:1'...})` cada foto como `["AF1Qip<id>",["https://lh3.googleusercontent.com/pw/<token>",<ancho>,<alto>,...]`. Sumando `=d` a la URL se descarga el JPEG original con su EXIF (probado: 3000×4000, 3,1 MB). El primer `AF1Qip…` es el álbum, no una foto. Falta comprobar con álbumes grandes si el HTML inicial trae todas las fotos o si hay que paginar.
+- **2026-10-27 · claude · Decisión BiRefNet (confirmada por el usuario):** copiar el código de la arquitectura (MIT) a `backend/app/pipeline/vendor/birefnet/`, revisado y fijado, y cargar los pesos `safetensors` ya descargados. Sin `trust_remote_code` ni un segundo motor (ONNX queda como plan B). Hecho en F1.1. Pendiente para F1.8: la métrica `uncertain_edge_ratio` dio 0,60 en una foto con bordes correctos, así que hay que calibrarla (banda de borde proporcional al tamaño) antes de usarla para marcar "para revisar".
 
 ## Registro de cambios de contrato
 
 _(Fecha · agente · cambio · motivo. El otro agente marca "revisado".)_
 
 - 2026-10-26 · claude · Contratos iniciales congelados (`app/contracts/`), más `AppSettings` (toda la configuración editable) y `process_image(..., *, base_name, mask_override)`. Motivo: cierre de la Fase 0 con alcance de la opción C. Revisado por codex: [x]
+- 2026-10-27 · codex · Se agregan `AppSettingsPublic` y `TelegramTestResult` para documentar la vista enmascarada de ajustes y el resultado de la prueba de Telegram. Motivo: F2.9 requiere que OpenAPI describa respuestas sin secretos. Revisado por claude: [x]
+- 2026-10-27 · claude · (rama `feat/F1-pipeline`) `process_image` recibe `settings: AppSettings | None = None` (el worker ya lo pasa; quitar el `del settings` de `PipelineProcessor` al unir). `QualitySettings.low_confidence_edge_ratio` por defecto pasa de 0,15 a 0,6 (calibrado con 12 fotos reales). `ImageItem.review_reasons` usa los códigos de F1.8 (la web debe traducirlos). Con `generate_both_layer_variants` el proceso nombra `SKU.webp` (conservar) y `SKU_smooth.webp` (suavizar). Revisado por codex: [x]

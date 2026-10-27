@@ -95,3 +95,14 @@ class SettingRow(Base):
     section: Mapped[str] = mapped_column(String(40), primary_key=True)
     value: Mapped[dict[str, Any]] = mapped_column(JSON)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
+
+
+class EventRow(Base):
+    """Evento persistente para que API y worker se comuniquen aunque sean procesos distintos."""
+
+    __tablename__ = "events"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    type: Mapped[str] = mapped_column(String(30), index=True)
+    payload: Mapped[dict[str, Any]] = mapped_column(JSON)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)

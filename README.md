@@ -35,9 +35,11 @@ Sin GPU o para trabajar solo en la API y la web: instala `pip install -e ".[dev]
 
 ```powershell
 copy .env.example .env      # opcional: todo tiene valor por defecto
-cd backend; .venv\Scripts\uvicorn app.main:app --port 8090 --reload
-cd web; npm run dev          # http://localhost:5180
+.\scripts\dev.ps1           # API + worker + web; Ctrl+C cierra los tres
 ```
+
+Para validar las dependencias sin iniciar servicios: `.\scripts\dev.ps1 -Check`. Los logs de cada
+proceso se guardan en una carpeta temporal que el script muestra al arrancar.
 
 - API: `http://localhost:8090/api/v1` · Swagger: `http://localhost:8090/docs`
 - La base SQLite se crea y migra sola al arrancar la API (`data/studio.db`).
