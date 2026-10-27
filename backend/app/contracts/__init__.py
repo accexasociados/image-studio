@@ -22,12 +22,19 @@ from app.contracts.models import (
 )
 from app.contracts.options import LayerLines, Preset, ProcessOptions, ShadowMode, UpscaleFactor
 from app.contracts.presets import PRESETS, OutputFormat, PresetSpec
-from app.contracts.settings import SECRET_FIELDS, AppSettings, SettingsSection
+from app.contracts.settings import (
+    SECRET_FIELDS,
+    AppSettings,
+    AppSettingsPublic,
+    SettingsSection,
+    TelegramTestResult,
+)
 
 __all__ = [
     "PRESETS",
     "SECRET_FIELDS",
     "AppSettings",
+    "AppSettingsPublic",
     "Batch",
     "BatchCounts",
     "BatchCreate",
@@ -52,5 +59,6 @@ __all__ = [
     "ProcessResult",
     "SettingsSection",
     "ShadowMode",
+    "TelegramTestResult",
     "UpscaleFactor",
 ]

@@ -101,6 +101,47 @@ class AppSettings(_Section):
     pipeline: PipelineSettings = Field(default_factory=PipelineSettings)
 
 
+class SecretConfigured(_Section):
+    configured: bool
+
+
+class TelegramSettingsPublic(_Section):
+    enabled: bool
+    bot_token: SecretConfigured
+    allowed_chat_ids: list[int]
+    notify_chat_ids: list[int]
+    notify_on_start: bool
+    notify_progress_step: int
+    notify_on_finish: bool
+    input_bot_enabled: bool
+    send_results_as: Literal["files", "zip"]
+
+
+class ImporterSettingsPublic(_Section):
+    google_drive_api_key: SecretConfigured
+    max_download_mb: int
+    max_images_per_import: int
+
+
+class AppSettingsPublic(_Section):
+    """Vista de API: conserva toda la configuración sin revelar secretos."""
+
+    general: GeneralSettings
+    processing_defaults: ProcessOptions
+    export: ExportSettings
+    telegram: TelegramSettingsPublic
+    notifications: NotificationSettings
+    hot_folder: HotFolderSettings
+    importers: ImporterSettingsPublic
+    quality: QualitySettings
+    pipeline: PipelineSettings
+
+
+class TelegramTestResult(_Section):
+    ok: Literal[True] = True
+    sent: int
+
+
 SettingsSection = Literal[
     "general",
     "processing_defaults",

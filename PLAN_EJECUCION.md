@@ -286,7 +286,7 @@ Puede empezar con `PIPELINE_MODE=stub`.
 - [x] F2.6 Reprocesar una imagen con otras opciones o con máscara editada (`kind=reprocess`), conservando versiones anteriores. — (codex)
 - [x] F2.7 SSE `/api/v1/events` con progreso por lote e imagen. — (codex)
 - [x] F2.8 Descarga `.zip` por lote y por preset (solo aprobadas, o todas), con nombres por SKU. — (codex)
-- [ ] F2.9 Router `settings` sobre `settings_store`: `GET /settings` (secretos enmascarados como `{configured: true}`), `PUT /settings/{section}` por sección (un secreto vacío u omitido conserva el actual; `null` explícito lo borra) y `POST /settings/telegram/test`. Cubre **todas** las secciones de `AppSettings`.
+- [x] F2.9 Router `settings` sobre `settings_store`: `GET /settings` (secretos enmascarados como `{configured: true}`), `PUT /settings/{section}` por sección (un secreto vacío u omitido conserva el actual; `null` explícito lo borra) y `POST /settings/telegram/test`. Cubre **todas** las secciones de `AppSettings`. — (codex)
 - [ ] F2.10 Tests de API (`httpx` + BD temporal) y del worker con el stub.
 - [ ] F2.11 Script `scripts/dev.ps1` que levanta API + worker + web.
 
@@ -412,3 +412,4 @@ _(Agregar aquí cualquier hallazgo que cambie el plan, con fecha y agente.)_
 _(Fecha · agente · cambio · motivo. El otro agente marca "revisado".)_
 
 - 2026-10-26 · claude · Contratos iniciales congelados (`app/contracts/`), más `AppSettings` (toda la configuración editable) y `process_image(..., *, base_name, mask_override)`. Motivo: cierre de la Fase 0 con alcance de la opción C. Revisado por codex: [x]
+- 2026-10-27 · codex · Se agregan `AppSettingsPublic` y `TelegramTestResult` para documentar la vista enmascarada de ajustes y el resultado de la prueba de Telegram. Motivo: F2.9 requiere que OpenAPI describa respuestas sin secretos. Revisado por claude: [ ]
