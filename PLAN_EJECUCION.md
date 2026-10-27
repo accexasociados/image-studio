@@ -21,15 +21,15 @@ Fecha de creación: **2026-10-26**.
 | Fase | Objetivo | Dueño sugerido | Depende de | Estado |
 |---|---|---|---|---|
 | 0 | Fundaciones y contratos | Claude | — | Completa (2026-10-26) |
-| 1 | Proceso de imagen para impresión 3D | Claude | F0 + fotos de prueba | Pendiente |
-| 2 | API, cola de trabajos y worker | Codex | F0 | Pendiente |
-| 3 | Interfaz web: lotes y subida en bloque | Codex | F0 (API simulada) | Pendiente |
+| 1 | Proceso de imagen para impresión 3D | Claude | F0 + fotos de prueba | Código listo; falta que el usuario apruebe la hoja de contacto |
+| 2 | API, cola de trabajos y worker | Codex | F0 | Completa (2026-10-27), unida a `main` |
+| 3 | Interfaz web: lotes y subida en bloque | Codex | F0 (API simulada) | En progreso |
 | 4 | Importar desde enlaces (Google Photos, Drive, URL directa) | Codex | F2 | Pendiente |
 | 5 | Avisos (Telegram, Windows, navegador) | Codex | F2 | Pendiente |
 | 6 | Galería de revisión y editor (antes/después, ajustes, pincel) | Claude | F1, F3 | Pendiente |
 | 7 | Entradas extra: bot de Telegram y carpeta vigilada | Codex | F2, F5 | Pendiente |
 | 8 | Validación con lote real de 100 fotos y ajuste fino | Claude + usuario | F1–F6 | Pendiente |
-| 9 | Nube (opción C): Docker, Redis, S3, autenticación e integración con el ecommerce | Codex (9.1–9.4) + Claude (9.5) | F8 | Pendiente |
+| 9 | Nube (opción C): Docker, Redis, S3, autenticación e integración con el ecommerce | Codex (9.1–9.7) + Claude (9.8) | F8 | Pendiente |
 
 Las fases 1, 2 y 3 pueden avanzar **en paralelo**: la Fase 0 ya dejó los contratos, la configuración y el proceso en modo `stub`.
 
@@ -227,6 +227,7 @@ Interfaces para crecer a la nube (ya definidas en la Fase 0):
    - `backend/app/contracts/` → solo se modifica con una nota en *Registro de cambios de contrato* (al final), y el otro agente debe revisarla.
 5. **Mientras el proceso real no exista**, la Fase 2 usa `pipeline/run.py` en **modo stub** (pega la imagen sobre blanco en cada preset, sin IA), activable con `PIPELINE_MODE=stub`. Ya está implementado y probado desde la Fase 0. Así la API y la web avanzan sin GPU.
 8. **Configuración:** cualquier ajuste nuevo va a `AppSettings` (y a la pantalla de Ajustes), no a `.env` ni a constantes. Solo lo de arranque va a `.env.example`.
+9. **Carpetas separadas por agente:** Codex trabaja en `image-studio/` y Claude en el worktree `../image-studio-claude/` (mismo repositorio, rama `feat/F1-pipeline`). Así ningún cambio de rama le mueve archivos al otro. Este plan se edita siempre en `image-studio/`. Al cerrar la fase, Claude junta su rama en `main` y borra el worktree (`git worktree remove ../image-studio-claude`).
 6. **Cada tarea termina con:** tests pasando (`pytest` / `npm run test`), lint (`ruff check`, `npm run lint`), typecheck (`mypy app` / `npm run build`) y su casilla en `[x]`.
 7. **Si algo del plan no cuadra con la realidad**, escribirlo en *Notas y bloqueos* y no improvisar un cambio de diseño grande.
 
@@ -257,18 +258,18 @@ Bloquea todo lo demás. Debe quedar corta.
 
 **Requiere las fotos de prueba** (ver *Qué necesitamos del usuario*).
 
-- [ ] F1.1 `segment.py`: BiRefNet a 1024 px en FP32, máscara escalada al tamaño original con refinado de bordes (guided filter) y bordes suaves de 1 a 2 px. Cerrar huecos pequeños y conservar agujeros reales de la pieza.
-- [ ] F1.2 `color.py`: balance de blancos con referencia en el fondo original (que suele ser neutro) y corrección suave de exposición y contraste, solo dentro de la máscara. Nada de saturación agresiva.
-- [ ] F1.3 `upscale.py`: Real-ESRGAN x2 por tiles (512 px, solape de 32) en FP32; x4 opcional. **Reinyección de detalle:** mezclar la alta frecuencia de la original (escalada con Lanczos) para conservar las líneas de capa y evitar el aspecto "encerado".
-- [ ] F1.4 `layers.py`: modo `keep` (no tocar) y modo `smooth` (filtro guiado o bilateral solo en la pieza, con intensidad 0–100 y bordes protegidos).
-- [ ] F1.5 `shadow.py`: sombra de contacto realista (elipse difusa bajo la base, deducida de la parte inferior de la máscara) más una sombra ambiental muy tenue. El modo `auto` usa `strong` si la luminancia media de la pieza es alta (piezas blancas o claras).
-- [ ] F1.6 `compose.py`: lienzo `#FFFFFF` puro, centrado por centro de masa, `fill_ratio` según preset y fondo exactamente blanco fuera de la sombra (sin grises residuales).
-- [ ] F1.7 `export.py`: los cuatro presets, perfil sRGB, límite de 5 MB para storefront (bajar la calidad hasta cumplirlo) y nombres por SKU o slug.
-- [ ] F1.8 `quality.py`: marcar para revisión si la máscara toca el borde de la foto, si la pieza ocupa menos del 5 % o más del 95 %, si hay varias piezas separadas, si los bordes son de baja confianza (translúcidos) o si hay poca diferencia entre la pieza y el fondo.
-- [ ] F1.9 `run.py`: modo `real` encadenando las etapas, con tiempos por etapa en `timings_ms`. Las opciones de `AppSettings.pipeline`, `export` y `quality` se reciben como parámetro (sin leer la BD dentro del proceso). El modo `stub` ya existe desde la Fase 0.
-- [ ] F1.10 `scripts/process_folder.py`: CLI `python -m scripts.process_folder samples/ out/ --preset storefront --layers keep` para probar sin web.
-- [ ] F1.11 Tests con imágenes sintéticas (fondo plano más figura) y prueba de regresión visual básica (fondo blanco puro, pieza centrada, tamaño correcto, < 5 MB).
-- [ ] F1.12 Ajuste con las fotos reales: hoja de contacto HTML antes/después en `data/reports/` para que el usuario apruebe el estilo.
+- [x] F1.1 `segment.py`: BiRefNet a 1024 px en FP32, máscara escalada al tamaño original con refinado de bordes (guided filter) y bordes suaves de 1 a 2 px. Cerrar huecos pequeños y conservar agujeros reales de la pieza. — (claude). Código de BiRefNet copiado y verificado por firma (`app/pipeline/vendor/birefnet/`). Muestra 3000×4000: 2,7 s y 3,2 GB de VRAM.
+- [x] F1.2 `color.py`: balance de blancos con referencia en el fondo original (que suele ser neutro) y corrección suave de exposición y contraste, solo dentro de la máscara. Nada de saturación agresiva. — (claude). Balance de blancos calculado sobre la foto reducida (la mitad clara del fondo), sin aplicar si el fondo tiene color; exposición con tope 1,35.
+- [x] F1.3 `upscale.py`: Real-ESRGAN x2 por tiles (512 px, solape de 32) en FP32; x4 opcional. **Reinyección de detalle:** mezclar la alta frecuencia de la original (escalada con Lanczos) para conservar las líneas de capa y evitar el aspecto "encerado". — (claude). Solo agranda lo necesario para el formato más exigente; una pasada x2 + Lanczos hasta 2,8x; reinyección de detalle 0,6.
+- [x] F1.4 `layers.py`: modo `keep` (no tocar) y modo `smooth` (filtro guiado o bilateral solo en la pieza, con intensidad 0–100 y bordes protegidos). — (claude). Filtro guiado por canal con peso solo en el interior de la pieza.
+- [x] F1.5 `shadow.py`: sombra de contacto realista (elipse difusa bajo la base, deducida de la parte inferior de la máscara) más una sombra ambiental muy tenue. El modo `auto` usa `strong` si la luminancia media de la pieza es alta (piezas blancas o claras). — (claude). Contacto + ambiental; `auto` = strong si la luminancia media de la pieza > 0,62.
+- [x] F1.6 `compose.py`: lienzo `#FFFFFF` puro, centrado por centro de masa, `fill_ratio` según preset y fondo exactamente blanco fuera de la sombra (sin grises residuales). — (claude). Incluye limpieza del halo del fondo en los bordes (decontaminación) y fondo exacto verificado por test.
+- [x] F1.7 `export.py`: los cuatro presets, perfil sRGB, límite de 5 MB para storefront (bajar la calidad hasta cumplirlo) y nombres por SKU o slug. — (claude). Perfil sRGB embebido; ajustes de Ajustes > Formatos aplicados con `resolve_preset`.
+- [x] F1.8 `quality.py`: marcar para revisión si la máscara toca el borde de la foto, si la pieza ocupa menos del 5 % o más del 95 %, si hay varias piezas separadas, si los bordes son de baja confianza (translúcidos) o si hay poca diferencia entre la pieza y el fondo. — (claude). Códigos: touches_border, object_too_small, object_too_large, multiple_objects, uncertain_edges, low_resolution. Umbral de bordes recalibrado a 0,6.
+- [x] F1.9 `run.py`: modo `real` encadenando las etapas, con tiempos por etapa en `timings_ms`. Las opciones de `AppSettings.pipeline`, `export` y `quality` se reciben como parámetro (sin leer la BD dentro del proceso). El modo `stub` ya existe desde la Fase 0. — (claude). `process_image(..., settings=AppSettings)`; carga de modelos cacheada; tiempos por etapa.
+- [x] F1.10 `scripts/process_folder.py`: CLI `python -m scripts.process_folder samples/ out/ --preset storefront --layers keep` para probar sin web. — (claude). Genera además `index.html` (hoja de contacto) y `summary.json`.
+- [x] F1.11 Tests con imágenes sintéticas (fondo plano más figura) y prueba de regresión visual básica (fondo blanco puro, pieza centrada, tamaño correcto, < 5 MB). — (claude). 26 tests (incluye proceso real completo sin GPU con máscara dada y Lanczos).
+- [~] F1.12 Ajuste con las fotos reales: hoja de contacto HTML antes/después en `data/reports/` para que el usuario apruebe el estilo. — (claude). Generada en `image-studio-claude/data/reports/f1-final/index.html` con las 12 fotos; **falta la aprobación del usuario**.
 
 **Criterio de salida:** con las fotos de prueba, el usuario aprueba la hoja de contacto. Menos de 10 s por imagen en la GTX 1660 con `storefront` + `instagram_feed`. Fondo `#FFFFFF` verificado por test.
 
@@ -290,6 +291,22 @@ Puede empezar con `PIPELINE_MODE=stub`.
 - [x] F2.10 Tests de API (`httpx` + BD temporal) y del worker con el stub. — (codex)
 - [x] F2.11 Script `scripts/dev.ps1` que levanta API + worker + web. — (codex)
 
+### Correcciones tras la revisión del 2026-10-27 (claude)
+
+La revisión de F2.1–F2.11 y F3.1 (commits `bd12dd5..34be4be`) pasó pytest (57), ruff, mypy, lint, test y build de la web, y cumple el criterio de salida en el caso normal (100 imágenes en `.zip` con el worker en modo stub). Antes de unir a `main` hay que corregir:
+
+- [x] F2.12 Cancelar un lote mientras el worker procesa una imagen lo deja en `processing` para siempre: `_refresh_batch_status` (`queue/worker.py` ~315) sobrescribe `cancelled`. Un lote cancelado nunca debe volver a `queued` ni a `processing`. — (codex)
+- [x] F2.13 El worker puede deshacer una cancelación: el `ValueError` de lote cancelado se trata como reintentable, el trabajo vuelve a la cola y `_record_failure` pone el lote en `queued` (`worker.py` ~106-110, ~178, ~297). Debe ser terminal y sin reintento. — (codex)
+- [x] F2.14 Una sola imagen fallida marca todo el lote `failed` (`worker.py` ~297-301) sin pasar por `_refresh_batch_status`. El estado del lote debe salir de los conteos (p. ej. `done` con `failed > 0`), y `batch.finished` debe informar el estado correcto. — (codex)
+- [x] F2.15 `recover_stale` (`queue/sqlite.py` ~103-112) vuelve a encolar sin tope: un trabajo que tumba el worker (CUDA, OOM) se repite en cada arranque. Contar el intento al recuperar, marcar `failed` al superar el máximo y no robar trabajos de otro worker vivo (por ejemplo, con `worker_id` + latido). — (codex)
+- [x] F2.16 SSE: sin `Last-Event-ID` se repite todo el historial y la tabla `events` crece sin límite (`api/events.py` ~153). Empezar en el último evento (o aceptar `?since=`), podar eventos viejos y no bloquear el event loop con la consulta síncrona (`run_in_threadpool`). — (codex). Verificado por claude el 2026-10-27 en `7fd4001`.
+- [x] F2.17 `ImageItem.outputs` mezcla todas las versiones (`api/images.py` ~56): devolver solo la última versión (o agregar `version` al contrato, con nota en el registro). — (codex). Verificado por claude el 2026-10-27 en `7fd4001`.
+- [x] F2.18 En el `.zip`, las imágenes sin SKU ni nombre salen con el UUID (`api/downloads.py` ~57). Usar `source_ref` (nombre original) y respetar `AppSettings.export.filename_strategy`. Con las dos variantes de capa, usar `SKU.webp` + `SKU_smooth.webp` (ver el registro de contratos), no `SKU_keep`. — (codex). Verificado por claude el 2026-10-27 en `7fd4001`.
+- [x] F2.19 Las subidas, reintentos, reprocesos y cancelaciones escriben `JobRow` directamente (`images.py` ~247, ~329; `batches.py` ~92-96, ~116) en vez de usar `JobQueue`; eso rompe el cambio a Redis de la Fase 9. — (codex). Verificado por claude el 2026-10-27 en `7fd4001`.
+- [x] F2.20 Menores: un archivo que no es imagen dentro del `.zip` (p. ej. `metadata.csv`) rechaza todo el `.zip` (ignorarlo o tratarlo como CSV); falta la ruta `GET /api/v1/files/{key}` que usa `Storage.public_url` (la necesitan F3.5 y F6); `PUT /settings/{section}` recibe `dict` y el OpenAPI queda sin tipos; la API y el worker corren las migraciones al mismo tiempo en una BD nueva; clave sin uso `app.subtitle`. — (codex). Verificado por claude el 2026-10-27 en `7fd4001`.
+
+**Integración (2026-10-27, claude):** `main` = `b7f0486`: Fase 0 + Fase 1 (`feat/F1-pipeline`) + Fase 2 y F3.1 de codex (hasta `7fd4001`) + worker conectado al proceso real (`PipelineProcessor` pasa `settings`). Probado de punta a punta con 3 fotos reales en la GPU: lote `done`, `.zip` de storefront e Instagram con nombres por SKU y `_smooth`. 72 tests, ruff y mypy en verde. Pendiente menor: `GET /files/{key}` con una clave fuera del almacenamiento responde 500 en lugar de 404. **Codex: seguir la Fase 3 desde `main`** (`git switch main` y una rama nueva por tarea).
+
 **Criterio de salida:** subir 100 imágenes en `.zip` crea un lote, el worker las procesa (stub o real), el progreso llega por SSE y el `.zip` de salida se descarga con nombres correctos.
 
 ---
@@ -299,7 +316,7 @@ Puede empezar con `PIPELINE_MODE=stub`.
 Todo texto visible en **español e inglés** (i18next), sin textos fijos en el código.
 
 - [x] F3.1 Layout base, selector de idioma, tema claro/oscuro y lista de lotes con estado y contadores. — (codex)
-- [ ] F3.2 Crear lote: nombre, opciones por defecto (presets, líneas de capa, sombra) y zona de arrastrar y soltar para fotos o `.zip`, con progreso de subida.
+- [x] F3.2 Crear lote: nombre, opciones por defecto (presets, líneas de capa, sombra) y zona de arrastrar y soltar para fotos o `.zip`, con progreso de subida. (Codex, 2026-10-27) Corregido por claude el 2026-10-27: el nombre iba dentro de `default_options` (422 siempre), faltaban suavizado, margen y ambas variantes, y ahora parte de `processing_defaults` de Ajustes. Probado en el navegador.
 - [ ] F3.3 Pestaña "Desde enlace" en el mismo formulario (se conecta en la Fase 4).
 - [ ] F3.4 Tabla editable de nombre y SKU por imagen, más carga de CSV.
 - [ ] F3.5 Vista del lote en proceso: barra de progreso en vivo (SSE), miniaturas que cambian de estado y filtros (todas, listas, para revisar, fallidas).
@@ -307,6 +324,8 @@ Todo texto visible en **español e inglés** (i18next), sin textos fijos en el c
 - [ ] F3.7 Tests de componentes con Vitest + Testing Library.
 
 **Criterio de salida:** flujo completo desde la web: crear lote → subir → ver el progreso → descargar el `.zip`.
+
+**Aviso para codex (2026-10-27, claude):** la rama `feat/F3.2-create-batch-upload` no partió de `main` y reconstruyó a mano la Fase 1 (commits `ebe7530` y `702dd6b`). Eso borraba `.gitattributes` y `tests/test_segment.py`, devolvía `low_confidence_edge_ratio` a 0.15, quitaba `settings=` en `PipelineProcessor` y las exclusiones de `vendor` en `pyproject.toml`. En `main` solo entró `dd67a78` (F3.2) más la corrección. **No uses esa rama.** Para cada tarea: `git switch main && git pull --ff-only` (o `git reset --hard origin/main` si tu `main` local difiere) y `git switch -c feat/F3.x-...`. Nunca copies archivos de otra rama a mano: si te falta algo, haz `merge` o `rebase` sobre `main`. Antes de entregar una tarea de la web, pruébala contra la API real (crear lote, subir), no solo con `tsc` y lint. Formatea con `npm run format`.
 
 ---
 
@@ -416,3 +435,4 @@ _(Fecha · agente · cambio · motivo. El otro agente marca "revisado".)_
 - 2026-10-26 · claude · Contratos iniciales congelados (`app/contracts/`), más `AppSettings` (toda la configuración editable) y `process_image(..., *, base_name, mask_override)`. Motivo: cierre de la Fase 0 con alcance de la opción C. Revisado por codex: [x]
 - 2026-10-27 · codex · Se agregan `AppSettingsPublic` y `TelegramTestResult` para documentar la vista enmascarada de ajustes y el resultado de la prueba de Telegram. Motivo: F2.9 requiere que OpenAPI describa respuestas sin secretos. Revisado por claude: [x]
 - 2026-10-27 · claude · (rama `feat/F1-pipeline`) `process_image` recibe `settings: AppSettings | None = None` (el worker ya lo pasa; quitar el `del settings` de `PipelineProcessor` al unir). `QualitySettings.low_confidence_edge_ratio` por defecto pasa de 0,15 a 0,6 (calibrado con 12 fotos reales). `ImageItem.review_reasons` usa los códigos de F1.8 (la web debe traducirlos). Con `generate_both_layer_variants` el proceso nombra `SKU.webp` (conservar) y `SKU_smooth.webp` (suavizar). Revisado por codex: [x]
+- 2026-10-27 · claude · `ProcessOptions.shadow_intensity: int` (0 a 200, por defecto 100) escala la opacidad del modo de sombra; en `main` desde `feat/F1.13-shadow-intensity`. **Codex:** regenerar `web/src/shared/api/schema.d.ts` (`npm run gen:api`) e incluir en los formularios de opciones (F3.2 crear lote, F3.6 Ajustes > Procesamiento por defecto) y en el panel por imagen (F6.3) todos los campos de `ProcessOptions`: formatos, líneas de capa + intensidad, sombra + intensidad, margen (`fill_ratio`), agrandado máximo, balance de blancos y las dos variantes. Revisado por codex: [x]

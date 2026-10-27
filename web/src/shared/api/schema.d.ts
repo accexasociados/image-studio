@@ -248,6 +248,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/files/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get File */
+        get: operations["get_file_api_v1_files__key__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/settings": {
         parameters: {
             query?: never;
@@ -518,6 +535,21 @@ export interface components {
             sku?: string | null;
             options_override?: components["schemas"]["ProcessOptions"] | null;
         };
+        /** ImporterSettings */
+        ImporterSettings: {
+            /** Google Drive Api Key */
+            google_drive_api_key?: string | null;
+            /**
+             * Max Download Mb
+             * @default 40
+             */
+            max_download_mb: number;
+            /**
+             * Max Images Per Import
+             * @default 300
+             */
+            max_images_per_import: number;
+        };
         /** ImporterSettingsPublic */
         ImporterSettingsPublic: {
             google_drive_api_key: components["schemas"]["SecretConfigured"];
@@ -650,6 +682,12 @@ export interface components {
              */
             shadow: "none" | "soft" | "strong" | "auto";
             /**
+             * Shadow Intensity
+             * @description Porcentaje de la opacidad del modo de sombra (100 = normal).
+             * @default 100
+             */
+            shadow_intensity: number;
+            /**
              * Fill Ratio
              * @description Fracción del lado mayor que ocupa la pieza. None = valor por defecto de cada preset.
              */
@@ -695,7 +733,7 @@ export interface components {
             flag_multiple_objects: boolean;
             /**
              * Low Confidence Edge Ratio
-             * @default 0.15
+             * @default 0.6
              */
             low_confidence_edge_ratio: number;
         };
@@ -703,6 +741,47 @@ export interface components {
         SecretConfigured: {
             /** Configured */
             configured: boolean;
+        };
+        /** TelegramSettings */
+        TelegramSettings: {
+            /**
+             * Enabled
+             * @default false
+             */
+            enabled: boolean;
+            /** Bot Token */
+            bot_token?: string | null;
+            /** Allowed Chat Ids */
+            allowed_chat_ids?: number[];
+            /** Notify Chat Ids */
+            notify_chat_ids?: number[];
+            /**
+             * Notify On Start
+             * @default true
+             */
+            notify_on_start: boolean;
+            /**
+             * Notify Progress Step
+             * @description 0 = sin avisos de progreso.
+             * @default 25
+             */
+            notify_progress_step: number;
+            /**
+             * Notify On Finish
+             * @default true
+             */
+            notify_on_finish: boolean;
+            /**
+             * Input Bot Enabled
+             * @default false
+             */
+            input_bot_enabled: boolean;
+            /**
+             * Send Results As
+             * @default zip
+             * @enum {string}
+             */
+            send_results_as: "files" | "zip";
         };
         /** TelegramSettingsPublic */
         TelegramSettingsPublic: {
@@ -1293,6 +1372,35 @@ export interface operations {
             };
         };
     };
+    get_file_api_v1_files__key__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_app_settings_api_v1_settings_get: {
         parameters: {
             query?: never;
@@ -1324,9 +1432,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": {
-                    [key: string]: unknown;
-                };
+                "application/json": components["schemas"]["GeneralSettings"] | components["schemas"]["ProcessOptions"] | components["schemas"]["ExportSettings"] | components["schemas"]["TelegramSettings"] | components["schemas"]["NotificationSettings"] | components["schemas"]["HotFolderSettings"] | components["schemas"]["ImporterSettings"] | components["schemas"]["QualitySettings"] | components["schemas"]["PipelineSettings"];
             };
         };
         responses: {

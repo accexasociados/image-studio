@@ -1,12 +1,15 @@
 import { CircleX, Layers3, Plus } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { useState } from 'react'
 import { HealthStatus } from '@/modules/health/components/HealthStatus'
 import { BatchList } from '../components/BatchList'
 import { useBatches } from '../hooks/useBatches'
+import { CreateBatchPanel } from '../components/CreateBatchPanel'
 
 export function BatchesPage() {
   const { t } = useTranslation()
   const { data, isPending, isError, refetch } = useBatches()
+  const [creating, setCreating] = useState(false)
 
   return (
     <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
@@ -25,14 +28,19 @@ export function BatchesPage() {
         </div>
         <button
           type="button"
-          disabled
-          title={t('batches.createComingSoon')}
-          className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white shadow-sm shadow-indigo-600/20 opacity-60"
+          onClick={() => setCreating(true)}
+          className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white shadow-sm shadow-indigo-600/20"
         >
           <Plus size={18} aria-hidden />
           {t('batches.create')}
         </button>
       </div>
+
+      {creating && (
+        <div className="mb-6">
+          <CreateBatchPanel onClose={() => setCreating(false)} />
+        </div>
+      )}
 
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
