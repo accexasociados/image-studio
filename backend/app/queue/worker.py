@@ -173,14 +173,17 @@ class Worker:
         url = job.payload["url"]
         with get_sessionmaker()() as session:
             settings = load_settings(session)
+            max_download_bytes = settings.importers.max_download_mb * 1024 * 1024
             hostname = (urlparse(url).hostname or "").casefold().rstrip(".")
             if hostname in {"photos.google.com", "photos.app.goo.gl"}:
-                images = download_album(url)
+                images = download_album(url, max_bytes=max_download_bytes)
             elif hostname == "drive.google.com":
                 api_key = settings.importers.google_drive_api_key
-                images = download_drive(url, api_key=api_key.get_secret_value() if api_key else None)
+                images = download_drive(
+                    url, max_bytes=max_download_bytes, api_key=api_key.get_secret_value() if api_key else None
+                )
             else:
-                images = (download_image(url),)
+                images = (download_image(url, max_bytes=max_download_bytes),)
             batch = session.get(BatchRow, job.batch_id)
             if batch is None:
                 raise ValueError("El lote de importación no existe.")

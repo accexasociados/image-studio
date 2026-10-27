@@ -5,7 +5,7 @@ from collections.abc import Iterable
 
 import httpx
 
-from app.importers.direct_url import DownloadedImage, _validate_url, download_image
+from app.importers.direct_url import MAX_IMAGE_BYTES, DownloadedImage, _validate_url, download_image
 
 _PHOTO_URL = re.compile(r"https://lh3\.googleusercontent\.com/[A-Za-z0-9_/?=&%-]+")
 
@@ -56,7 +56,9 @@ def fetch_album_urls(url: str, *, client: httpx.Client | None = None) -> list[st
             session.close()
 
 
-def download_album(url: str, *, client: httpx.Client | None = None) -> Iterable[DownloadedImage]:
+def download_album(
+    url: str, *, max_bytes: int = MAX_IMAGE_BYTES, client: httpx.Client | None = None
+) -> Iterable[DownloadedImage]:
     """Descarga las imágenes del álbum; la paginación queda aislada aquí."""
     for photo_url in fetch_album_urls(url, client=client):
-        yield download_image(photo_url, client=client)
+        yield download_image(photo_url, max_bytes=max_bytes, client=client)

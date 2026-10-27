@@ -6,7 +6,7 @@ from urllib.parse import parse_qs, urlparse
 
 import httpx
 
-from app.importers.direct_url import DownloadedImage, download_image
+from app.importers.direct_url import MAX_IMAGE_BYTES, DownloadedImage, download_image
 
 _FILE_ID = re.compile(r"/file/d/([\w-]+)")
 
@@ -23,7 +23,11 @@ def extract_drive_id(url: str) -> str:
 
 
 def download_drive(
-    url: str, *, api_key: str | None = None, client: httpx.Client | None = None
+    url: str,
+    *,
+    max_bytes: int = MAX_IMAGE_BYTES,
+    api_key: str | None = None,
+    client: httpx.Client | None = None,
 ) -> Iterator[DownloadedImage]:
     """Descarga un archivo o las imágenes de una carpeta pública."""
     owns_client = client is None
@@ -38,6 +42,7 @@ def download_drive(
         if metadata.status_code == 404 and not api_key:
             yield download_image(
                 f"https://drive.usercontent.google.com/download?id={resource_id}&export=download",
+                max_bytes=max_bytes,
                 client=session,
             )
             return
@@ -57,13 +62,16 @@ def download_drive(
                 if child.get("mimeType", "").startswith("image/"):
                     yield download_image(
                         f"https://drive.usercontent.google.com/download?id={child['id']}&export=download",
+                        max_bytes=max_bytes,
                         client=session,
                     )
             return
         if not item.get("mimeType", "").startswith("image/"):
             raise ValueError("El archivo de Drive no es una imagen.")
         yield download_image(
-            f"https://drive.usercontent.google.com/download?id={resource_id}&export=download", client=session
+            f"https://drive.usercontent.google.com/download?id={resource_id}&export=download",
+            max_bytes=max_bytes,
+            client=session,
         )
     finally:
         if owns_client:

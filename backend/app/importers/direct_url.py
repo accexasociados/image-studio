@@ -5,6 +5,7 @@ import socket
 from dataclasses import dataclass
 from io import BytesIO
 from urllib.parse import urljoin, urlparse
+from warnings import catch_warnings, simplefilter
 
 import httpx
 from PIL import Image, UnidentifiedImageError
@@ -68,10 +69,17 @@ def download_image(
             if len(data) > max_bytes:
                 raise ValueError("La imagen supera el límite permitido.")
             try:
-                with Image.open(BytesIO(data)) as image:
-                    image.verify()
-                    image_format = image.format or ""
-            except (UnidentifiedImageError, OSError) as error:
+                with catch_warnings():
+                    simplefilter("error", Image.DecompressionBombWarning)
+                    with Image.open(BytesIO(data)) as image:
+                        image.verify()
+                        image_format = image.format or ""
+            except (
+                Image.DecompressionBombError,
+                Image.DecompressionBombWarning,
+                UnidentifiedImageError,
+                OSError,
+            ) as error:
                 raise ValueError("La respuesta no es una imagen válida.") from error
             extension = {"JPEG": "jpg", "PNG": "png", "WEBP": "webp"}.get(image_format)
             if extension is None:
