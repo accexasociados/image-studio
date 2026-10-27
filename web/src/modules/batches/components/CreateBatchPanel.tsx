@@ -26,6 +26,8 @@ export function CreateBatchPanel({ onClose }: { onClose: () => void }) {
   const [files, setFiles] = useState<File[]>([])
   const [progress, setProgress] = useState(0)
   const [batchId, setBatchId] = useState<string | null>(null)
+  const [source, setSource] = useState<'upload' | 'link'>('upload')
+  const [url, setUrl] = useState('')
   const options = edited ?? settings.data?.processing_defaults ?? FALLBACK_OPTIONS
   const presets = options.presets ?? []
 
@@ -35,7 +37,8 @@ export function CreateBatchPanel({ onClose }: { onClose: () => void }) {
       const id =
         batchId ?? (await apiPost<Batch>('/batches', { name: name.trim(), default_options: options })).id
       setBatchId(id)
-      if (files.length) await apiUpload(`/batches/${id}/images`, files, setProgress)
+      if (source === 'link') await apiPost(`/batches/${id}/imports`, { url: url.trim() })
+      else if (files.length) await apiUpload(`/batches/${id}/images`, files, setProgress)
     },
     onSuccess: onClose,
     onSettled: () => void queryClient.invalidateQueries({ queryKey: ['batches'] }),
@@ -72,6 +75,18 @@ export function CreateBatchPanel({ onClose }: { onClose: () => void }) {
           create.mutate()
         }}
       >
+        <div className="flex gap-2 border-b border-slate-200 pb-3 dark:border-slate-800">
+          {(['upload', 'link'] as const).map((item) => (
+            <button
+              key={item}
+              type="button"
+              onClick={() => setSource(item)}
+              className={`rounded-lg px-3 py-2 text-sm font-semibold ${source === item ? 'bg-indigo-600 text-white' : 'text-slate-500'}`}
+            >
+              {t(`batches.source.${item}`)}
+            </button>
+          ))}
+        </div>
         <label className={labelClass}>
           {t('batches.name')}
           <input
@@ -87,31 +102,45 @@ export function CreateBatchPanel({ onClose }: { onClose: () => void }) {
 
         <ProcessOptionsFields value={options} onChange={setEdited} />
 
-        <label
-          onDragOver={(event) => event.preventDefault()}
-          onDrop={onDrop}
-          className="flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-300 px-5 py-7 text-center dark:border-slate-700"
-        >
-          <Upload size={24} className="mb-2 text-indigo-500" aria-hidden />
-          <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">
-            {t('batches.dropFiles')}
-          </span>
-          <span className="mt-1 text-xs text-slate-500">{t('batches.fileTypes')}</span>
-          <input
-            type="file"
-            multiple
-            accept="image/jpeg,image/png,image/webp,.zip"
-            className="sr-only"
-            onChange={onInput}
-          />
-          {files.length > 0 && (
-            <span className="mt-2 text-xs text-indigo-600">
-              {t('batches.filesSelected', { count: files.length })}
+        {source === 'link' ? (
+          <label className={labelClass}>
+            {t('batches.linkLabel')}
+            <input
+              required
+              type="url"
+              value={url}
+              onChange={(event) => setUrl(event.target.value)}
+              placeholder={t('batches.linkPlaceholder')}
+              className={fieldClass}
+            />
+          </label>
+        ) : (
+          <label
+            onDragOver={(event) => event.preventDefault()}
+            onDrop={onDrop}
+            className="flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-300 px-5 py-7 text-center dark:border-slate-700"
+          >
+            <Upload size={24} className="mb-2 text-indigo-500" aria-hidden />
+            <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+              {t('batches.dropFiles')}
             </span>
-          )}
-        </label>
+            <span className="mt-1 text-xs text-slate-500">{t('batches.fileTypes')}</span>
+            <input
+              type="file"
+              multiple
+              accept="image/jpeg,image/png,image/webp,.zip"
+              className="sr-only"
+              onChange={onInput}
+            />
+            {files.length > 0 && (
+              <span className="mt-2 text-xs text-indigo-600">
+                {t('batches.filesSelected', { count: files.length })}
+              </span>
+            )}
+          </label>
+        )}
 
-        {create.isPending && files.length > 0 && (
+        {create.isPending && files.length > 0 && source === 'upload' && (
           <progress
             className="h-2 w-full"
             max={100}
