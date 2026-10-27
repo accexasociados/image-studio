@@ -318,7 +318,7 @@ Todo texto visible en **español e inglés** (i18next), sin textos fijos en el c
 - [x] F3.1 Layout base, selector de idioma, tema claro/oscuro y lista de lotes con estado y contadores. — (codex)
 - [x] F3.2 Crear lote: nombre, opciones por defecto (presets, líneas de capa, sombra) y zona de arrastrar y soltar para fotos o `.zip`, con progreso de subida. (Codex, 2026-10-27) Corregido por claude el 2026-10-27: el nombre iba dentro de `default_options` (422 siempre), faltaban suavizado, margen y ambas variantes, y ahora parte de `processing_defaults` de Ajustes. Probado en el navegador.
 - [ ] F3.3 Pestaña "Desde enlace" en el mismo formulario (se conecta en la Fase 4).
-- [ ] F3.4 Tabla editable de nombre y SKU por imagen, más carga de CSV.
+- [x] F3.4 Tabla editable de nombre y SKU por imagen, más carga de CSV. — (codex, 2026-10-27)
 - [x] F3.5 Vista del lote en proceso: barra de progreso en vivo (SSE), miniaturas que cambian de estado y filtros (todas, listas, para revisar, fallidas). — (codex, 2026-10-27)
 - [x] F3.6 Pantalla de **Ajustes** con una pestaña por sección de `AppSettings`: General, Procesamiento por defecto, Formatos de salida, Telegram (con botón "Probar"), Avisos, Carpeta vigilada, Importadores, Calidad y Modelos. Los secretos se muestran como "Configurado" y se reemplazan sin revelarse. — (codex, 2026-10-27)
 - [ ] F3.7 Tests de componentes con Vitest + Testing Library.

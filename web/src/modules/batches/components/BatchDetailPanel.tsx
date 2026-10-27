@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { apiGet, type Batch, type ImageItem } from '@/shared/api/client'
+import { ImageMetadataTable } from './ImageMetadataTable'
 
 type Filter = 'all' | 'done' | 'review' | 'failed'
 
@@ -121,6 +122,7 @@ export function BatchDetailPanel({ batch, onBack }: { batch: Batch; onBack: () =
           </li>
         ))}
       </ul>
+      <ImageMetadataTable batchId={batch.id} images={images} />
     </section>
   )
 }

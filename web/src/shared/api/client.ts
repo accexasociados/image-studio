@@ -46,7 +46,22 @@ export async function apiPut<T>(path: string, body: unknown): Promise<T> {
   return (await response.json()) as T
 }
 
-export function apiUpload<T>(path: string, files: File[], onProgress: (percent: number) => void): Promise<T> {
+export async function apiPatch<T>(path: string, body: unknown): Promise<T> {
+  const response = await fetch(`${API_BASE}${path}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  if (!response.ok) throw new ApiError(response.status, await response.text())
+  return (await response.json()) as T
+}
+
+export function apiUpload<T>(
+  path: string,
+  files: File[],
+  onProgress: (percent: number) => void,
+  field = 'files',
+): Promise<T> {
   return new Promise((resolve, reject) => {
     const request = new XMLHttpRequest()
     request.open('POST', `${API_BASE}${path}`)
@@ -62,7 +77,7 @@ export function apiUpload<T>(path: string, files: File[], onProgress: (percent: 
       resolve(JSON.parse(request.responseText) as T)
     }
     const form = new FormData()
-    files.forEach((file) => form.append('files', file, file.name))
+    files.forEach((file) => form.append(field, file, file.name))
     request.send(form)
   })
 }
