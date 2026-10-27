@@ -6,8 +6,18 @@ export type ProcessOptions = components['schemas']['ProcessOptions']
 export type Preset = NonNullable<ProcessOptions['presets']>[number]
 export type AppSettingsPublic = components['schemas']['AppSettingsPublic']
 export type ImageItem = components['schemas']['ImageItem']
+export type OutputFile = components['schemas']['OutputFile']
+export type LayerLines = ProcessOptions['layer_lines']
+export type CropBox = components['schemas']['CropBox']
+export type ThumbWidth = 320 | 640 | 1280
 
 const API_BASE = '/api/v1'
+
+/** URL de un archivo del almacenamiento; con `width`, una miniatura WebP cacheada por la API. */
+export function fileUrl(key: string, width?: ThumbWidth): string {
+  const path = key.split('/').map(encodeURIComponent).join('/')
+  return `${API_BASE}/files/${path}${width ? `?w=${width}` : ''}`
+}
 
 export class ApiError extends Error {
   readonly status: number
@@ -56,15 +66,22 @@ export async function apiPatch<T>(path: string, body: unknown): Promise<T> {
   return (await response.json()) as T
 }
 
+export async function apiDelete<T>(path: string): Promise<T> {
+  const response = await fetch(`${API_BASE}${path}`, { method: 'DELETE' })
+  if (!response.ok) throw new ApiError(response.status, await response.text())
+  return (await response.json()) as T
+}
+
 export function apiUpload<T>(
   path: string,
   files: File[],
   onProgress: (percent: number) => void,
   field = 'files',
+  method: 'POST' | 'PUT' = 'POST',
 ): Promise<T> {
   return new Promise((resolve, reject) => {
     const request = new XMLHttpRequest()
-    request.open('POST', `${API_BASE}${path}`)
+    request.open(method, `${API_BASE}${path}`)
     request.upload.onprogress = (event) => {
       if (event.lengthComputable) onProgress(Math.round((event.loaded / event.total) * 100))
     }

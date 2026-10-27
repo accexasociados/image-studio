@@ -197,6 +197,46 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/api/v1/batches/{batch_id}/images/approve': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Approve Images
+     * @description Aprueba las imágenes procesadas (conservando la variante elegida) y omite las demás.
+     */
+    post: operations['approve_images_api_v1_batches__batch_id__images_approve_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/batches/{batch_id}/images/reprocess': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Reprocess Images
+     * @description Reprocesa las imágenes terminadas; con `options`, esas opciones pasan a ser las de cada imagen.
+     */
+    post: operations['reprocess_images_api_v1_batches__batch_id__images_reprocess_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/api/v1/images/{image_id}/reprocess': {
     parameters: {
       query?: never
@@ -225,7 +265,11 @@ export interface paths {
     /** Replace Mask */
     put: operations['replace_mask_api_v1_images__image_id__mask_put']
     post?: never
-    delete?: never
+    /**
+     * Discard Mask
+     * @description Descarta la corrección a mano y reprocesa con la segmentación automática.
+     */
+    delete: operations['discard_mask_api_v1_images__image_id__mask_delete']
     options?: never
     head?: never
     patch?: never
@@ -335,6 +379,14 @@ export interface components {
       quality: components['schemas']['QualitySettings']
       pipeline: components['schemas']['PipelineSettings']
     }
+    /** ApproveRequest */
+    ApproveRequest: {
+      /**
+       * Variant
+       * @description Variante a exportar cuando la imagen tiene las dos (keep y smooth).
+       */
+      variant?: ('keep' | 'smooth') | null
+    }
     /** Batch */
     Batch: {
       /** Id */
@@ -408,6 +460,30 @@ export interface components {
        * @description Imágenes o archivos ZIP
        */
       files: string[]
+    }
+    /**
+     * BulkImagesRequest
+     * @description Aprobar o reprocesar varias imágenes del mismo lote; se omiten las que aún están en proceso.
+     */
+    BulkImagesRequest: {
+      /** Image Ids */
+      image_ids: string[]
+      /** @description Solo para reprocesar. */
+      options?: components['schemas']['ProcessOptions'] | null
+    }
+    /**
+     * CropBox
+     * @description Recorte en fracciones (0 a 1) de la foto ya rotada. Se elige por imagen desde la web.
+     */
+    CropBox: {
+      /** X */
+      x: number
+      /** Y */
+      y: number
+      /** Width */
+      width: number
+      /** Height */
+      height: number
     }
     /** ExportSettings */
     ExportSettings: {
@@ -526,6 +602,17 @@ export interface components {
       error?: string | null
       /** Mask Path */
       mask_path?: string | null
+      /**
+       * Selected Variant
+       * @description Variante elegida al aprobar; la descarga exporta solo esa.
+       */
+      selected_variant?: ('keep' | 'smooth') | null
+      /**
+       * Mask Edited
+       * @description La máscara es una corrección a mano y se reutiliza al reprocesar.
+       * @default false
+       */
+      mask_edited: boolean
     }
     /** ImageUpdate */
     ImageUpdate: {
@@ -708,6 +795,15 @@ export interface components {
        * @default false
        */
       generate_both_layer_variants: boolean
+      /**
+       * Rotate
+       * @description Giro en grados, en sentido horario, antes de recortar.
+       * @default 0
+       * @enum {integer}
+       */
+      rotate: 0 | 90 | 180 | 270
+      /** @description Recorte previo; None = foto completa. */
+      crop?: components['schemas']['CropBox'] | null
     }
     /** QualitySettings */
     QualitySettings: {
@@ -1249,7 +1345,11 @@ export interface operations {
       }
       cookie?: never
     }
-    requestBody?: never
+    requestBody?: {
+      content: {
+        'application/json': components['schemas']['ApproveRequest'] | null
+      }
+    }
     responses: {
       /** @description Successful Response */
       200: {
@@ -1258,6 +1358,76 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ImageItem']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  approve_images_api_v1_batches__batch_id__images_approve_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        batch_id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['BulkImagesRequest']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ImageItem'][]
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  reprocess_images_api_v1_batches__batch_id__images_reprocess_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        batch_id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['BulkImagesRequest']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ImageItem'][]
         }
       }
       /** @description Validation Error */
@@ -1341,6 +1511,37 @@ export interface operations {
       }
     }
   }
+  discard_mask_api_v1_images__image_id__mask_delete: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        image_id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ImageItem']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   events_api_v1_events_get: {
     parameters: {
       query?: {
@@ -1374,7 +1575,10 @@ export interface operations {
   }
   get_file_api_v1_files__key__get: {
     parameters: {
-      query?: never
+      query?: {
+        /** @description Ancho de la miniatura WebP: 320, 640 o 1280. */
+        w?: number | null
+      }
       header?: never
       path: {
         key: string

@@ -76,6 +76,7 @@ def _image_response(row: ImageRow) -> ImageItem:
         error=row.error,
         mask_path=row.mask_path,
         selected_variant=cast(LayerLines | None, row.selected_variant),
+        mask_edited=row.mask_edited,
     )
 
 
@@ -566,10 +567,22 @@ def replace_mask(
     try:
         storage.save_bytes(key, normalized)
         row.mask_path = key
+        row.mask_edited = True
         session.commit()
     except Exception:
         session.rollback()
         storage.delete(key)
         raise
+    session.refresh(row)
+    return _image_response(row)
+
+
+@router.delete("/images/{image_id}/mask", response_model=ImageItem)
+def discard_mask(image_id: str, session: SessionDep) -> ImageItem:
+    """Descarta la corrección a mano y reprocesa con la segmentación automática."""
+    row = _get_image(session, image_id)
+    _enqueue_reprocess(row, session)
+    row.mask_edited = False
+    session.commit()
     session.refresh(row)
     return _image_response(row)

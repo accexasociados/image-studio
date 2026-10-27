@@ -2,7 +2,7 @@ from datetime import UTC, datetime
 from typing import Any, ClassVar
 from uuid import uuid4
 
-from sqlalchemy import JSON, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Integer, String, Text, false
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -47,6 +47,8 @@ class ImageRow(Base):
     error: Mapped[str | None] = mapped_column(Text)
     mask_path: Mapped[str | None] = mapped_column(Text)
     selected_variant: Mapped[str | None] = mapped_column(String(10))
+    # True cuando `mask_path` es una corrección a mano: solo entonces se reutiliza al reprocesar.
+    mask_edited: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())
     position: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 

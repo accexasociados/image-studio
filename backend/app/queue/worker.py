@@ -191,7 +191,12 @@ class Worker:
                 image_id=image.id,
                 batch_id=batch.id,
                 input_path=self.storage.local_path(image.original_path),
-                mask_override=(self.storage.local_path(image.mask_path) if image.mask_path else None),
+                # La máscara del proceso anterior no se reutiliza: solo la corregida a mano.
+                mask_override=(
+                    self.storage.local_path(image.mask_path)
+                    if image.mask_edited and image.mask_path
+                    else None
+                ),
                 options=ProcessOptions.model_validate(options_data),
                 base_name=_base_name(image),
                 settings=settings,

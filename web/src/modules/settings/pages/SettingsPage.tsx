@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { apiGet, apiPost, apiPut, type AppSettingsPublic } from '@/shared/api/client'
+import { apiGet, apiPost, apiPut, type AppSettingsPublic, type ProcessOptions } from '@/shared/api/client'
+import { ProcessOptionsFields } from '@/shared/components/ProcessOptionsFields'
+import { FALLBACK_OPTIONS } from '@/shared/components/processOptions'
 
 const SECTIONS = [
   'general',
@@ -81,17 +83,26 @@ export function SettingsPage({ onClose }: { onClose: () => void }) {
             <h2 className="text-lg font-semibold text-slate-950 dark:text-white">
               {t(`settings.sections.${section}`)}
             </h2>
-            <div className="mt-5 grid gap-4 sm:grid-cols-2">
-              {Object.entries(draft).map(([key, value]) => (
-                <SettingField
-                  key={key}
-                  name={key}
-                  value={value}
-                  onChange={(next) => update(key, next)}
-                  t={t}
+            {section === 'processing_defaults' ? (
+              <div className="mt-5">
+                <ProcessOptionsFields
+                  value={{ ...FALLBACK_OPTIONS, ...(draft as Partial<ProcessOptions>) }}
+                  onChange={(next) => setValues(next as unknown as Values)}
                 />
-              ))}
-            </div>
+              </div>
+            ) : (
+              <div className="mt-5 grid gap-4 sm:grid-cols-2">
+                {Object.entries(draft).map(([key, value]) => (
+                  <SettingField
+                    key={key}
+                    name={key}
+                    value={value}
+                    onChange={(next) => update(key, next)}
+                    t={t}
+                  />
+                ))}
+              </div>
+            )}
             <div className="mt-6 flex items-center gap-3">
               <button
                 type="button"

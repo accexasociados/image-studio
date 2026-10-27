@@ -1,6 +1,7 @@
 """Fase 6: variante elegida al aprobar, acciones en bloque, miniaturas y rotación/recorte."""
 
 from io import BytesIO
+from pathlib import Path
 from zipfile import ZipFile
 
 import numpy as np
@@ -9,7 +10,7 @@ from fastapi.testclient import TestClient
 from PIL import Image
 from pydantic import ValidationError
 
-from app.contracts import CropBox, ProcessOptions
+from app.contracts import AppSettings, CropBox, ProcessOptions, ProcessResult
 from app.main import create_app
 from app.pipeline.geometry import forward, plan, restore
 from app.queue import get_job_queue
@@ -165,3 +166,64 @@ def test_stub_pipeline_applies_rotation_and_crop() -> None:
     # Original 40x20 -> girado 20x40 -> mitad superior 20x20 -> lado mayor del preset.
     output = image["outputs"][0]
     assert output["width"] == output["height"]
+
+
+class _MaskSpyProcessor:
+    """Como el proceso real: devuelve una máscara nueva y registra si recibió `mask_override`."""
+
+    def __init__(self) -> None:
+        self.overrides: list[Path | None] = []
+
+    def __call__(
+        self,
+        input_path: Path,
+        options: ProcessOptions,
+        out_dir: Path,
+        *,
+        base_name: str,
+        mask_override: Path | None,
+        settings: AppSettings,
+    ) -> ProcessResult:
+        self.overrides.append(mask_override)
+        result = PipelineProcessor()(
+            input_path, options, out_dir, base_name=base_name, mask_override=None, settings=settings
+        )
+        mask = out_dir / f"{base_name}_mask.png"
+        Image.new("L", (40, 20), 255).save(mask)
+        return result.model_copy(update={"mask_path": str(mask)})
+
+
+def test_only_hand_edited_masks_are_reused_when_reprocessing() -> None:
+    spy = _MaskSpyProcessor()
+    worker = Worker(
+        worker_id="mask-test",
+        queue=get_job_queue(),
+        storage=get_storage(),
+        processor=spy,
+        release_memory=lambda: None,
+    )
+    with TestClient(create_app()) as client:
+        batch_id = client.post("/api/v1/batches", json={"name": "Máscaras"}).json()["id"]
+        image_id = client.post(
+            f"/api/v1/batches/{batch_id}/images",
+            files={"files": ("pieza.png", _png_bytes(), "image/png")},
+        ).json()[0]["id"]
+        worker.run_once()
+        client.post(f"/api/v1/images/{image_id}/reprocess")
+        worker.run_once()
+        stream = BytesIO()
+        Image.new("L", (40, 20), 128).save(stream, format="PNG")
+        edited = client.put(
+            f"/api/v1/images/{image_id}/mask", files={"file": ("m.png", stream.getvalue(), "image/png")}
+        )
+        worker.run_once()
+        client.post(f"/api/v1/images/{image_id}/reprocess", json={"shadow": "soft"})
+        worker.run_once()
+        discarded = client.delete(f"/api/v1/images/{image_id}/mask")
+        worker.run_once()
+
+    # 1.º proceso y reproceso: BiRefNet; tras el pincel (y en el reproceso siguiente) se usa la
+    # corrección; al descartarla vuelve la segmentación automática.
+    assert [override is not None for override in spy.overrides] == [False, False, True, True, False]
+    assert edited.json()["mask_edited"] is True
+    assert discarded.json()["mask_edited"] is False

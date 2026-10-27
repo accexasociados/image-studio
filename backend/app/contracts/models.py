@@ -67,6 +67,9 @@ class ImageItem(_ReadModel):
     selected_variant: LayerLines | None = Field(
         default=None, description="Variante elegida al aprobar; la descarga exporta solo esa."
     )
+    mask_edited: bool = Field(
+        default=False, description="La máscara es una corrección a mano y se reutiliza al reprocesar."
+    )
 
 
 class ImageUpdate(BaseModel):

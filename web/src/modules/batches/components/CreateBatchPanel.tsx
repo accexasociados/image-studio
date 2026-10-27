@@ -8,29 +8,10 @@ import {
   apiUpload,
   type AppSettingsPublic,
   type Batch,
-  type Preset,
   type ProcessOptions,
 } from '@/shared/api/client'
-
-const PRESETS: Preset[] = ['storefront', 'instagram_feed', 'instagram_square', 'original_hd']
-const SHADOWS: ProcessOptions['shadow'][] = ['none', 'soft', 'strong', 'auto']
-
-// Respaldo mientras cargan los ajustes; los valores reales vienen de Ajustes > Procesamiento por defecto.
-const FALLBACK_OPTIONS: ProcessOptions = {
-  presets: ['storefront', 'instagram_feed'],
-  layer_lines: 'keep',
-  smooth_strength: 35,
-  shadow: 'auto',
-  shadow_intensity: 100,
-  fill_ratio: null,
-  upscale: 2,
-  white_balance: true,
-  generate_both_layer_variants: false,
-}
-
-const fieldClass =
-  'mt-1.5 w-full rounded-lg border border-slate-300 bg-transparent px-3 py-2.5 dark:border-slate-700'
-const labelClass = 'block text-sm font-medium text-slate-700 dark:text-slate-200'
+import { ProcessOptionsFields } from '@/shared/components/ProcessOptionsFields'
+import { FALLBACK_OPTIONS, fieldClass, labelClass } from '@/shared/components/processOptions'
 
 function isAccepted(file: File) {
   return /^image\/(jpeg|png|webp)$/.test(file.type) || file.name.toLowerCase().endsWith('.zip')
@@ -60,13 +41,6 @@ export function CreateBatchPanel({ onClose }: { onClose: () => void }) {
     onSettled: () => void queryClient.invalidateQueries({ queryKey: ['batches'] }),
   })
 
-  const set = <K extends keyof ProcessOptions>(key: K, value: ProcessOptions[K]) =>
-    setEdited({ ...options, [key]: value })
-  const togglePreset = (preset: Preset) =>
-    set(
-      'presets',
-      presets.includes(preset) ? presets.filter((item) => item !== preset) : [...presets, preset],
-    )
   const addFiles = (incoming: File[]) => setFiles((current) => [...current, ...incoming.filter(isAccepted)])
   const onDrop = (event: DragEvent<HTMLLabelElement>) => {
     event.preventDefault()
@@ -111,129 +85,7 @@ export function CreateBatchPanel({ onClose }: { onClose: () => void }) {
           />
         </label>
 
-        <fieldset>
-          <legend className="mb-2 text-sm font-medium text-slate-700 dark:text-slate-200">
-            {t('batches.presets')}
-          </legend>
-          <div className="grid gap-2 sm:grid-cols-2">
-            {PRESETS.map((preset) => (
-              <label key={preset} className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={presets.includes(preset)}
-                  onChange={() => togglePreset(preset)}
-                />
-                {t(`batches.preset.${preset}`)}
-              </label>
-            ))}
-          </div>
-        </fieldset>
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          <label className={labelClass}>
-            {t('batches.layerLines')}
-            <select
-              value={options.layer_lines}
-              onChange={(event) => set('layer_lines', event.target.value as ProcessOptions['layer_lines'])}
-              className={fieldClass}
-            >
-              <option value="keep">{t('batches.layerKeep')}</option>
-              <option value="smooth">{t('batches.layerSmooth')}</option>
-            </select>
-          </label>
-          <label className={labelClass}>
-            {t('batches.shadow')}
-            <select
-              value={options.shadow}
-              onChange={(event) => set('shadow', event.target.value as ProcessOptions['shadow'])}
-              className={fieldClass}
-            >
-              {SHADOWS.map((value) => (
-                <option key={value} value={value}>
-                  {t(`batches.shadowMode.${value}`)}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-
-        {(options.layer_lines === 'smooth' || options.generate_both_layer_variants) && (
-          <label className={labelClass}>
-            {t('batches.smoothStrength')}
-            <input
-              type="range"
-              min="0"
-              max="100"
-              value={options.smooth_strength}
-              onChange={(event) => set('smooth_strength', Number(event.target.value))}
-              className="mt-2 w-full"
-            />
-            <span className="text-xs text-slate-500">{options.smooth_strength}%</span>
-          </label>
-        )}
-
-        <label className="flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            checked={options.generate_both_layer_variants}
-            onChange={(event) => set('generate_both_layer_variants', event.target.checked)}
-          />
-          {t('batches.bothVariants')}
-        </label>
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          <label className={labelClass}>
-            {t('batches.shadowIntensity')}
-            <input
-              type="range"
-              min="0"
-              max="200"
-              value={options.shadow_intensity}
-              disabled={options.shadow === 'none'}
-              onChange={(event) => set('shadow_intensity', Number(event.target.value))}
-              className="mt-2 w-full"
-            />
-            <span className="text-xs text-slate-500">{options.shadow_intensity}%</span>
-          </label>
-          <label className={labelClass}>
-            {t('batches.fillRatio')}
-            <select
-              value={options.fill_ratio ?? ''}
-              onChange={(event) => set('fill_ratio', event.target.value ? Number(event.target.value) : null)}
-              className={fieldClass}
-            >
-              <option value="">{t('batches.fillAuto')}</option>
-              {[0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9].map((ratio) => (
-                <option key={ratio} value={ratio}>
-                  {Math.round(ratio * 100)}%
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          <label className={labelClass}>
-            {t('batches.upscale')}
-            <select
-              value={options.upscale}
-              onChange={(event) => set('upscale', Number(event.target.value) as ProcessOptions['upscale'])}
-              className={fieldClass}
-            >
-              <option value="1">1×</option>
-              <option value="2">2×</option>
-              <option value="4">4×</option>
-            </select>
-          </label>
-          <label className="flex items-center gap-2 self-end pb-3 text-sm">
-            <input
-              type="checkbox"
-              checked={options.white_balance}
-              onChange={(event) => set('white_balance', event.target.checked)}
-            />
-            {t('batches.whiteBalance')}
-          </label>
-        </div>
+        <ProcessOptionsFields value={options} onChange={setEdited} />
 
         <label
           onDragOver={(event) => event.preventDefault()}

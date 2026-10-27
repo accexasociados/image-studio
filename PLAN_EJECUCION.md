@@ -26,7 +26,7 @@ Fecha de creación: **2026-10-26**.
 | 3 | Interfaz web: lotes y subida en bloque | Codex | F0 (API simulada) | En progreso |
 | 4 | Importar desde enlaces (Google Photos, Drive, URL directa) | Codex | F2 | Pendiente |
 | 5 | Avisos (Telegram, Windows, navegador) | Codex | F2 | Pendiente |
-| 6 | Galería de revisión y editor (antes/después, ajustes, pincel) | Claude | F1, F3 | Pendiente |
+| 6 | Galería de revisión y editor (antes/después, ajustes, pincel) | Claude | F1, F3 | Código listo (rama `feat/F6-review-gallery`); falta el lote de 100 fotos (F8) |
 | 7 | Entradas extra: bot de Telegram y carpeta vigilada | Codex | F2, F5 | Pendiente |
 | 8 | Validación con lote real de 100 fotos y ajuste fino | Claude + usuario | F1–F6 | Pendiente |
 | 9 | Nube (opción C): Docker, Redis, S3, autenticación e integración con el ecommerce | Codex (9.1–9.7) + Claude (9.8) | F8 | Pendiente |
@@ -355,16 +355,20 @@ Todo texto visible en **español e inglés** (i18next), sin textos fijos en el c
 
 ## Fase 6 — Galería de revisión y editor (Claude)
 
-- [ ] F6.1 Galería del lote con cuadrícula, filtros y selección múltiple (aprobar o reprocesar en bloque).
-- [ ] F6.2 Comparador antes/después con deslizador y zoom al 100 % para revisar bordes y líneas de capa.
-- [ ] F6.3 Panel de ajustes por imagen (líneas de capa e intensidad, sombra, margen, presets) que reprocesa y muestra el resultado.
-- [ ] F6.4 Generar ambas variantes de líneas de capa y elegir una.
-- [ ] F6.5 Recortar o rotar el original antes de procesar.
-- [ ] F6.6 **Pincel de máscara** (sumar o borrar, con tamaño y dureza regulables, deshacer y rehacer) sobre canvas. Guarda la máscara y reprocesa con `mask_override`.
-- [ ] F6.7 Atajos de teclado para revisar rápido (A aprobar, R reprocesar, ←/→ navegar).
-- [ ] F6.8 Exportar las aprobadas por preset.
+- [x] F6.1 Galería del lote con cuadrícula, filtros y selección múltiple (aprobar o reprocesar en bloque).
+- [x] F6.2 Comparador antes/después con deslizador y zoom al 100 % para revisar bordes y líneas de capa.
+- [x] F6.3 Panel de ajustes por imagen (líneas de capa e intensidad, sombra, margen, presets) que reprocesa y muestra el resultado.
+- [x] F6.4 Generar ambas variantes de líneas de capa y elegir una.
+- [x] F6.5 Recortar o rotar el original antes de procesar.
+- [x] F6.6 **Pincel de máscara** (sumar o borrar, con tamaño y dureza regulables, deshacer y rehacer) sobre canvas. Guarda la máscara y reprocesa con `mask_override`.
+- [x] F6.7 Atajos de teclado para revisar rápido (A aprobar, R reprocesar, ←/→ navegar).
+- [x] F6.8 Exportar las aprobadas por preset.
 
 **Criterio de salida:** se puede revisar un lote de 100 fotos, corregir una pieza translúcida con el pincel y exportar solo las aprobadas.
+
+**Estado (2026-10-27, claude):** rama `feat/F6-review-gallery` (sobre `feat/F3.7-component-tests` de codex). Probado en el navegador con 3 fotos reales en la GPU: galería con miniaturas, selección y aprobación en bloque, visor con comparador y zoom al 100 %, ajustes por foto, elección de variante, giro y recorte, pincel (borrar, deshacer, rehacer, guardar y reprocesar) y descarga del `.zip` con la variante elegida. Falta validarlo con el lote de 100 fotos y una pieza translúcida (F8).
+
+Correcciones incluidas: (1) el worker reutilizaba la máscara del proceso anterior en cada reproceso, así que BiRefNet nunca volvía a correr; ahora solo se reutiliza la corregida a mano (`mask_edited`). (2) La vista del lote mostraba claves crudas para los estados de imagen (`batches.status.pending`). (3) La vista creaba una consulta nueva por cada evento SSE; ahora invalida la misma y filtra por lote. (4) `GET /files/{key}` fuera del almacenamiento responde 404 (se había perdido al unir F3.2). (5) Ajustes > Procesamiento por defecto usa el mismo formulario que crear lote, en vez de editar formatos y sombra como texto o JSON.
 
 ---
 
@@ -436,3 +440,4 @@ _(Fecha · agente · cambio · motivo. El otro agente marca "revisado".)_
 - 2026-10-27 · codex · Se agregan `AppSettingsPublic` y `TelegramTestResult` para documentar la vista enmascarada de ajustes y el resultado de la prueba de Telegram. Motivo: F2.9 requiere que OpenAPI describa respuestas sin secretos. Revisado por claude: [x]
 - 2026-10-27 · claude · (rama `feat/F1-pipeline`) `process_image` recibe `settings: AppSettings | None = None` (el worker ya lo pasa; quitar el `del settings` de `PipelineProcessor` al unir). `QualitySettings.low_confidence_edge_ratio` por defecto pasa de 0,15 a 0,6 (calibrado con 12 fotos reales). `ImageItem.review_reasons` usa los códigos de F1.8 (la web debe traducirlos). Con `generate_both_layer_variants` el proceso nombra `SKU.webp` (conservar) y `SKU_smooth.webp` (suavizar). Revisado por codex: [x]
 - 2026-10-27 · claude · `ProcessOptions.shadow_intensity: int` (0 a 200, por defecto 100) escala la opacidad del modo de sombra; en `main` desde `feat/F1.13-shadow-intensity`. **Codex:** regenerar `web/src/shared/api/schema.d.ts` (`npm run gen:api`) e incluir en los formularios de opciones (F3.2 crear lote, F3.6 Ajustes > Procesamiento por defecto) y en el panel por imagen (F6.3) todos los campos de `ProcessOptions`: formatos, líneas de capa + intensidad, sombra + intensidad, margen (`fill_ratio`), agrandado máximo, balance de blancos y las dos variantes. Revisado por codex: [x]
+- 2026-10-27 · claude · Fase 6 (rama `feat/F6-review-gallery`): `ProcessOptions.rotate` (0/90/180/270, horario) y `ProcessOptions.crop: CropBox | None` (fracciones de la foto ya girada) se aplican antes de segmentar; la máscara se guarda siempre en coordenadas del original. `ImageItem.selected_variant` y `ImageItem.mask_edited` (migración `0003`). Nuevos: `ApproveRequest` (`POST /images/{id}/approve` con `{variant}`: el `.zip` exporta solo esa variante y sin sufijo), `BulkImagesRequest` (`POST /batches/{id}/images/approve` y `/reprocess`), `DELETE /images/{id}/mask` (descarta la corrección a mano) y `GET /files/{key}?w=320|640|1280` (miniaturas WebP cacheadas). El worker pasa `mask_override` solo si `mask_edited`. El modo stub genera las dos variantes. **Codex:** regenerar `schema.d.ts`; los formularios de opciones deben partir de `FALLBACK_OPTIONS` (`web/src/shared/components/processOptions.ts`) y usar `ProcessOptionsFields`; `rotate` y `crop` son por imagen (no van en crear lote). Revisado por codex: [ ]
