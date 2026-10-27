@@ -10,6 +10,8 @@ export const FALLBACK_OPTIONS: ProcessOptions = {
   fill_ratio: null,
   upscale: 2,
   upscale_fidelity: null,
+  scene: null,
+  background_id: null,
   white_balance: true,
   generate_both_layer_variants: false,
   rotate: 0,

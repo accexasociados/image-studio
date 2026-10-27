@@ -1,4 +1,6 @@
 import { useTranslation } from 'react-i18next'
+import { useEffect, useState } from 'react'
+import { apiGet, type SceneBackground, type SceneStyle } from '@/shared/api/client'
 import type { Preset, ProcessOptions } from '@/shared/api/client'
 import { fieldClass, labelClass } from './processOptions'
 
@@ -18,6 +20,13 @@ export function ProcessOptionsFields({
   compact?: boolean
 }) {
   const { t } = useTranslation()
+  const [backgrounds, setBackgrounds] = useState<SceneBackground[]>([])
+  useEffect(() => {
+    if (value.scene !== 'photo') return
+    void apiGet<SceneBackground[]>('/backgrounds')
+      .then(setBackgrounds)
+      .catch(() => setBackgrounds([]))
+  }, [value.scene])
   const presets = value.presets ?? []
   const set = <K extends keyof ProcessOptions>(key: K, next: ProcessOptions[K]) =>
     onChange({ ...value, [key]: next })
@@ -50,6 +59,41 @@ export function ProcessOptionsFields({
           ))}
         </div>
       </fieldset>
+
+      <div className={grid}>
+        <label className={labelClass}>
+          {t('common.sceneStyle')}
+          <select
+            value={value.scene ?? ''}
+            onChange={(event) => set('scene', (event.target.value || null) as SceneStyle | null)}
+            className={fieldClass}
+          >
+            <option value="">{t('batches.upscaleFidelitySettings')}</option>
+            {(['white', 'studio', 'pedestal', 'color', 'photo'] as SceneStyle[]).map((style) => (
+              <option key={style} value={style}>
+                {t(`common.sceneStyles.${style}`)}
+              </option>
+            ))}
+          </select>
+        </label>
+        {value.scene === 'photo' && (
+          <label className={labelClass}>
+            {t('common.defaultBackground')}
+            <select
+              value={value.background_id ?? ''}
+              onChange={(event) => set('background_id', event.target.value || null)}
+              className={fieldClass}
+            >
+              <option value="">{t('batches.upscaleFidelitySettings')}</option>
+              {backgrounds.map((background) => (
+                <option key={background.id} value={background.id}>
+                  {background.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+      </div>
 
       <div className={grid}>
         <label className={labelClass}>

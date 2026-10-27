@@ -8,9 +8,11 @@ import {
   type AppSettingsPublic,
   type ProcessOptions,
   type UpscaleModelInfo,
+  type SceneSettings,
 } from '@/shared/api/client'
 import { ProcessOptionsFields } from '@/shared/components/ProcessOptionsFields'
 import { FALLBACK_OPTIONS } from '@/shared/components/processOptions'
+import { SceneSettingsSection } from '../components/SceneSettingsSection'
 
 const SECTIONS = [
   'general',
@@ -103,13 +105,24 @@ export function SettingsPage({ onClose }: { onClose: () => void }) {
                   onChange={(next) => setValues(next as unknown as Values)}
                 />
               </div>
+            ) : section === 'export' && draft.scene ? (
+              <div className="mt-5">
+                <SceneSettingsSection
+                  value={draft.scene as SceneSettings}
+                  onChange={(scene) => update('scene', scene)}
+                />
+              </div>
             ) : (
               <div className="mt-5 grid gap-4 sm:grid-cols-2">
                 {section === 'pipeline' && (
                   <PipelineFields value={draft} models={upscaleModels.data ?? []} onChange={update} t={t} />
                 )}
                 {Object.entries(draft)
-                  .filter(([key]) => section !== 'pipeline' || !PIPELINE_CUSTOM_FIELDS.includes(key))
+                  .filter(
+                    ([key]) =>
+                      (section !== 'pipeline' || !PIPELINE_CUSTOM_FIELDS.includes(key)) &&
+                      !(section === 'export' && key === 'scene'),
+                  )
                   .map(([key, value]) => (
                     <SettingField
                       key={key}

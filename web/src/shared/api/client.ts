@@ -11,6 +11,9 @@ export type LayerLines = ProcessOptions['layer_lines']
 export type CropBox = components['schemas']['CropBox']
 export type ThumbWidth = 320 | 640 | 1280
 export type UpscaleModelInfo = components['schemas']['UpscaleModelInfo']
+export type SceneSettings = components['schemas']['SceneSettings']
+export type SceneBackground = components['schemas']['SceneBackground']
+export type SceneStyle = SceneSettings['style']
 
 const API_BASE = '/api/v1'
 
