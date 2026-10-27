@@ -5,6 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app import __version__
+from app.api.backgrounds import router as backgrounds_router
 from app.api.batches import router as batches_router
 from app.api.downloads import router as downloads_router
 from app.api.events import router as events_router
@@ -43,6 +44,7 @@ def create_app() -> FastAPI:
     app.include_router(events_router, prefix=API_PREFIX)
     app.include_router(files_router, prefix=API_PREFIX)
     app.include_router(settings_router, prefix=API_PREFIX)
+    app.include_router(backgrounds_router, prefix=API_PREFIX)
     return app
 
 

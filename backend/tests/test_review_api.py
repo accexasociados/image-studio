@@ -182,6 +182,7 @@ class _MaskSpyProcessor:
         *,
         base_name: str,
         mask_override: Path | None,
+        background: object = None,
         settings: AppSettings,
     ) -> ProcessResult:
         self.overrides.append(mask_override)

@@ -113,6 +113,8 @@ def test_real_pipeline_end_to_end_without_gpu(tmp_path: Path, real_mode: None) -
     Image.fromarray((alpha * 255).astype(np.uint8)).save(mask)
     settings = AppSettings()
     settings.pipeline.upscale_model = "lanczos"
+    # Esta prueba revisa el fondo liso; las escenas tienen su propio archivo (test_scenes.py).
+    settings.export.scene.style = "white"
 
     result = process_image(
         source,

@@ -7,7 +7,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, SecretStr
 
-from app.contracts.options import Preset, ProcessOptions
+from app.contracts.options import Preset, ProcessOptions, SceneStyle
 from app.contracts.presets import OutputFormat
 
 # Pesos en `app/pipeline/catalog.py`. Elegidos el 2026-10-27 comparando con 6 piezas reales (Fase 10).
@@ -48,9 +48,26 @@ class PresetOverride(_Section):
     max_bytes: int | None = Field(default=None, ge=100_000)
 
 
+_HEX = r"^#[0-9A-Fa-f]{6}$"
+
+
+class SceneSettings(_Section):
+    """Fondo con el que se componen todos los formatos (Fase 11). Cada lote o foto puede cambiar el estilo."""
+
+    style: SceneStyle = "studio"
+    studio_wall_hex: str = Field(default="#FFFFFF", pattern=_HEX)
+    studio_floor_hex: str = Field(default="#ECEAE6", pattern=_HEX)
+    brand_hex: str = Field(default="#C9D9EA", pattern=_HEX)
+    pedestal_hex: str = Field(default="#E4DFD6", pattern=_HEX)
+    reflection: int = Field(default=14, ge=0, le=60, description="Opacidad del reflejo en el piso (%).")
+    default_background_id: str | None = Field(default=None, max_length=32)
+
+
 class ExportSettings(_Section):
     presets: dict[Preset, PresetOverride] = Field(default_factory=dict)
-    background_hex: str = Field(default="#FFFFFF", pattern=r"^#[0-9A-Fa-f]{6}$")
+    # Color del estilo "white".
+    background_hex: str = Field(default="#FFFFFF", pattern=_HEX)
+    scene: SceneSettings = Field(default_factory=SceneSettings)
     filename_strategy: Literal["sku_then_slug", "slug", "original"] = "sku_then_slug"
 
 

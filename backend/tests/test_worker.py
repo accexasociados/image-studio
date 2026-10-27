@@ -105,6 +105,7 @@ class _OomOnceProcessor:
         *,
         base_name: str,
         mask_override: Path | None,
+        background: object = None,
         settings: AppSettings,
     ) -> ProcessResult:
         del input_path, options, mask_override
@@ -144,6 +145,7 @@ class _FailingProcessor:
         *,
         base_name: str,
         mask_override: Path | None,
+        background: object = None,
         settings: AppSettings,
     ) -> ProcessResult:
         del input_path, options, out_dir, base_name, mask_override, settings
@@ -181,6 +183,7 @@ def test_worker_marks_review_results(queued_image: tuple[str, str, str]) -> None
         *,
         base_name: str,
         mask_override: Path | None,
+        background: object = None,
         settings: AppSettings,
     ) -> ProcessResult:
         del input_path, options, mask_override, settings
@@ -328,6 +331,7 @@ def test_cancellation_during_processing_stays_cancelled(
         *,
         base_name: str,
         mask_override: Path | None,
+        background: object = None,
         settings: AppSettings,
     ) -> ProcessResult:
         del input_path, options, mask_override, settings

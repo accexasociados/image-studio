@@ -30,7 +30,8 @@ Fecha de creación: **2026-10-26**.
 | 7 | Entradas extra: bot de Telegram y carpeta vigilada | Codex | F2, F5 | Pendiente |
 | 8 | Validación con lote real de 100 fotos y ajuste fino | Claude + usuario | F1–F6 | Pendiente |
 | 9 | Nube (opción C): Docker, Redis, S3, autenticación e integración con el ecommerce | Codex (9.1–9.7) + Claude (9.8) | F8 | Pendiente |
-| 10 | Mejora de resolución: modelo elegible y fidelidad por foto | Claude (10.1–10.4) + Codex (10.5–10.7) | F1, F6 | Backend listo (rama `feat/F10-upscale-models`); falta la web |
+| 10 | Mejora de resolución: modelo elegible y fidelidad por foto | Claude (10.1–10.4) + Codex (10.5–10.7) | F1, F6 | Hecha (en `main`) |
+| 11 | Escenas: la pieza apoyada en estudio, pedestal, color de marca o foto de fondo | Claude (11.1–11.5) + Codex (11.6–11.9) | F10 | Backend listo (rama `feat/F11-scenes`); falta la web |
 
 Las fases 1, 2 y 3 pueden avanzar **en paralelo**: la Fase 0 ya dejó los contratos, la configuración y el proceso en modo `stub`.
 
@@ -455,6 +456,34 @@ Barrido de fidelidad con Siax: la calidad es casi igual entre 50 % y 80 % (SSIM 
 
 **Criterio de salida:** desde la web se elige el modelo y la fidelidad, y una foto reenviada por WhatsApp sale para la tienda sin texturas inventadas.
 
+## Fase 11 — Escenas: que la pieza no flote (Claude + Codex)
+
+Objetivo: además del fondo blanco, poner la pieza apoyada en una escena. El usuario eligió (2026-10-27) los cuatro estilos y que **todos los formatos** (tienda e Instagram) usen la escena; cada lote o foto puede cambiarla.
+
+Todo se dibuja con código, sin IA generativa: la pieza nunca cambia y cada escena tarda menos de 1 s. Lo que la "apoya" es la oclusión de contacto (sombra fina y oscura pegada a la base) más una penumbra amplia; en estudio y color, además, un reflejo tenue. Probado con el proceso completo (máscara guardada + Siax) en tres piezas de la Fase 8: unos 2 s por foto con dos formatos.
+
+| Estilo | Qué es |
+|---|---|
+| `white` | El fondo liso de antes (`export.background_hex`) |
+| `studio` (por defecto) | Pared que se curva hacia el piso sin línea visible, sombra de contacto y reflejo |
+| `pedestal` | Base redonda de exhibición dibujada con luz y sombra; la pieza se apoya sobre la tapa |
+| `color` | Como estudio, con pared y piso derivados de un solo color de marca |
+| `photo` | Una foto de la biblioteca (por ejemplo, la mesa del usuario); la pieza se apoya en el punto marcado |
+
+Límite conocido: si la pieza se fotografió inclinada, la escena no lo corrige (el punto más bajo de la máscara es el que se apoya).
+
+- [x] F11.1 `app/pipeline/scene.py`: `render_scene` con estudio, pedestal, color y foto. La base queda en el 80 % del alto (estudio y color), sobre la tapa del pedestal (70 %) o en el punto marcado de la foto; la foto cubre el lienzo y se recorta para conservar ese punto. `original_hd` con escena usa un lienzo 4:5.
+- [x] F11.2 Contratos: `ProcessOptions.scene` y `ProcessOptions.background_id` (`null` = Ajustes), `ExportSettings.scene: SceneSettings` y `SceneBackground` / `SceneBackgroundUpdate`. El modo de sombra también gobierna la escena (`none` = sin sombra; `strong` = 1,3×) junto con `shadow_intensity`.
+- [x] F11.3 Biblioteca de fondos: tabla `backgrounds` (migración `0004`) y `GET/POST /backgrounds`, `PATCH/DELETE /backgrounds/{id}`. El primer fondo subido queda como predeterminado; al borrarlo se limpia `default_background_id`. Valida igual que las subidas (bomba de descompresión, formatos, `max_download_mb`).
+- [x] F11.4 El worker resuelve la foto de fondo (`options.background_id` o el predeterminado) y, si no existe, la imagen falla con un mensaje claro.
+- [x] F11.5 Tests (`tests/test_scenes.py`): apoyo en el piso, sombra, reflejo, pedestal, foto, HD 4:5, API de la biblioteca. `schema.d.ts` ya regenerado en la rama.
+- [ ] F11.6 (codex) Ajustes > Exportación: sección "Escena" con el estilo (5 opciones con su nombre traducido), selectores de color para `studio_wall_hex`, `studio_floor_hex`, `brand_hex` y `pedestal_hex` (`<input type="color">`), deslizador de reflejo 0–60 % y el fondo predeterminado (miniaturas de la biblioteca). Hoy `scene` aparece como JSON crudo en un campo de texto: que `SettingField` no lo pinte.
+- [ ] F11.7 (codex) Biblioteca de fondos en Ajustes: subir (`POST /backgrounds`, multipart `file` + `name`), renombrar, borrar con confirmación y **marcar el punto de apoyo** con un clic sobre la foto (`floor_y`, `center_x` = coordenadas del clic en fracción) más un deslizador de tamaño de la pieza (`piece_height`, 20–90 %). Mostrar una silueta o marca en el punto para que se vea dónde quedará la base.
+- [ ] F11.8 (codex) En `ProcessOptionsFields` (crear lote, procesamiento por defecto y ajustes por foto): selector "Fondo" con "Usar el de Ajustes" (`null`) más los 5 estilos y, si es `photo`, el selector de foto de la biblioteca (`background_id`, `null` = la predeterminada). Agregar `scene: null` y `background_id: null` a `FALLBACK_OPTIONS`. Textos en español e inglés.
+- [ ] F11.9 (codex) Tests de componentes de F11.6–F11.8, `tsc -b`, `eslint`, `vitest` y una prueba real: subir una foto de una mesa, marcar el punto, reprocesar una foto con `photo` y verla en la galería.
+
+**Criterio de salida:** desde la web se elige el estilo (y la foto de fondo con su punto de apoyo), y las fotos salen apoyadas, sin efecto de flotar, en todos los formatos.
+
 ---
 
 ## Qué necesitamos del usuario y cuándo
@@ -490,3 +519,4 @@ _(Fecha · agente · cambio · motivo. El otro agente marca "revisado".)_
 - 2026-10-27 · claude · Fase 6 (rama `feat/F6-review-gallery`): `ProcessOptions.rotate` (0/90/180/270, horario) y `ProcessOptions.crop: CropBox | None` (fracciones de la foto ya girada) se aplican antes de segmentar; la máscara se guarda siempre en coordenadas del original. `ImageItem.selected_variant` y `ImageItem.mask_edited` (migración `0003`). Nuevos: `ApproveRequest` (`POST /images/{id}/approve` con `{variant}`: el `.zip` exporta solo esa variante y sin sufijo), `BulkImagesRequest` (`POST /batches/{id}/images/approve` y `/reprocess`), `DELETE /images/{id}/mask` (descarta la corrección a mano) y `GET /files/{key}?w=320|640|1280` (miniaturas WebP cacheadas). El worker pasa `mask_override` solo si `mask_edited`. El modo stub genera las dos variantes. **Codex:** regenerar `schema.d.ts`; los formularios de opciones deben partir de `FALLBACK_OPTIONS` (`web/src/shared/components/processOptions.ts`) y usar `ProcessOptionsFields`; `rotate` y `crop` son por imagen (no van en crear lote). Revisado por codex: [ ]
 - 2026-10-27 · claude · Fase 10 (rama `feat/F10-upscale-models`): `PipelineSettings.upscale_model` pasa a `"realesrgan_x2plus" | "nmkd_siax" | "lanczos"` con `nmkd_siax` por defecto, y `detail_reinjection` por defecto pasa de 0,6 a 0,5. Nuevos: `ProcessOptions.upscale_fidelity: int | None` (0–100), `UpscaleModelInfo` y `GET /settings/upscale-models`. `schema.d.ts` ya regenerado en la rama. **Codex:** F10.5–F10.7. Revisado por codex: [x]
 - 2026-10-27 · codex · `Job.payload` expone el payload persistido de la cola para que el worker procese importaciones; los fallos de un trabajo `import` marcan el lote como `failed` y publican `batch.finished`. Motivo: corrección F4.7 de importaciones bloqueadas. Revisado por codex: [x]
+- 2026-10-27 · claude · Fase 11 (rama `feat/F11-scenes`): nuevos `SceneStyle` (`white|studio|pedestal|color|photo`), `ProcessOptions.scene` y `ProcessOptions.background_id` (ambos `null` = Ajustes), `ExportSettings.scene: SceneSettings` (estilo por defecto `studio`), `SceneBackground`, `SceneBackgroundUpdate` y `GET/POST /backgrounds`, `PATCH/DELETE /backgrounds/{id}` (tabla `backgrounds`, migración 0004). El fondo por defecto deja de ser blanco puro: para volver al de antes, `export.scene.style = "white"`. `schema.d.ts` ya regenerado. **Codex:** F11.6–F11.9. Revisado por codex: [ ]

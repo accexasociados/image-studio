@@ -56,6 +56,31 @@ class ImportRequest(BaseModel):
     url: str = Field(min_length=1, max_length=2000)
 
 
+class SceneBackground(_ReadModel):
+    """Foto de fondo de la biblioteca. La pieza se apoya con la base en (center_x, floor_y)."""
+
+    id: str
+    name: str
+    url: str
+    width: int
+    height: int
+    floor_y: float = Field(ge=0.3, le=0.98, description="Altura del punto de apoyo, en fracción de la foto.")
+    center_x: float = Field(ge=0.1, le=0.9, description="Posición horizontal del punto de apoyo.")
+    piece_height: float = Field(
+        ge=0.2, le=0.9, description="Alto máximo de la pieza, en fracción del lienzo."
+    )
+    created_at: datetime
+
+
+class SceneBackgroundUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: str | None = Field(default=None, min_length=1, max_length=120)
+    floor_y: float | None = Field(default=None, ge=0.3, le=0.98)
+    center_x: float | None = Field(default=None, ge=0.1, le=0.9)
+    piece_height: float | None = Field(default=None, ge=0.2, le=0.9)
+
+
 class ImageItem(_ReadModel):
     id: str
     batch_id: str

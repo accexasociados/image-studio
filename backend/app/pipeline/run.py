@@ -14,7 +14,16 @@ import numpy as np
 from PIL import Image, ImageFilter, ImageOps
 
 from app.config import get_settings
-from app.contracts import PRESETS, AppSettings, LayerLines, OutputFile, Preset, ProcessOptions, ProcessResult
+from app.contracts import (
+    PRESETS,
+    AppSettings,
+    LayerLines,
+    OutputFile,
+    Preset,
+    ProcessOptions,
+    ProcessResult,
+    SceneStyle,
+)
 from app.pipeline.catalog import model_path
 from app.pipeline.color import correct_color
 from app.pipeline.compose import Crop, compose_on_canvas, crop_to_piece, decontaminate_edges, piece_bounds
@@ -22,8 +31,9 @@ from app.pipeline.export import encode, output_path, resolve_preset
 from app.pipeline.geometry import forward, plan, restore
 from app.pipeline.layers import smooth_layer_lines
 from app.pipeline.quality import review_reasons
+from app.pipeline.scene import BackgroundPhoto, SceneSpec, brand_colors, render_scene
 from app.pipeline.segment import SegmentationParams, load_birefnet, segment
-from app.pipeline.shadow import ShadowParams, resolve_shadow
+from app.pipeline.shadow import ResolvedShadow, ShadowParams, resolve_shadow
 from app.pipeline.types import Alpha, FloatImage, to_float, to_uint8
 from app.pipeline.upscale import UpscaleParams, load_upscaler, upscale
 
@@ -31,6 +41,10 @@ _EXTENSIONS = {"webp": "webp", "jpeg": "jpg", "png": "png"}
 _VARIANT_SUFFIX: dict[LayerLines, str] = {"keep": "", "smooth": "_smooth"}
 # original_hd no tiene lienzo fijo: la pieza ocupa este margen dentro de un lienzo con su proporción.
 _ORIGINAL_HD_FILL = 0.9
+# Con escena, original_hd usa un lienzo 4:5 (la pieza necesita piso debajo).
+_SCENE_HD_RATIO = 0.8
+# Fuerza de la sombra de contacto de las escenas según el modo de sombra.
+_SCENE_SHADOW: dict[ResolvedShadow, float] = {"none": 0.0, "soft": 1.0, "strong": 1.3}
 
 
 def process_image(
@@ -41,6 +55,7 @@ def process_image(
     base_name: str,
     mask_override: Path | None = None,
     settings: AppSettings | None = None,
+    background: BackgroundPhoto | None = None,
 ) -> ProcessResult:
     if get_settings().pipeline_mode == "stub":
         return _process_stub(input_path, options, out_dir, base_name=base_name)
@@ -51,6 +66,7 @@ def process_image(
         base_name=base_name,
         mask_override=mask_override,
         settings=settings or AppSettings(),
+        background=background,
     )
 
 
@@ -99,15 +115,38 @@ def _needed_scale(crop: Crop, presets: list[Preset], settings: AppSettings, opti
     return needed
 
 
-def _canvas_for(preset: Preset, crop: Crop, settings: AppSettings) -> tuple[tuple[int, int], float]:
+def _canvas_for(
+    preset: Preset, crop: Crop, settings: AppSettings, style: SceneStyle = "white"
+) -> tuple[tuple[int, int], float]:
     spec = resolve_preset(preset, settings.export)
     if spec.width and spec.height:
         return (spec.width, spec.height), 0.0
-    top, bottom, left, right = piece_bounds(crop.alpha)
     long_side = spec.long_side or 3000
+    if style != "white":
+        return (round(long_side * _SCENE_HD_RATIO), long_side), _ORIGINAL_HD_FILL
+    top, bottom, left, right = piece_bounds(crop.alpha)
     ratio = (right - left) / (bottom - top)
     size = (long_side, round(long_side / ratio)) if ratio >= 1 else (round(long_side * ratio), long_side)
     return size, _ORIGINAL_HD_FILL
+
+
+def _scene_spec(
+    style: SceneStyle, settings: AppSettings, background: BackgroundPhoto | None
+) -> SceneSpec | None:
+    if style == "white":
+        return None
+    scene = settings.export.scene
+    wall, floor = _hex_to_rgb(scene.studio_wall_hex), _hex_to_rgb(scene.studio_floor_hex)
+    if style == "color":
+        wall, floor = brand_colors(_hex_to_rgb(scene.brand_hex))
+    return SceneSpec(
+        kind=style,
+        wall=wall,
+        floor=floor,
+        pedestal=_hex_to_rgb(scene.pedestal_hex),
+        reflection=scene.reflection / 100.0,
+        background=background,
+    )
 
 
 def _hex_to_rgb(value: str) -> tuple[int, int, int]:
@@ -122,8 +161,12 @@ def _process_real(
     base_name: str,
     mask_override: Path | None,
     settings: AppSettings,
+    background: BackgroundPhoto | None,
 ) -> ProcessResult:
     timer = _Timer()
+    style: SceneStyle = options.scene or settings.export.scene.style
+    if style == "photo" and background is None:
+        raise ValueError("La escena con foto de fondo necesita un fondo: elígelo en Ajustes > Exportación.")
     out_dir.mkdir(parents=True, exist_ok=True)
     models_dir = get_settings().models_dir
     device = _device()
@@ -177,7 +220,8 @@ def _process_real(
 
     shadow_params = ShadowParams(intensity=options.shadow_intensity / 100.0)
     shadow_mode = resolve_shadow(options.shadow, crop.image, crop.alpha, shadow_params)
-    background = _hex_to_rgb(settings.export.background_hex)
+    background_rgb = _hex_to_rgb(settings.export.background_hex)
+    scene = _scene_spec(style, settings, background)
     variants: list[LayerLines] = (
         ["keep", "smooth"] if options.generate_both_layer_variants else [options.layer_lines]
     )
@@ -195,11 +239,15 @@ def _process_real(
         for preset in options.presets:
             with timer.stage(f"{preset}_{variant}"):
                 spec = resolve_preset(preset, settings.export)
-                size, hd_fill = _canvas_for(preset, variant_crop, settings)
+                size, hd_fill = _canvas_for(preset, variant_crop, settings, style)
                 fill = hd_fill or options.fill_ratio or spec.default_fill_ratio
-                composed = compose_on_canvas(
-                    variant_crop, size, fill, shadow_mode, background, shadow_params=shadow_params
-                )
+                if scene is None:
+                    composed = compose_on_canvas(
+                        variant_crop, size, fill, shadow_mode, background_rgb, shadow_params=shadow_params
+                    )
+                else:
+                    strength = _SCENE_SHADOW[shadow_mode] * shadow_params.intensity
+                    composed = render_scene(variant_crop, size, fill, scene, strength)
                 path = output_path(out_dir, base_name, preset, spec, suffix)
                 data = encode(composed, spec)
                 path.write_bytes(data)

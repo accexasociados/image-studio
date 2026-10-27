@@ -2,7 +2,7 @@ from datetime import UTC, datetime
 from typing import Any, ClassVar
 from uuid import uuid4
 
-from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Integer, String, Text, false
+from sqlalchemy import JSON, Boolean, DateTime, Float, ForeignKey, Integer, String, Text, false
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -109,3 +109,19 @@ class EventRow(Base):
     type: Mapped[str] = mapped_column(String(30), index=True)
     payload: Mapped[dict[str, Any]] = mapped_column(JSON)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)
+
+
+class BackgroundRow(Base):
+    """Foto de fondo de la biblioteca de escenas (Fase 11)."""
+
+    __tablename__ = "backgrounds"
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=new_id)
+    name: Mapped[str] = mapped_column(String(120))
+    path: Mapped[str] = mapped_column(String(500))
+    width: Mapped[int] = mapped_column(Integer)
+    height: Mapped[int] = mapped_column(Integer)
+    floor_y: Mapped[float] = mapped_column(Float, default=0.8)
+    center_x: Mapped[float] = mapped_column(Float, default=0.5)
+    piece_height: Mapped[float] = mapped_column(Float, default=0.55)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)

@@ -7,6 +7,9 @@ LayerLines = Literal["keep", "smooth"]
 ShadowMode = Literal["none", "soft", "strong", "auto"]
 UpscaleFactor = Literal[1, 2, 4]
 Rotation = Literal[0, 90, 180, 270]
+# white = fondo liso de hoy; studio = piso continuo de estudio; pedestal = base redonda de exhibición;
+# color = piso continuo en el color de marca; photo = una foto de fondo de la biblioteca.
+SceneStyle = Literal["white", "studio", "pedestal", "color", "photo"]
 
 _DEFAULT_PRESETS: list[Preset] = ["storefront", "instagram_feed"]
 
@@ -57,6 +60,14 @@ class ProcessOptions(BaseModel):
             "Al agrandar, porcentaje del detalle fino que sale de la foto original y no del modelo "
             "(100 = lo más fiel, 0 = todo lo reconstruye la IA). None = Ajustes > Proceso."
         ),
+    )
+    scene: SceneStyle | None = Field(
+        default=None, description="Fondo de la pieza. None = Ajustes > Exportación."
+    )
+    background_id: str | None = Field(
+        default=None,
+        max_length=32,
+        description="Foto de fondo con scene='photo'. None = la de Ajustes > Exportación.",
     )
     white_balance: bool = True
     generate_both_layer_variants: bool = False

@@ -22,6 +22,8 @@ from app.contracts.models import (
     JobStatus,
     OutputFile,
     ProcessResult,
+    SceneBackground,
+    SceneBackgroundUpdate,
 )
 from app.contracts.options import (
     CropBox,
@@ -29,6 +31,7 @@ from app.contracts.options import (
     Preset,
     ProcessOptions,
     Rotation,
+    SceneStyle,
     ShadowMode,
     UpscaleFactor,
 )
@@ -37,6 +40,7 @@ from app.contracts.settings import (
     SECRET_FIELDS,
     AppSettings,
     AppSettingsPublic,
+    SceneSettings,
     SettingsSection,
     TelegramTestResult,
     UpscaleModel,
@@ -75,6 +79,10 @@ __all__ = [
     "ProcessOptions",
     "ProcessResult",
     "Rotation",
+    "SceneBackground",
+    "SceneBackgroundUpdate",
+    "SceneSettings",
+    "SceneStyle",
     "SettingsSection",
     "ShadowMode",
     "TelegramTestResult",

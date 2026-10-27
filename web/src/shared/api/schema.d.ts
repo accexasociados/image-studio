@@ -39,6 +39,23 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/api/v1/batches/{batch_id}/imports': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Import Batch */
+    post: operations['import_batch_api_v1_batches__batch_id__imports_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/api/v1/batches/{batch_id}': {
     parameters: {
       query?: never
@@ -377,6 +394,42 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/api/v1/backgrounds': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** List Backgrounds */
+    get: operations['list_backgrounds_api_v1_backgrounds_get']
+    put?: never
+    /** Upload Background */
+    post: operations['upload_background_api_v1_backgrounds_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/backgrounds/{background_id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post?: never
+    /** Delete Background */
+    delete: operations['delete_background_api_v1_backgrounds__background_id__delete']
+    options?: never
+    head?: never
+    /** Update Background */
+    patch: operations['update_background_api_v1_backgrounds__background_id__patch']
+    trace?: never
+  }
 }
 export type webhooks = Record<string, never>
 export interface components {
@@ -470,6 +523,16 @@ export interface components {
        */
       file: string
     }
+    /** Body_upload_background_api_v1_backgrounds_post */
+    Body_upload_background_api_v1_backgrounds_post: {
+      /**
+       * File
+       * @description Foto de fondo JPEG, PNG o WebP
+       */
+      file: string
+      /** Name */
+      name?: string | null
+    }
     /** Body_upload_images_api_v1_batches__batch_id__images_post */
     Body_upload_images_api_v1_batches__batch_id__images_post: {
       /**
@@ -513,6 +576,7 @@ export interface components {
        * @default #FFFFFF
        */
       background_hex: string
+      scene?: components['schemas']['SceneSettings']
       /**
        * Filename Strategy
        * @default sku_then_slug
@@ -638,6 +702,11 @@ export interface components {
       /** Sku */
       sku?: string | null
       options_override?: components['schemas']['ProcessOptions'] | null
+    }
+    /** ImportRequest */
+    ImportRequest: {
+      /** Url */
+      url: string
     }
     /** ImporterSettings */
     ImporterSettings: {
@@ -807,6 +876,16 @@ export interface components {
        */
       upscale_fidelity?: number | null
       /**
+       * Scene
+       * @description Fondo de la pieza. None = Ajustes > Exportación.
+       */
+      scene?: ('white' | 'studio' | 'pedestal' | 'color' | 'photo') | null
+      /**
+       * Background Id
+       * @description Foto de fondo con scene='photo'. None = la de Ajustes > Exportación.
+       */
+      background_id?: string | null
+      /**
        * White Balance
        * @default true
        */
@@ -853,6 +932,93 @@ export interface components {
        * @default 0.6
        */
       low_confidence_edge_ratio: number
+    }
+    /**
+     * SceneBackground
+     * @description Foto de fondo de la biblioteca. La pieza se apoya con la base en (center_x, floor_y).
+     */
+    SceneBackground: {
+      /** Id */
+      id: string
+      /** Name */
+      name: string
+      /** Url */
+      url: string
+      /** Width */
+      width: number
+      /** Height */
+      height: number
+      /**
+       * Floor Y
+       * @description Altura del punto de apoyo, en fracción de la foto.
+       */
+      floor_y: number
+      /**
+       * Center X
+       * @description Posición horizontal del punto de apoyo.
+       */
+      center_x: number
+      /**
+       * Piece Height
+       * @description Alto máximo de la pieza, en fracción del lienzo.
+       */
+      piece_height: number
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string
+    }
+    /** SceneBackgroundUpdate */
+    SceneBackgroundUpdate: {
+      /** Name */
+      name?: string | null
+      /** Floor Y */
+      floor_y?: number | null
+      /** Center X */
+      center_x?: number | null
+      /** Piece Height */
+      piece_height?: number | null
+    }
+    /**
+     * SceneSettings
+     * @description Fondo con el que se componen todos los formatos (Fase 11). Cada lote o foto puede cambiar el estilo.
+     */
+    SceneSettings: {
+      /**
+       * Style
+       * @default studio
+       * @enum {string}
+       */
+      style: 'white' | 'studio' | 'pedestal' | 'color' | 'photo'
+      /**
+       * Studio Wall Hex
+       * @default #FFFFFF
+       */
+      studio_wall_hex: string
+      /**
+       * Studio Floor Hex
+       * @default #ECEAE6
+       */
+      studio_floor_hex: string
+      /**
+       * Brand Hex
+       * @default #C9D9EA
+       */
+      brand_hex: string
+      /**
+       * Pedestal Hex
+       * @default #E4DFD6
+       */
+      pedestal_hex: string
+      /**
+       * Reflection
+       * @description Opacidad del reflejo en el piso (%).
+       * @default 14
+       */
+      reflection: number
+      /** Default Background Id */
+      default_background_id?: string | null
     }
     /** SecretConfigured */
     SecretConfigured: {
@@ -1035,6 +1201,43 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['Batch']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  import_batch_api_v1_batches__batch_id__imports_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        batch_id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ImportRequest']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      202: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            [key: string]: string
+          }
         }
       }
       /** @description Validation Error */
@@ -1754,6 +1957,123 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['TelegramTestResult']
+        }
+      }
+    }
+  }
+  list_backgrounds_api_v1_backgrounds_get: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SceneBackground'][]
+        }
+      }
+    }
+  }
+  upload_background_api_v1_backgrounds_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'multipart/form-data': components['schemas']['Body_upload_background_api_v1_backgrounds_post']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SceneBackground']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  delete_background_api_v1_backgrounds__background_id__delete: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        background_id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  update_background_api_v1_backgrounds__background_id__patch: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        background_id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SceneBackgroundUpdate']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SceneBackground']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
         }
       }
     }

@@ -17,7 +17,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.contracts import AppSettings, Event, Job, ProcessOptions, ProcessResult
-from app.db.models import BatchRow, ImageRow, OutputRow, utcnow
+from app.db.models import BackgroundRow, BatchRow, ImageRow, OutputRow, utcnow
 from app.db.session import get_sessionmaker
 from app.db.settings_store import load_settings
 from app.events import EventPublisher, get_event_store
@@ -26,6 +26,7 @@ from app.importers.direct_url import download_image
 from app.importers.google_drive import download_drive
 from app.importers.google_photos import download_album
 from app.pipeline.run import process_image
+from app.pipeline.scene import BackgroundPhoto
 from app.queue import JobQueue, get_job_queue
 from app.storage import Storage, get_storage
 
@@ -43,6 +44,7 @@ class ImageProcessor(Protocol):
         base_name: str,
         mask_override: Path | None,
         settings: AppSettings,
+        background: BackgroundPhoto | None = None,
     ) -> ProcessResult: ...
 
 
@@ -58,6 +60,7 @@ class PipelineProcessor:
         base_name: str,
         mask_override: Path | None,
         settings: AppSettings,
+        background: BackgroundPhoto | None = None,
     ) -> ProcessResult:
         return process_image(
             input_path,
@@ -66,6 +69,7 @@ class PipelineProcessor:
             base_name=base_name,
             mask_override=mask_override,
             settings=settings,
+            background=background,
         )
 
 
@@ -78,6 +82,7 @@ class _ImageContext:
     options: ProcessOptions
     base_name: str
     settings: AppSettings
+    background: BackgroundPhoto | None = None
 
 
 class Worker:
@@ -157,6 +162,7 @@ class Worker:
                     options=context.options,
                     base_name=context.base_name,
                     settings=reduced,
+                    background=context.background,
                 )
                 result, result_dir = self._invoke(retry_context, temp_root / "reduced-tiles")
 
@@ -235,6 +241,7 @@ class Worker:
             base_name=context.base_name,
             mask_override=context.mask_override,
             settings=context.settings,
+            background=context.background,
         )
         return result, out_dir
 
@@ -255,6 +262,7 @@ class Worker:
             batch.finished_at = None
             settings = load_settings(session)
             options_data = image.options_override or batch.default_options
+            options = ProcessOptions.model_validate(options_data)
             context = _ImageContext(
                 image_id=image.id,
                 batch_id=batch.id,
@@ -265,12 +273,30 @@ class Worker:
                     if image.mask_edited and image.mask_path
                     else None
                 ),
-                options=ProcessOptions.model_validate(options_data),
+                options=options,
                 base_name=_base_name(image),
                 settings=settings,
+                background=self._background(session, options, settings),
             )
             session.commit()
             return context
+
+    def _background(
+        self, session: Session, options: ProcessOptions, settings: AppSettings
+    ) -> BackgroundPhoto | None:
+        scene = settings.export.scene
+        if (options.scene or scene.style) != "photo":
+            return None
+        background_id = options.background_id or scene.default_background_id
+        row = session.get(BackgroundRow, background_id) if background_id else None
+        if row is None:
+            raise ValueError("La foto de fondo elegida no existe: elige otra en Ajustes > Exportación.")
+        return BackgroundPhoto(
+            path=self.storage.local_path(row.path),
+            floor_y=row.floor_y,
+            center_x=row.center_x,
+            piece_height=row.piece_height,
+        )
 
     def _publish_state(self, image_id: str) -> None:
         if self.publisher is None:
