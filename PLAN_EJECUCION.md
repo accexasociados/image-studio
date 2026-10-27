@@ -30,6 +30,7 @@ Fecha de creación: **2026-10-26**.
 | 7 | Entradas extra: bot de Telegram y carpeta vigilada | Codex | F2, F5 | Pendiente |
 | 8 | Validación con lote real de 100 fotos y ajuste fino | Claude + usuario | F1–F6 | Pendiente |
 | 9 | Nube (opción C): Docker, Redis, S3, autenticación e integración con el ecommerce | Codex (9.1–9.7) + Claude (9.8) | F8 | Pendiente |
+| 10 | Mejora de resolución: modelo elegible y fidelidad por foto | Claude (10.1–10.4) + Codex (10.5–10.7) | F1, F6 | Backend listo (rama `feat/F10-upscale-models`); falta la web |
 
 Las fases 1, 2 y 3 pueden avanzar **en paralelo**: la Fase 0 ya dejó los contratos, la configuración y el proceso en modo `stub`.
 
@@ -425,6 +426,33 @@ Parte del alcance desde el 2026-10-26. Las interfaces ya existen (`JobQueue`, `S
 - [ ] F9.7 Backend de proceso remoto opcional (servidor con GPU o fal.ai/Replicate) para cuando no haya GPU local, elegible en Ajustes > Modelos.
 - [ ] F9.8 Integración con `ecommerce-dashboard`: botón "Mejorar fotos" en productos que crea un lote vía API key y asigna las aprobadas al producto por SKU.
 
+## Fase 10 — Mejora de resolución (Claude + Codex)
+
+Objetivo: que las fotos pequeñas o reenviadas por WhatsApp suban de resolución sin "dañarse" (sin texturas inventadas ni aspecto de plástico).
+
+**Resultado de la comparación (2026-10-27, claude).** Seis piezas de fotos reales de 12 MP se redujeron a 600 px de lado largo (limpias y con JPEG calidad 72, como WhatsApp) y se volvieron a agrandar a 1640 px (la pieza en el formato tienda), midiendo contra la pieza real:
+
+| Modelo (+ detalle) | SSIM limpia | SSIM WhatsApp | Nitidez vs. real | s/pieza | Licencia |
+|---|---|---|---|---|---|
+| **4x NMKD Siax + 60 %** | **0,944** | **0,909** | 0,68 | 4,1 | WTFPL |
+| Lanczos (sin IA) | 0,940 | 0,899 | 0,33 (borrosa) | 0 | — |
+| 4x Nomos8kDAT + 60 % | 0,936 | 0,905 | 0,58 | 26 | CC-BY-4.0 |
+| 4x RealESRGAN x4plus + 60 % | 0,930 | 0,899 | 0,63 | 4,0 | BSD-3 |
+| 4x-UltraSharp + 60 % | 0,926 | 0,901 | 0,97 | 4,1 | **CC-BY-NC-SA** (no comercial) |
+| RealESRGAN x2plus + 60 % (el de antes) | 0,924 | 0,897 | 0,52 | 1,2 | BSD-3 |
+
+Barrido de fidelidad con Siax: la calidad es casi igual entre 50 % y 80 % (SSIM 0,943–0,944); con 50 % la nitidez (0,79) queda más cerca de la real. Sin reinyección los modelos inventan texturas (UltraSharp dibuja grietas negras; Siax, arrugas en fotos con JPEG). Ninguno recupera las líneas de capa que la foto pequeña ya no tiene: el límite real es la captura. En el proceso completo, Siax tarda 6–12 s más que x2plus solo en las fotos que necesitan agrandarse (2 de 35 en la Fase 8).
+
+- [x] F10.1 Catálogo de modelos (`app/pipeline/catalog.py`): `realesrgan_x2plus` y `nmkd_siax`, con URL, SHA-256 y licencia. Siax queda por defecto y `detail_reinjection` baja de 0,6 a 0,5. Se descartan Nomos8kDAT (no mejora y tarda 6 veces más), x4plus (peor que Siax en todo) y UltraSharp (licencia no comercial).
+- [x] F10.2 El ampliador acepta modelos x2 y x4 de spandrel y siempre hace al menos una pasada (antes, entre 1,05x y 1,4x se cargaba el modelo pero no se usaba).
+- [x] F10.3 `ProcessOptions.upscale_fidelity` (0–100 o `null` = Ajustes) y `GET /settings/upscale-models` (id, escala, tamaño, licencia, instalado). Si el modelo elegido no está descargado, la imagen falla con el comando para descargarlo.
+- [x] F10.4 `python -m scripts.download_models --upscale <ids|all>` (por defecto, el modelo por defecto) y README.
+- [ ] F10.5 (codex) Ajustes > Proceso: `upscale_model` como selector con las opciones de `GET /settings/upscale-models` más "Sin IA (Lanczos)"; las no instaladas se muestran deshabilitadas con el comando de descarga. `detail_reinjection` como deslizador 0–100 %. Hoy los dos son campos de texto.
+- [ ] F10.6 (codex) En `ProcessOptionsFields` (crear lote, Ajustes > Procesamiento por defecto y ajustes por foto del visor): deslizador "Fidelidad al agrandar" para `upscale_fidelity` con la opción "Usar la de Ajustes" (`null`) y una ayuda corta: más alto = más fiel a la foto, más bajo = más nitidez reconstruida por la IA. Agregar `upscale_fidelity: null` a `FALLBACK_OPTIONS`. Textos en español e inglés.
+- [ ] F10.7 (codex) Tests de componentes de F10.5 y F10.6, y `tsc -b`, `eslint` y `vitest` en verde.
+
+**Criterio de salida:** desde la web se elige el modelo y la fidelidad, y una foto reenviada por WhatsApp sale para la tienda sin texturas inventadas.
+
 ---
 
 ## Qué necesitamos del usuario y cuándo
@@ -458,3 +486,4 @@ _(Fecha · agente · cambio · motivo. El otro agente marca "revisado".)_
 - 2026-10-27 · claude · (rama `feat/F1-pipeline`) `process_image` recibe `settings: AppSettings | None = None` (el worker ya lo pasa; quitar el `del settings` de `PipelineProcessor` al unir). `QualitySettings.low_confidence_edge_ratio` por defecto pasa de 0,15 a 0,6 (calibrado con 12 fotos reales). `ImageItem.review_reasons` usa los códigos de F1.8 (la web debe traducirlos). Con `generate_both_layer_variants` el proceso nombra `SKU.webp` (conservar) y `SKU_smooth.webp` (suavizar). Revisado por codex: [x]
 - 2026-10-27 · claude · `ProcessOptions.shadow_intensity: int` (0 a 200, por defecto 100) escala la opacidad del modo de sombra; en `main` desde `feat/F1.13-shadow-intensity`. **Codex:** regenerar `web/src/shared/api/schema.d.ts` (`npm run gen:api`) e incluir en los formularios de opciones (F3.2 crear lote, F3.6 Ajustes > Procesamiento por defecto) y en el panel por imagen (F6.3) todos los campos de `ProcessOptions`: formatos, líneas de capa + intensidad, sombra + intensidad, margen (`fill_ratio`), agrandado máximo, balance de blancos y las dos variantes. Revisado por codex: [x]
 - 2026-10-27 · claude · Fase 6 (rama `feat/F6-review-gallery`): `ProcessOptions.rotate` (0/90/180/270, horario) y `ProcessOptions.crop: CropBox | None` (fracciones de la foto ya girada) se aplican antes de segmentar; la máscara se guarda siempre en coordenadas del original. `ImageItem.selected_variant` y `ImageItem.mask_edited` (migración `0003`). Nuevos: `ApproveRequest` (`POST /images/{id}/approve` con `{variant}`: el `.zip` exporta solo esa variante y sin sufijo), `BulkImagesRequest` (`POST /batches/{id}/images/approve` y `/reprocess`), `DELETE /images/{id}/mask` (descarta la corrección a mano) y `GET /files/{key}?w=320|640|1280` (miniaturas WebP cacheadas). El worker pasa `mask_override` solo si `mask_edited`. El modo stub genera las dos variantes. **Codex:** regenerar `schema.d.ts`; los formularios de opciones deben partir de `FALLBACK_OPTIONS` (`web/src/shared/components/processOptions.ts`) y usar `ProcessOptionsFields`; `rotate` y `crop` son por imagen (no van en crear lote). Revisado por codex: [ ]
+- 2026-10-27 · claude · Fase 10 (rama `feat/F10-upscale-models`): `PipelineSettings.upscale_model` pasa a `"realesrgan_x2plus" | "nmkd_siax" | "lanczos"` con `nmkd_siax` por defecto, y `detail_reinjection` por defecto pasa de 0,6 a 0,5. Nuevos: `ProcessOptions.upscale_fidelity: int | None` (0–100), `UpscaleModelInfo` y `GET /settings/upscale-models`. `schema.d.ts` ya regenerado en la rama. **Codex:** F10.5–F10.7. Revisado por codex: [ ]
