@@ -61,6 +61,7 @@ class PipelineProcessor:
             out_dir,
             base_name=base_name,
             mask_override=mask_override,
+            settings=settings,
         )
 
 
