@@ -4,11 +4,12 @@ from dataclasses import dataclass
 from io import BytesIO, StringIO
 from pathlib import PurePosixPath
 from typing import IO, Annotated, cast
+from uuid import uuid4
 from warnings import catch_warnings, simplefilter
 from zipfile import BadZipFile, ZipFile, ZipInfo, is_zipfile
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
-from PIL import Image, UnidentifiedImageError
+from fastapi import APIRouter, Body, Depends, File, HTTPException, UploadFile, status
+from PIL import Image, ImageOps, UnidentifiedImageError
 from pydantic import ValidationError
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
@@ -232,6 +233,49 @@ def _filename_key(value: str) -> str:
     return PurePosixPath(value.replace("\\", "/")).name.casefold()
 
 
+def _enqueue_reprocess(row: ImageRow, session: Session) -> None:
+    if row.status not in {"done", "review", "failed", "approved"}:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="La imagen debe terminar su proceso actual antes de reprocesarla.",
+        )
+    row.status = "pending"
+    row.error = None
+    row.review_reasons = []
+    row.batch.status = "queued"
+    row.batch.finished_at = None
+    session.add(JobRow(kind="reprocess", status="queued", image_id=row.id, batch_id=row.batch_id))
+
+
+def _normalized_mask(data: bytes, source_name: str, expected_size: tuple[int, int]) -> bytes:
+    try:
+        with catch_warnings():
+            simplefilter("error", Image.DecompressionBombWarning)
+            with Image.open(BytesIO(data)) as opened:
+                opened.verify()
+            with Image.open(BytesIO(data)) as opened:
+                mask = ImageOps.exif_transpose(opened)
+                if mask.size != expected_size:
+                    raise HTTPException(
+                        status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                        detail=(
+                            f"La máscara mide {mask.width}x{mask.height}; "
+                            f"debe medir {expected_size[0]}x{expected_size[1]}."
+                        ),
+                    )
+                grayscale = mask.getchannel("A") if "A" in mask.getbands() else mask.convert("L")
+                output = BytesIO()
+                grayscale.save(output, format="PNG")
+                return output.getvalue()
+    except HTTPException:
+        raise
+    except (Image.DecompressionBombError, Image.DecompressionBombWarning, UnidentifiedImageError, OSError):
+        raise HTTPException(
+            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            detail=f"'{source_name}' no es una máscara de imagen válida o segura.",
+        ) from None
+
+
 @router.post(
     "/batches/{batch_id}/images",
     response_model=list[ImageItem],
@@ -405,4 +449,46 @@ def approve_image(image_id: str, session: SessionDep) -> ImageItem:
         row.status = "approved"
         session.commit()
         session.refresh(row)
+    return _image_response(row)
+
+
+@router.post("/images/{image_id}/reprocess", response_model=ImageItem)
+def reprocess_image(
+    image_id: str,
+    session: SessionDep,
+    payload: Annotated[ProcessOptions | None, Body()] = None,
+) -> ImageItem:
+    row = _get_image(session, image_id)
+    _enqueue_reprocess(row, session)
+    if payload is not None:
+        row.options_override = payload.model_dump(mode="json")
+    session.commit()
+    session.refresh(row)
+    return _image_response(row)
+
+
+@router.put("/images/{image_id}/mask", response_model=ImageItem)
+def replace_mask(
+    image_id: str,
+    file: Annotated[UploadFile, File(description="Máscara PNG del tamaño del original")],
+    session: SessionDep,
+    storage: StorageDep,
+) -> ImageItem:
+    row = _get_image(session, image_id)
+    _enqueue_reprocess(row, session)
+    max_image_bytes = load_settings(session).importers.max_download_mb * 1024**2
+    data = _read_limited(file.file, max_image_bytes)
+    with Image.open(storage.local_path(row.original_path)) as original:
+        expected_size = ImageOps.exif_transpose(original).size
+    normalized = _normalized_mask(data, file.filename or "máscara", expected_size)
+    key = f"batches/{row.batch_id}/masks/{row.id}/edited-{uuid4().hex}.png"
+    try:
+        storage.save_bytes(key, normalized)
+        row.mask_path = key
+        session.commit()
+    except Exception:
+        session.rollback()
+        storage.delete(key)
+        raise
+    session.refresh(row)
     return _image_response(row)
