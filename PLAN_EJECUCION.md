@@ -336,7 +336,7 @@ Todo texto visible en **español e inglés** (i18next), sin textos fijos en el c
 - [x] F4.3 `google_drive.py`: carpeta o archivo público de Drive. Para carpetas, usar la API de Drive con una API key guardada en `settings` (`gdown` limita las carpetas a 50 archivos). — (codex, 2026-10-27)
 - [x] F4.4 Endpoint `POST /api/v1/batches/{id}/imports` con `{ url }`: detecta el tipo de enlace, crea un trabajo `import` y reporta progreso por SSE. — (codex, 2026-10-27)
 - [x] F4.5 Conexión con la pestaña "Desde enlace" de la web. — (codex, 2026-10-27)
-- [ ] F4.6 Tests con respuestas simuladas.
+- [x] F4.6 Tests con respuestas simuladas. — (codex, 2026-10-27)
 
 **Criterio de salida:** pegar un enlace de álbum de Google Photos de unas 100 fotos crea el lote con todas las imágenes en resolución original.
 
