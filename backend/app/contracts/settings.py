@@ -69,7 +69,8 @@ class QualitySettings(_Section):
     max_object_area: float = Field(default=0.95, ge=0, le=1)
     flag_touching_border: bool = True
     flag_multiple_objects: bool = True
-    low_confidence_edge_ratio: float = Field(default=0.15, ge=0, le=1)
+    # Calibrado el 2026-10-27 con 12 fotos reales: recortes correctos dan 0,27 a 0,51.
+    low_confidence_edge_ratio: float = Field(default=0.6, ge=0, le=1)
 
 
 class PipelineSettings(_Section):

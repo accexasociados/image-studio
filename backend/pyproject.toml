@@ -30,6 +30,7 @@ ml = [
   "torchvision>=0.21",
   "transformers>=4.46,<5",
   "huggingface-hub>=0.26",
+  "safetensors>=0.4",
   "timm>=1.0",
   "kornia>=0.7",
   "einops>=0.8",
@@ -47,7 +48,7 @@ include = ["app*", "scripts*"]
 [tool.ruff]
 line-length = 110
 target-version = "py311"
-extend-exclude = ["alembic/versions"]
+extend-exclude = ["alembic/versions", "app/pipeline/vendor"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "SIM", "RUF"]
@@ -61,7 +62,7 @@ known-first-party = ["app", "scripts"]
 python_version = "3.11"
 strict = true
 plugins = ["pydantic.mypy"]
-exclude = ["alembic/"]
+exclude = ["alembic/", "app/pipeline/vendor/"]
 
 [[tool.mypy.overrides]]
 module = ["cv2.*", "torch.*", "torchvision.*", "transformers.*", "spandrel.*", "huggingface_hub.*"]
@@ -69,3 +70,9 @@ ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[[tool.mypy.overrides]]
+# Código copiado de BiRefNet: se usa sin modificar (ver app/pipeline/vendor/birefnet/VENDOR.md).
+module = ["app.pipeline.vendor.*"]
+follow_imports = "skip"
+ignore_errors = true
