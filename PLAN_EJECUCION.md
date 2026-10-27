@@ -355,10 +355,10 @@ Pasan los 91 tests, pero **mypy falla con 7 errores**, `ruff format` falla en `t
 
 ## Fase 5 — Avisos (Codex)
 
-- [ ] F5.1 `telegram.py`: mensajes de "lote iniciado", progreso cada 25 % y "lote terminado: X listas, Y para revisar, Z fallidas", con el enlace local a la galería. Botón "Probar" en ajustes.
-- [ ] F5.2 `windows.py`: notificación nativa de Windows al terminar un lote.
-- [ ] F5.3 Notificación del navegador al terminar (pidiendo permiso), con la pestaña en segundo plano.
-- [ ] F5.4 Suscripción a eventos del worker (sin acoplar los notificadores al proceso de imagen).
+- [x] F5.1 `telegram.py`: mensajes de "lote iniciado", progreso cada 25 % y "lote terminado: X listas, Y para revisar, Z fallidas", con el enlace local a la galería. Botón "Probar" en ajustes. — (codex, 2026-10-27)
+- [x] F5.2 `windows.py`: notificación nativa de Windows al terminar un lote. — (codex, 2026-10-27)
+- [x] F5.3 Notificación del navegador al terminar (pidiendo permiso), con la pestaña en segundo plano. — (codex, 2026-10-27)
+- [x] F5.4 Suscripción a eventos del worker (sin acoplar los notificadores al proceso de imagen). — (codex, 2026-10-27)
 
 **Criterio de salida:** al terminar un lote llegan el mensaje de Telegram y la notificación de Windows.
 
