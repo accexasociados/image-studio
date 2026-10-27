@@ -10,6 +10,7 @@ export type OutputFile = components['schemas']['OutputFile']
 export type LayerLines = ProcessOptions['layer_lines']
 export type CropBox = components['schemas']['CropBox']
 export type ThumbWidth = 320 | 640 | 1280
+export type UpscaleModelInfo = components['schemas']['UpscaleModelInfo']
 
 const API_BASE = '/api/v1'
 

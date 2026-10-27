@@ -1,7 +1,14 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { apiGet, apiPost, apiPut, type AppSettingsPublic, type ProcessOptions } from '@/shared/api/client'
+import {
+  apiGet,
+  apiPost,
+  apiPut,
+  type AppSettingsPublic,
+  type ProcessOptions,
+  type UpscaleModelInfo,
+} from '@/shared/api/client'
 import { ProcessOptionsFields } from '@/shared/components/ProcessOptionsFields'
 import { FALLBACK_OPTIONS } from '@/shared/components/processOptions'
 
@@ -24,6 +31,10 @@ export function SettingsPage({ onClose }: { onClose: () => void }) {
   const { data, isPending, isError, refetch } = useQuery({
     queryKey: ['settings'],
     queryFn: () => apiGet<AppSettingsPublic>('/settings'),
+  })
+  const upscaleModels = useQuery({
+    queryKey: ['upscale-models'],
+    queryFn: () => apiGet<UpscaleModelInfo[]>('/settings/upscale-models'),
   })
   const [section, setSection] = useState<Section>('general')
   const [values, setValues] = useState<Values>({})
@@ -90,6 +101,8 @@ export function SettingsPage({ onClose }: { onClose: () => void }) {
                   onChange={(next) => setValues(next as unknown as Values)}
                 />
               </div>
+            ) : section === 'pipeline' ? (
+              <PipelineFields value={draft} models={upscaleModels.data ?? []} onChange={update} t={t} />
             ) : (
               <div className="mt-5 grid gap-4 sm:grid-cols-2">
                 {Object.entries(draft).map(([key, value]) => (
@@ -127,6 +140,57 @@ export function SettingsPage({ onClose }: { onClose: () => void }) {
         </div>
       )}
     </main>
+  )
+}
+
+function PipelineFields({
+  value,
+  models,
+  onChange,
+  t,
+}: {
+  value: Values
+  models: UpscaleModelInfo[]
+  onChange: (key: string, value: unknown) => void
+  t: (key: string) => string
+}) {
+  return (
+    <div className="mt-5 grid gap-4 sm:grid-cols-2">
+      <label className="text-sm font-medium text-slate-700 dark:text-slate-200">
+        {t('settings.fields.upscale_model')}
+        <select
+          value={String(value.upscale_model ?? 'lanczos')}
+          onChange={(event) => onChange('upscale_model', event.target.value)}
+          className="mt-1.5 w-full rounded-lg border border-slate-300 bg-transparent px-3 py-2 dark:border-slate-700"
+        >
+          <option value="lanczos">{t('settings.lanczos')}</option>
+          {models.map((model) => (
+            <option key={model.id} value={model.id} disabled={!model.installed}>
+              {model.id} · {model.scale}×{model.installed ? '' : ` (${t('settings.notInstalled')})`}
+            </option>
+          ))}
+        </select>
+        {models.some((model) => !model.installed) && (
+          <span className="mt-1 block text-xs font-normal text-slate-500">
+            {t('settings.downloadCommand')}
+          </span>
+        )}
+      </label>
+      <label className="text-sm font-medium text-slate-700 dark:text-slate-200">
+        {t('settings.fields.detail_reinjection')}
+        <input
+          type="range"
+          min="0"
+          max="100"
+          value={Math.round(Number(value.detail_reinjection ?? 0.5) * 100)}
+          onChange={(event) => onChange('detail_reinjection', Number(event.target.value) / 100)}
+          className="mt-2 w-full"
+        />
+        <span className="text-xs text-slate-500">
+          {Math.round(Number(value.detail_reinjection ?? 0.5) * 100)}%
+        </span>
+      </label>
+    </div>
   )
 }
 
