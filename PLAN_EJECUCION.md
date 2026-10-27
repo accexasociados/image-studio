@@ -340,6 +340,16 @@ Todo texto visible en **español e inglés** (i18next), sin textos fijos en el c
 
 **Criterio de salida:** pegar un enlace de álbum de Google Photos de unas 100 fotos crea el lote con todas las imágenes en resolución original.
 
+### Correcciones tras la revisión del 2026-10-27 (claude, sobre `733e908`)
+
+Pasan los 91 tests, pero **mypy falla con 7 errores**, `ruff format` falla en `tests/test_telegram_notifier.py` y ningún test ejecuta una importación a través del worker. Probado a mano:
+
+- [ ] F4.7 **(bloqueante)** Toda importación falla: `Worker._process_import` usa `job.payload`, pero el contrato `Job` no tiene `payload` (`AttributeError`). Además `_record_failure` no toca el lote cuando `job.image_id` es `None`, así que el lote queda en `queued` para siempre. Agregar `payload` a `Job` (con nota en el registro de contrato), marcar el lote como `failed` con el mensaje del error y publicar un evento. Test que pase por el worker con la descarga simulada.
+- [ ] F4.8 Google Photos con el álbum real (`photos.app.goo.gl/U6S7WECz2sseLrdK7`) devuelve 6 URLs: la portada con `=w600-h315-p-k=d` (responde 400) y avatares (`/a/…`, `/ogw/…`). Aceptar solo `/pw/`, reemplazar el parámetro de tamaño existente por `=d` en vez de añadirlo, y resolver que la página inicial solo trae una foto (el resto llega por `batchexecute`). Guardar ese HTML real como fixture del test de contrato. Si no se logra, decirlo en la web en vez de importar solo la portada.
+- [ ] F4.9 SSRF: el tipo de enlace se detecta con subcadenas (`"photos.app.goo.gl" in url`), así que `http://127.0.0.1:8090/?photos.app.goo.gl` pasa, y el cliente del álbum sigue redirecciones sin validar el host. El cliente de Drive (`follow_redirects=True`) se pasa a `download_image` y se salta su validación de cada salto. Comparar el `hostname` exacto y validar cada redirección en todos los importadores.
+- [ ] F4.10 Usar `settings.importers.max_download_mb` (no 40 MB fijo) y el mismo validador de las subidas (bomba de descompresión, formatos). En `_process_import` la variable `key` es la API key (`SecretStr`) y luego la clave de almacenamiento: renombrar.
+- [ ] F4.11 Si la importación falla a la mitad, los archivos ya guardados quedan huérfanos y no se crea ninguna fila: confirmar por imagen o limpiar lo guardado.
+
 ---
 
 ## Fase 5 — Avisos (Codex)
@@ -350,6 +360,13 @@ Todo texto visible en **español e inglés** (i18next), sin textos fijos en el c
 - [ ] F5.4 Suscripción a eventos del worker (sin acoplar los notificadores al proceso de imagen).
 
 **Criterio de salida:** al terminar un lote llegan el mensaje de Telegram y la notificación de Windows.
+
+### Correcciones tras la revisión del 2026-10-27 (claude, sobre `733e908`)
+
+- [ ] F5.5 Telegram manda el `id` del lote y el `dict` crudo de conteos (`{'total': 3, ...}`). Usar el nombre del lote y "X listas, Y para revisar, Z fallidas" más el enlace a la galería (`general.public_base_url`), como dice F5.1. El progreso cuenta `done` sin `review`, así que nunca llega al 100 % si alguna queda para revisar.
+- [ ] F5.6 `win11toast` no está en las dependencias: la notificación de Windows nunca aparece y solo queda un log. Agregarlo a un extra opcional (`notify`) y documentarlo en el README, o usar otra vía sin dependencia. Tipar `settings_loader` (mypy).
+- [ ] F5.7 Navegador: `BatchDetailPanel` abre un segundo `EventSource` que vuelve a pedir la lista en cada evento (`useBatchImages` ya escucha y agrupa), avisa al terminar **cualquier** lote (no filtra `batch_id`) y pide el permiso dentro de un evento SSE, cosa que Chrome rechaza sin un clic del usuario. Pedir el permiso con un botón y mover el aviso a un hook global para que funcione aunque el detalle del lote no esté abierto.
+- [ ] F5.8 Antes de marcar `[x]`: `ruff check`, `ruff format --check`, `mypy app`, `tsc -b`, `eslint` y una prueba real (importar un enlace y terminar un lote con el worker corriendo).
 
 ---
 
