@@ -24,6 +24,7 @@ from app.gpu import release_gpu_memory
 from app.importers.direct_url import download_image
 from app.importers.google_drive import download_drive
 from app.importers.google_photos import download_album
+from app.notifiers.telegram import TelegramNotifier
 from app.pipeline.run import process_image
 from app.queue import JobQueue, get_job_queue
 from app.storage import Storage, get_storage
@@ -416,6 +417,11 @@ def _worker_id() -> str:
     return f"{socket.gethostname()}-{os.getpid()}-{uuid4().hex[:8]}"
 
 
+def _runtime_settings() -> AppSettings:
+    with get_sessionmaker()() as session:
+        return load_settings(session)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Worker secuencial de Image Studio")
     parser.add_argument("--once", action="store_true", help="Procesa como máximo un trabajo y termina.")
@@ -425,12 +431,16 @@ def main() -> None:
         parser.error("--poll-seconds debe ser mayor que cero")
 
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+    event_store = get_event_store()
     worker = Worker(
         worker_id=_worker_id(),
         queue=get_job_queue(),
         storage=get_storage(),
         processor=PipelineProcessor(),
-        publisher=get_event_store(),
+        publisher=TelegramNotifier(
+            event_store,
+            _runtime_settings,
+        ),
     )
     try:
         worker.run(poll_seconds=args.poll_seconds, once=args.once)

@@ -344,7 +344,7 @@ Todo texto visible en **español e inglés** (i18next), sin textos fijos en el c
 
 ## Fase 5 — Avisos (Codex)
 
-- [ ] F5.1 `telegram.py`: mensajes de "lote iniciado", progreso cada 25 % y "lote terminado: X listas, Y para revisar, Z fallidas", con el enlace local a la galería. Botón "Probar" en ajustes.
+- [x] F5.1 `telegram.py`: mensajes de "lote iniciado", progreso cada 25 % y "lote terminado: X listas, Y para revisar, Z fallidas", con el enlace local a la galería. Botón "Probar" en ajustes. — (codex, 2026-10-27)
 - [ ] F5.2 `windows.py`: notificación nativa de Windows al terminar un lote.
 - [ ] F5.3 Notificación del navegador al terminar (pidiendo permiso), con la pestaña en segundo plano.
 - [ ] F5.4 Suscripción a eventos del worker (sin acoplar los notificadores al proceso de imagen).
