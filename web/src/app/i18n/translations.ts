@@ -110,6 +110,10 @@ const es = {
     error: 'No pudimos cargar los ajustes.',
     configured: 'Configurado · escribe para reemplazar',
     notConfigured: 'No configurado',
+    testTelegram: 'Probar Telegram',
+    testingTelegram: 'Probando…',
+    telegramOk: 'Telegram respondió correctamente.',
+    telegramError: 'No se pudo probar Telegram.',
     sections: {
       general: 'General',
       processing_defaults: 'Procesamiento por defecto',
@@ -272,6 +276,10 @@ const en: TranslationShape<typeof es> = {
     error: 'We could not load settings.',
     configured: 'Configured · type to replace',
     notConfigured: 'Not configured',
+    testTelegram: 'Test Telegram',
+    testingTelegram: 'Testing…',
+    telegramOk: 'Telegram responded successfully.',
+    telegramError: 'Telegram test failed.',
     sections: {
       general: 'General',
       processing_defaults: 'Default processing',

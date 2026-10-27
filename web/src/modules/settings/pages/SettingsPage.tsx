@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { apiGet, apiPut, type AppSettingsPublic } from '@/shared/api/client'
+import { apiGet, apiPost, apiPut, type AppSettingsPublic } from '@/shared/api/client'
 
 const SECTIONS = [
   'general',
@@ -26,6 +26,7 @@ export function SettingsPage({ onClose }: { onClose: () => void }) {
   const [section, setSection] = useState<Section>('general')
   const [values, setValues] = useState<Values>({})
   const [message, setMessage] = useState('')
+  const [testingTelegram, setTestingTelegram] = useState(false)
   const current = data?.[section] as unknown as Values | undefined
   const draft = Object.keys(values).length > 0 ? values : (current ?? {})
   const update = (key: string, value: unknown) => setValues((old) => ({ ...old, [key]: value }))
@@ -34,6 +35,16 @@ export function SettingsPage({ onClose }: { onClose: () => void }) {
     setMessage(t('settings.saved'))
     await refetch()
     setValues(response[section] as unknown as Values)
+  }
+  const testTelegram = async () => {
+    setTestingTelegram(true)
+    try {
+      await apiPost('/settings/telegram/test', {})
+      setMessage(t('settings.telegramOk'))
+    } catch {
+      setMessage(t('settings.telegramError'))
+    }
+    setTestingTelegram(false)
   }
 
   return (
@@ -91,6 +102,16 @@ export function SettingsPage({ onClose }: { onClose: () => void }) {
               </button>
               {message && <span className="text-sm text-emerald-600">{message}</span>}
             </div>
+            {section === 'telegram' && (
+              <button
+                type="button"
+                onClick={() => void testTelegram()}
+                disabled={testingTelegram}
+                className="mt-3 rounded-xl border border-indigo-300 px-4 py-2.5 text-sm font-semibold text-indigo-600 disabled:opacity-50"
+              >
+                {testingTelegram ? t('settings.testingTelegram') : t('settings.testTelegram')}
+              </button>
+            )}
           </section>
         </div>
       )}
