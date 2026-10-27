@@ -280,7 +280,7 @@ Puede empezar con `PIPELINE_MODE=stub`.
 
 - [x] F2.1 Routers `batches`: crear, listar, ver, cancelar, reintentar fallidas y cambiar `default_options`. — (codex)
 - [x] F2.2 Router `images`: subida múltiple (`multipart`, hasta 200 archivos) y `.zip` (descomprimir con límites de tamaño y validar tipo real del archivo). Editar `product_name`, `sku` y `options_override`. Aprobar. — (codex)
-- [ ] F2.3 Importar metadatos por CSV (`archivo,nombre,sku`) para asociar nombre y SKU en bloque.
+- [x] F2.3 Importar metadatos por CSV (`archivo,nombre,sku`) para asociar nombre y SKU en bloque. — (codex)
 - [ ] F2.4 `queue/`: interfaz `JobQueue` + implementación SQLite (tomar trabajo con bloqueo, reintentos x2 y recuperación de trabajos que quedaron "processing" tras un reinicio).
 - [ ] F2.5 Worker como proceso aparte (`python -m app.queue.worker`) con concurrencia 1. Carga los modelos una sola vez y libera VRAM si hay error de memoria (reintento con tiles más pequeños).
 - [ ] F2.6 Reprocesar una imagen con otras opciones o con máscara editada (`kind=reprocess`), conservando versiones anteriores.

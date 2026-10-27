@@ -1,5 +1,7 @@
+import csv
 from collections.abc import Iterator
-from io import BytesIO
+from dataclasses import dataclass
+from io import BytesIO, StringIO
 from pathlib import PurePosixPath
 from typing import IO, Annotated, cast
 from warnings import catch_warnings, simplefilter
@@ -7,6 +9,7 @@ from zipfile import BadZipFile, ZipFile, ZipInfo, is_zipfile
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from PIL import Image, UnidentifiedImageError
+from pydantic import ValidationError
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
@@ -22,7 +25,17 @@ StorageDep = Annotated[Storage, Depends(get_storage)]
 
 _MAX_IMAGES_PER_UPLOAD = 200
 _MAX_ARCHIVE_BYTES = 2 * 1024**3
+_MAX_CSV_BYTES = 2 * 1024**2
+_MAX_CSV_ROWS = 2000
 _IMAGE_EXTENSIONS = {"JPEG": "jpg", "PNG": "png", "WEBP": "webp"}
+
+
+@dataclass(frozen=True)
+class _MetadataRow:
+    line: int
+    filename: str
+    product_name: str | None
+    sku: str | None
 
 
 def _image_response(row: ImageRow) -> ImageItem:
@@ -154,6 +167,71 @@ def _upload_images(upload: UploadFile, max_image_bytes: int) -> Iterator[tuple[s
     yield source_name, validated, extension
 
 
+def _metadata_rows(upload: UploadFile) -> list[_MetadataRow]:
+    data = upload.file.read(_MAX_CSV_BYTES + 1)
+    if len(data) > _MAX_CSV_BYTES:
+        raise HTTPException(
+            status_code=status.HTTP_413_CONTENT_TOO_LARGE,
+            detail="El CSV supera el límite de 2 MB.",
+        )
+    try:
+        text = data.decode("utf-8-sig")
+    except UnicodeDecodeError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El CSV debe estar codificado en UTF-8.",
+        ) from None
+
+    try:
+        dialect = csv.Sniffer().sniff(text[:4096], delimiters=",;")
+    except csv.Error:
+        dialect = csv.excel
+    parsed = list(csv.reader(StringIO(text), dialect=dialect))
+    if not parsed:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="El CSV está vacío.")
+
+    headers = [header.strip().casefold() for header in parsed[0]]
+    required = ("archivo", "nombre", "sku")
+    if any(headers.count(header) != 1 for header in required):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="El CSV debe contener una sola columna de archivo, nombre y sku.",
+        )
+    indexes = {header: headers.index(header) for header in required}
+    result: list[_MetadataRow] = []
+    for line, values in enumerate(parsed[1:], start=2):
+        if not any(value.strip() for value in values):
+            continue
+        if len(result) >= _MAX_CSV_ROWS:
+            raise HTTPException(
+                status_code=status.HTTP_413_CONTENT_TOO_LARGE,
+                detail=f"El CSV supera el límite de {_MAX_CSV_ROWS} filas.",
+            )
+        filename = values[indexes["archivo"]].strip() if indexes["archivo"] < len(values) else ""
+        product_name = values[indexes["nombre"]].strip() if indexes["nombre"] < len(values) else ""
+        sku = values[indexes["sku"]].strip() if indexes["sku"] < len(values) else ""
+        if not filename:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail=f"La fila {line} no tiene archivo.",
+            )
+        result.append(
+            _MetadataRow(
+                line=line,
+                filename=filename,
+                product_name=product_name or None,
+                sku=sku or None,
+            )
+        )
+    if not result:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="El CSV no contiene datos.")
+    return result
+
+
+def _filename_key(value: str) -> str:
+    return PurePosixPath(value.replace("\\", "/")).name.casefold()
+
+
 @router.post(
     "/batches/{batch_id}/images",
     response_model=list[ImageItem],
@@ -232,6 +310,65 @@ def list_batch_images(batch_id: str, session: SessionDep) -> list[ImageItem]:
         .order_by(ImageRow.position, ImageRow.created_at)
     ).all()
     return [_image_response(row) for row in rows]
+
+
+@router.post("/batches/{batch_id}/metadata-csv", response_model=list[ImageItem])
+def import_metadata_csv(
+    batch_id: str,
+    file: Annotated[UploadFile, File(description="CSV con columnas archivo,nombre,sku")],
+    session: SessionDep,
+) -> list[ImageItem]:
+    if session.get(BatchRow, batch_id) is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lote no encontrado.")
+
+    images = session.scalars(
+        select(ImageRow)
+        .where(ImageRow.batch_id == batch_id)
+        .options(selectinload(ImageRow.outputs))
+        .order_by(ImageRow.position, ImageRow.created_at)
+    ).all()
+    by_filename: dict[str, list[ImageRow]] = {}
+    for image in images:
+        source_name = image.source_ref or image.original_path
+        by_filename.setdefault(_filename_key(source_name), []).append(image)
+
+    assignments: list[tuple[ImageRow, ImageUpdate]] = []
+    seen: set[str] = set()
+    for metadata in _metadata_rows(file):
+        key = _filename_key(metadata.filename)
+        if key in seen:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail=f"El archivo '{metadata.filename}' aparece más de una vez en el CSV.",
+            )
+        seen.add(key)
+        matches = by_filename.get(key, [])
+        if not matches:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail=f"La fila {metadata.line} referencia un archivo que no pertenece al lote.",
+            )
+        if len(matches) > 1:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"El nombre '{metadata.filename}' es ambiguo dentro del lote.",
+            )
+        try:
+            update_payload = ImageUpdate(product_name=metadata.product_name, sku=metadata.sku)
+        except ValidationError:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail=f"La fila {metadata.line} contiene un nombre o SKU inválido.",
+            ) from None
+        assignments.append((matches[0], update_payload))
+
+    for image, payload in assignments:
+        image.product_name = payload.product_name
+        image.sku = payload.sku
+    session.commit()
+    for image, _payload in assignments:
+        session.refresh(image)
+    return [_image_response(image) for image, _payload in assignments]
 
 
 @router.get("/images/{image_id}", response_model=ImageItem)
