@@ -171,47 +171,56 @@ class Worker:
         if job.batch_id is None or not isinstance(job.payload.get("url"), str):
             raise ValueError("El trabajo de importación no tiene lote o URL.")
         url = job.payload["url"]
-        with get_sessionmaker()() as session:
-            settings = load_settings(session)
-            max_download_bytes = settings.importers.max_download_mb * 1024 * 1024
-            hostname = (urlparse(url).hostname or "").casefold().rstrip(".")
-            if hostname in {"photos.google.com", "photos.app.goo.gl"}:
-                images = download_album(url, max_bytes=max_download_bytes)
-            elif hostname == "drive.google.com":
-                api_key = settings.importers.google_drive_api_key
-                images = download_drive(
-                    url, max_bytes=max_download_bytes, api_key=api_key.get_secret_value() if api_key else None
-                )
-            else:
-                images = (download_image(url, max_bytes=max_download_bytes),)
-            batch = session.get(BatchRow, job.batch_id)
-            if batch is None:
-                raise ValueError("El lote de importación no existe.")
-            imported = 0
-            progress_counts: list[int] = []
-            for image in images:
-                row = ImageRow(
-                    batch_id=batch.id,
-                    source="url",
-                    source_ref=image.filename,
-                    original_path="pending",
-                    status="pending",
-                    position=len(batch.images),
-                )
-                session.add(row)
-                session.flush()
-                extension = image.filename.rsplit(".", 1)[-1].lower()
-                storage_key = f"batches/{batch.id}/originals/{row.id}.{extension}"
-                self.storage.save_bytes(storage_key, image.data)
-                row.original_path = storage_key
-                self.queue.enqueue("process", image_id=row.id, batch_id=batch.id, session=session)
-                imported += 1
-                progress_counts.append(imported)
-            if imported == 0:
-                raise ValueError("El enlace no contiene imágenes.")
-            batch.status = "queued"
-            batch.finished_at = None
-            session.commit()
+        saved_keys: list[str] = []
+        try:
+            with get_sessionmaker()() as session:
+                settings = load_settings(session)
+                max_download_bytes = settings.importers.max_download_mb * 1024 * 1024
+                hostname = (urlparse(url).hostname or "").casefold().rstrip(".")
+                if hostname in {"photos.google.com", "photos.app.goo.gl"}:
+                    images = download_album(url, max_bytes=max_download_bytes)
+                elif hostname == "drive.google.com":
+                    api_key = settings.importers.google_drive_api_key
+                    images = download_drive(
+                        url,
+                        max_bytes=max_download_bytes,
+                        api_key=api_key.get_secret_value() if api_key else None,
+                    )
+                else:
+                    images = (download_image(url, max_bytes=max_download_bytes),)
+                batch = session.get(BatchRow, job.batch_id)
+                if batch is None:
+                    raise ValueError("El lote de importación no existe.")
+                imported = 0
+                progress_counts: list[int] = []
+                for image in images:
+                    row = ImageRow(
+                        batch_id=batch.id,
+                        source="url",
+                        source_ref=image.filename,
+                        original_path="pending",
+                        status="pending",
+                        position=len(batch.images),
+                    )
+                    session.add(row)
+                    session.flush()
+                    extension = image.filename.rsplit(".", 1)[-1].lower()
+                    storage_key = f"batches/{batch.id}/originals/{row.id}.{extension}"
+                    self.storage.save_bytes(storage_key, image.data)
+                    saved_keys.append(storage_key)
+                    row.original_path = storage_key
+                    self.queue.enqueue("process", image_id=row.id, batch_id=batch.id, session=session)
+                    imported += 1
+                    progress_counts.append(imported)
+                if imported == 0:
+                    raise ValueError("El enlace no contiene imágenes.")
+                batch.status = "queued"
+                batch.finished_at = None
+                session.commit()
+        except Exception:
+            for storage_key in saved_keys:
+                self.storage.delete(storage_key)
+            raise
         if self.publisher:
             for count in progress_counts:
                 self.publisher.publish(

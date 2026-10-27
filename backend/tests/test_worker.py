@@ -274,6 +274,31 @@ def test_worker_import_persists_image_and_completes_job(
     assert row is not None and row.status == "done"
 
 
+def test_worker_import_failure_cleans_saved_files(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    with TestClient(create_app()) as client:
+        batch_id = client.post("/api/v1/batches", json={"name": "Import cleanup"}).json()["id"]
+    job = get_job_queue().enqueue(
+        "import", batch_id=batch_id, payload={"url": "https://photos.google.com/share/test"}
+    )
+
+    def broken_album(_url: str, **_kwargs: object) -> Iterator[DownloadedImage]:
+        yield DownloadedImage(data=_image_bytes(), filename="first.png", media_type="image/png")
+        raise RuntimeError("second image failed")
+
+    monkeypatch.setattr(worker_module, "download_album", broken_album)
+    assert _worker(PipelineProcessor()).run_once() is True
+
+    with get_sessionmaker()() as session:
+        images = session.query(ImageRow).filter_by(batch_id=batch_id).all()
+        row = session.get(JobRow, job.id)
+    assert images == []
+    assert row is not None and row.status == "failed"
+    root = get_storage().local_path(f"batches/{batch_id}")
+    assert not root.exists() or not any(path.is_file() for path in root.rglob("*"))
+
+
 def test_cancelled_batch_job_is_terminal_and_never_requeued(
     queued_image: tuple[str, str, str],
 ) -> None:
