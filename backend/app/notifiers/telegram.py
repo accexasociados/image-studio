@@ -43,19 +43,29 @@ class TelegramNotifier:
         ):
             self._started.add(batch_id)
             if telegram.notify_on_start:
-                message = f"Image Studio: lote iniciado ({batch_id})."
+                message = f"Image Studio: lote iniciado ({event.payload.get('batch_name', batch_id)})."
         elif event.type == "batch.progress" and telegram.notify_progress_step:
             counts = event.payload.get("counts", {})
             total = int(counts.get("total", 0)) if isinstance(counts, dict) else 0
             done = int(counts.get("done", 0)) if isinstance(counts, dict) else 0
-            percent = round(done * 100 / total) if total else 0
+            review = int(counts.get("review", 0)) if isinstance(counts, dict) else 0
+            failed = int(counts.get("failed", 0)) if isinstance(counts, dict) else 0
+            percent = round((done + review + failed) * 100 / total) if total else 0
             step = (percent // telegram.notify_progress_step) * telegram.notify_progress_step
             if step and step > self._last_progress.get(batch_id, 0):
                 self._last_progress[batch_id] = step
                 message = f"Image Studio: lote {batch_id} al {step} %."
         elif event.type == "batch.finished" and telegram.notify_on_finish:
             counts = event.payload.get("counts", {})
-            message = f"Image Studio: lote terminado ({batch_id}). {counts}"
+            done = int(counts.get("done", 0)) if isinstance(counts, dict) else 0
+            review = int(counts.get("review", 0)) if isinstance(counts, dict) else 0
+            failed = int(counts.get("failed", 0)) if isinstance(counts, dict) else 0
+            name = event.payload.get("batch_name", batch_id)
+            url = settings.general.public_base_url.rstrip("/")
+            gallery = f"\n{url}/batches/{batch_id}" if url else ""
+            message = (
+                f"Image Studio: {name}: {done} listas, {review} para revisar, {failed} fallidas.{gallery}"
+            )
         if message:
             for chat_id in telegram.notify_chat_ids:
                 self._send(telegram.bot_token.get_secret_value(), chat_id, message)

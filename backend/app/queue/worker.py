@@ -299,14 +299,24 @@ class Worker:
                 self.publisher.publish(
                     Event(
                         type="batch.progress",
-                        payload={"batch_id": batch.id, "status": batch.status, "counts": counts},
+                        payload={
+                            "batch_id": batch.id,
+                            "batch_name": batch.name,
+                            "status": batch.status,
+                            "counts": counts,
+                        },
                     )
                 )
                 if batch.status in {"done", "failed", "cancelled"}:
                     self.publisher.publish(
                         Event(
                             type="batch.finished",
-                            payload={"batch_id": batch.id, "status": batch.status, "counts": counts},
+                            payload={
+                                "batch_id": batch.id,
+                                "batch_name": batch.name,
+                                "status": batch.status,
+                                "counts": counts,
+                            },
                         )
                     )
         except Exception:
