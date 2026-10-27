@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app import __version__
 from app.api.batches import router as batches_router
 from app.api.health import router as health_router
+from app.api.images import router as images_router
 from app.config import get_settings
 from app.db.migrate import upgrade_to_head
 
@@ -33,6 +34,7 @@ def create_app() -> FastAPI:
     )
     app.include_router(health_router, prefix=API_PREFIX)
     app.include_router(batches_router, prefix=API_PREFIX)
+    app.include_router(images_router, prefix=API_PREFIX)
     return app
 
 
