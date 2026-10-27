@@ -1,3 +1,4 @@
+import gc
 from functools import lru_cache
 
 from app.contracts import GpuInfo
@@ -14,3 +15,14 @@ def detect_gpu() -> GpuInfo:
         return GpuInfo(available=False)
     props = torch.cuda.get_device_properties(0)
     return GpuInfo(available=True, name=props.name, vram_mb=props.total_memory // (1024 * 1024))
+
+
+def release_gpu_memory() -> None:
+    """Libera referencias y caché CUDA sin hacer obligatorio el extra `ml`."""
+    gc.collect()
+    try:
+        import torch
+    except ImportError:
+        return
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
