@@ -1,8 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import { afterEach, vi } from 'vitest'
 import { SettingsPage } from './SettingsPage'
-import { FALLBACK_OPTIONS } from '@/shared/components/processOptions'
 
 afterEach(() => vi.unstubAllGlobals())
 
@@ -73,10 +72,8 @@ it('muestra las secciones de ajustes recibidas desde la API', async () => {
   expect(screen.getByText('URL pública')).toBeInTheDocument()
 })
 
-it('muestra el editor de escenas y la biblioteca de fondos en Exportación', async () => {
+it('Formatos de salida conserva sus campos y agrega la escena debajo', async () => {
   const settings = {
-    general: { language: 'es', public_base_url: 'http://localhost:5180' },
-    processing_defaults: FALLBACK_OPTIONS,
     export: {
       presets: {},
       background_hex: '#FFFFFF',
@@ -94,10 +91,9 @@ it('muestra el editor de escenas y la biblioteca de fondos en Exportación', asy
   }
   vi.stubGlobal(
     'fetch',
-    vi
-      .fn()
-      .mockResolvedValueOnce(new Response(JSON.stringify(settings)))
-      .mockResolvedValueOnce(new Response('[]')),
+    vi.fn((url: string) =>
+      Promise.resolve(new Response(url.endsWith('/settings') ? JSON.stringify(settings) : '[]')),
+    ),
   )
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   render(
@@ -105,8 +101,11 @@ it('muestra el editor de escenas y la biblioteca de fondos en Exportación', asy
       <SettingsPage onClose={() => undefined} />
     </QueryClientProvider>,
   )
-  fireEvent.click(await screen.findByRole('button', { name: 'Formatos de salida' }))
-  expect(screen.getByLabelText('Estilo de escena')).toHaveValue('studio')
+  ;(await screen.findByRole('button', { name: 'Formatos de salida' })).click()
+
+  expect(await screen.findByLabelText('Nombres de archivo')).toBeInTheDocument()
+  expect(screen.getByLabelText('Color del fondo liso')).toHaveValue('#FFFFFF')
+  expect(screen.getByLabelText('Fondo')).toHaveValue('studio')
+  expect(screen.getByLabelText(/Reflejo en el piso/)).toHaveValue('14')
   expect(screen.getByText('Biblioteca de fondos')).toBeInTheDocument()
-  expect(screen.getByRole('slider')).toHaveValue('14')
 })

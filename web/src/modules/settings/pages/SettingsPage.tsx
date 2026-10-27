@@ -105,13 +105,6 @@ export function SettingsPage({ onClose }: { onClose: () => void }) {
                   onChange={(next) => setValues(next as unknown as Values)}
                 />
               </div>
-            ) : section === 'export' && draft.scene ? (
-              <div className="mt-5">
-                <SceneSettingsSection
-                  value={draft.scene as SceneSettings}
-                  onChange={(scene) => update('scene', scene)}
-                />
-              </div>
             ) : (
               <div className="mt-5 grid gap-4 sm:grid-cols-2">
                 {section === 'pipeline' && (
@@ -132,6 +125,16 @@ export function SettingsPage({ onClose }: { onClose: () => void }) {
                       t={t}
                     />
                   ))}
+              </div>
+            )}
+            {/* La escena va debajo de los demás campos de Formatos de salida, sin reemplazarlos. */}
+            {section === 'export' && draft.scene !== undefined && (
+              <div className="mt-6 border-t border-slate-200 pt-5 dark:border-slate-800">
+                <h3 className="mb-4 font-semibold text-slate-950 dark:text-white">{t('scenes.title')}</h3>
+                <SceneSettingsSection
+                  value={draft.scene as SceneSettings}
+                  onChange={(scene) => update('scene', scene)}
+                />
               </div>
             )}
             <div className="mt-6 flex items-center gap-3">

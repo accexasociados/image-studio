@@ -4,6 +4,7 @@ import { afterEach, vi } from 'vitest'
 import { SettingsPage } from './SettingsPage'
 import { FALLBACK_OPTIONS } from '@/shared/components/processOptions'
 import { ProcessOptionsFields } from '@/shared/components/ProcessOptionsFields'
+import { withQuery } from '@/test/withQuery'
 
 afterEach(() => vi.unstubAllGlobals())
 
@@ -73,7 +74,7 @@ it('muestra el selector de modelo y deshabilita los modelos no instalados', asyn
 
 it('permite usar la fidelidad de Ajustes o fijarla por imagen', () => {
   const onChange = vi.fn()
-  render(<ProcessOptionsFields value={FALLBACK_OPTIONS} onChange={onChange} />)
+  render(withQuery(<ProcessOptionsFields value={FALLBACK_OPTIONS} onChange={onChange} />))
   expect(screen.getByText('Usar la fidelidad de Ajustes')).toBeInTheDocument()
   fireEvent.click(screen.getByRole('checkbox', { name: 'Usar la fidelidad de Ajustes' }))
   expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ upscale_fidelity: 50 }))
@@ -81,7 +82,7 @@ it('permite usar la fidelidad de Ajustes o fijarla por imagen', () => {
 
 it('trata las opciones sin fidelidad (guardadas antes) como "usar la de Ajustes"', () => {
   const { upscale_fidelity: _omit, ...legacy } = FALLBACK_OPTIONS
-  render(<ProcessOptionsFields value={legacy} onChange={vi.fn()} />)
+  render(withQuery(<ProcessOptionsFields value={legacy} onChange={vi.fn()} />))
   expect(screen.getByRole('checkbox', { name: 'Usar la fidelidad de Ajustes' })).toBeChecked()
   expect(screen.getByRole('slider', { name: /Fidelidad al agrandar/ })).toBeDisabled()
 })

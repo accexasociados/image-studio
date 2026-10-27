@@ -73,6 +73,8 @@ export async function apiPatch<T>(path: string, body: unknown): Promise<T> {
 export async function apiDelete<T>(path: string): Promise<T> {
   const response = await fetch(`${API_BASE}${path}`, { method: 'DELETE' })
   if (!response.ok) throw new ApiError(response.status, await response.text())
+  // 204 No Content (p. ej. borrar un fondo) no trae cuerpo.
+  if (response.status === 204) return undefined as T
   return (await response.json()) as T
 }
 

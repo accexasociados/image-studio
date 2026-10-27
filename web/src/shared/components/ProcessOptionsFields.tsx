@@ -1,11 +1,17 @@
+import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { useEffect, useState } from 'react'
-import { apiGet, type SceneBackground, type SceneStyle } from '@/shared/api/client'
-import type { Preset, ProcessOptions } from '@/shared/api/client'
+import {
+  apiGet,
+  type Preset,
+  type ProcessOptions,
+  type SceneBackground,
+  type SceneStyle,
+} from '@/shared/api/client'
 import { fieldClass, labelClass } from './processOptions'
 
 const PRESETS: Preset[] = ['storefront', 'instagram_feed', 'instagram_square', 'original_hd']
 const SHADOWS: ProcessOptions['shadow'][] = ['none', 'soft', 'strong', 'auto']
+const SCENE_STYLES: SceneStyle[] = ['white', 'studio', 'pedestal', 'color', 'photo']
 const FILL_RATIOS = [0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9]
 
 /** Campos de `ProcessOptions` (sin giro ni recorte, que se eligen sobre la foto). Los usan crear lote,
@@ -20,13 +26,12 @@ export function ProcessOptionsFields({
   compact?: boolean
 }) {
   const { t } = useTranslation()
-  const [backgrounds, setBackgrounds] = useState<SceneBackground[]>([])
-  useEffect(() => {
-    if (value.scene !== 'photo') return
-    void apiGet<SceneBackground[]>('/backgrounds')
-      .then(setBackgrounds)
-      .catch(() => setBackgrounds([]))
-  }, [value.scene])
+  // Misma clave que la biblioteca de Ajustes: subir o borrar un fondo refresca este selector.
+  const backgrounds = useQuery({
+    queryKey: ['backgrounds'],
+    queryFn: () => apiGet<SceneBackground[]>('/backgrounds'),
+    enabled: value.scene === 'photo',
+  })
   const presets = value.presets ?? []
   const set = <K extends keyof ProcessOptions>(key: K, next: ProcessOptions[K]) =>
     onChange({ ...value, [key]: next })
@@ -62,30 +67,30 @@ export function ProcessOptionsFields({
 
       <div className={grid}>
         <label className={labelClass}>
-          {t('common.sceneStyle')}
+          {t('scenes.style')}
           <select
             value={value.scene ?? ''}
             onChange={(event) => set('scene', (event.target.value || null) as SceneStyle | null)}
             className={fieldClass}
           >
-            <option value="">{t('batches.upscaleFidelitySettings')}</option>
-            {(['white', 'studio', 'pedestal', 'color', 'photo'] as SceneStyle[]).map((style) => (
+            <option value="">{t('scenes.useSettings')}</option>
+            {SCENE_STYLES.map((style) => (
               <option key={style} value={style}>
-                {t(`common.sceneStyles.${style}`)}
+                {t(`scenes.styles.${style}`)}
               </option>
             ))}
           </select>
         </label>
         {value.scene === 'photo' && (
           <label className={labelClass}>
-            {t('common.defaultBackground')}
+            {t('scenes.background')}
             <select
               value={value.background_id ?? ''}
               onChange={(event) => set('background_id', event.target.value || null)}
               className={fieldClass}
             >
-              <option value="">{t('batches.upscaleFidelitySettings')}</option>
-              {backgrounds.map((background) => (
+              <option value="">{t('scenes.useSettings')}</option>
+              {(backgrounds.data ?? []).map((background) => (
                 <option key={background.id} value={background.id}>
                   {background.name}
                 </option>
