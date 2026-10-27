@@ -5,11 +5,14 @@ import { HealthStatus } from '@/modules/health/components/HealthStatus'
 import { BatchList } from '../components/BatchList'
 import { useBatches } from '../hooks/useBatches'
 import { CreateBatchPanel } from '../components/CreateBatchPanel'
+import { BatchDetailPanel } from '../components/BatchDetailPanel'
+import type { Batch } from '@/shared/api/client'
 
 export function BatchesPage() {
   const { t } = useTranslation()
   const { data, isPending, isError, refetch } = useBatches()
   const [creating, setCreating] = useState(false)
+  const [selected, setSelected] = useState<Batch | null>(null)
 
   return (
     <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
@@ -42,6 +45,11 @@ export function BatchesPage() {
         </div>
       )}
 
+      {selected && (
+        <div className="mb-6">
+          <BatchDetailPanel batch={selected} onBack={() => setSelected(null)} />
+        </div>
+      )}
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
           <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4 sm:px-6 dark:border-slate-800">
@@ -66,7 +74,7 @@ export function BatchesPage() {
               </button>
             </div>
           )}
-          {data && <BatchList batches={data} />}
+          {data && <BatchList batches={data} onSelect={setSelected} />}
         </section>
         <HealthStatus />
       </div>

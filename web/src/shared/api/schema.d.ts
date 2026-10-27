@@ -4,1476 +4,1494 @@
  */
 
 export interface paths {
-    "/api/v1/health": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Health */
-        get: operations["health_api_v1_health_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/batches": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List Batches */
-        get: operations["list_batches_api_v1_batches_get"];
-        put?: never;
-        /** Create Batch */
-        post: operations["create_batch_api_v1_batches_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/batches/{batch_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get Batch */
-        get: operations["get_batch_api_v1_batches__batch_id__get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/batches/{batch_id}/default-options": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** Replace Default Options */
-        put: operations["replace_default_options_api_v1_batches__batch_id__default_options_put"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/batches/{batch_id}/cancel": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Cancel Batch */
-        post: operations["cancel_batch_api_v1_batches__batch_id__cancel_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/batches/{batch_id}/retry-failed": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Retry Failed Images */
-        post: operations["retry_failed_images_api_v1_batches__batch_id__retry_failed_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/batches/{batch_id}/download/{preset}.zip": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Download Batch
-         * @description Empaqueta la versión más reciente de un preset, nombrada por SKU cuando exista.
-         */
-        get: operations["download_batch_api_v1_batches__batch_id__download__preset__zip_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/batches/{batch_id}/images": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List Batch Images */
-        get: operations["list_batch_images_api_v1_batches__batch_id__images_get"];
-        put?: never;
-        /** Upload Images */
-        post: operations["upload_images_api_v1_batches__batch_id__images_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/batches/{batch_id}/metadata-csv": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Import Metadata Csv */
-        post: operations["import_metadata_csv_api_v1_batches__batch_id__metadata_csv_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/images/{image_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get Image */
-        get: operations["get_image_api_v1_images__image_id__get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /** Update Image */
-        patch: operations["update_image_api_v1_images__image_id__patch"];
-        trace?: never;
-    };
-    "/api/v1/images/{image_id}/approve": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Approve Image */
-        post: operations["approve_image_api_v1_images__image_id__approve_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/images/{image_id}/reprocess": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Reprocess Image */
-        post: operations["reprocess_image_api_v1_images__image_id__reprocess_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/images/{image_id}/mask": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** Replace Mask */
-        put: operations["replace_mask_api_v1_images__image_id__mask_put"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/events": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Events */
-        get: operations["events_api_v1_events_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/files/{key}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get File */
-        get: operations["get_file_api_v1_files__key__get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/settings": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get App Settings */
-        get: operations["get_app_settings_api_v1_settings_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/settings/{section}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** Replace Settings Section */
-        put: operations["replace_settings_section_api_v1_settings__section__put"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/settings/telegram/test": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Test Telegram */
-        post: operations["test_telegram_api_v1_settings_telegram_test_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
+  '/api/v1/health': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Health */
+    get: operations['health_api_v1_health_get']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/batches': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** List Batches */
+    get: operations['list_batches_api_v1_batches_get']
+    put?: never
+    /** Create Batch */
+    post: operations['create_batch_api_v1_batches_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/batches/{batch_id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Get Batch */
+    get: operations['get_batch_api_v1_batches__batch_id__get']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/batches/{batch_id}/default-options': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    /** Replace Default Options */
+    put: operations['replace_default_options_api_v1_batches__batch_id__default_options_put']
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/batches/{batch_id}/cancel': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Cancel Batch */
+    post: operations['cancel_batch_api_v1_batches__batch_id__cancel_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/batches/{batch_id}/retry-failed': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Retry Failed Images */
+    post: operations['retry_failed_images_api_v1_batches__batch_id__retry_failed_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/batches/{batch_id}/download/{preset}.zip': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Download Batch
+     * @description Empaqueta la versión más reciente de un preset, nombrada por SKU cuando exista.
+     */
+    get: operations['download_batch_api_v1_batches__batch_id__download__preset__zip_get']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/batches/{batch_id}/images': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** List Batch Images */
+    get: operations['list_batch_images_api_v1_batches__batch_id__images_get']
+    put?: never
+    /** Upload Images */
+    post: operations['upload_images_api_v1_batches__batch_id__images_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/batches/{batch_id}/metadata-csv': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Import Metadata Csv */
+    post: operations['import_metadata_csv_api_v1_batches__batch_id__metadata_csv_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/images/{image_id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Get Image */
+    get: operations['get_image_api_v1_images__image_id__get']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    /** Update Image */
+    patch: operations['update_image_api_v1_images__image_id__patch']
+    trace?: never
+  }
+  '/api/v1/images/{image_id}/approve': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Approve Image */
+    post: operations['approve_image_api_v1_images__image_id__approve_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/images/{image_id}/reprocess': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Reprocess Image */
+    post: operations['reprocess_image_api_v1_images__image_id__reprocess_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/images/{image_id}/mask': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    /** Replace Mask */
+    put: operations['replace_mask_api_v1_images__image_id__mask_put']
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/events': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Events */
+    get: operations['events_api_v1_events_get']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/files/{key}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Get File */
+    get: operations['get_file_api_v1_files__key__get']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/settings': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Get App Settings */
+    get: operations['get_app_settings_api_v1_settings_get']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/settings/{section}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    /** Replace Settings Section */
+    put: operations['replace_settings_section_api_v1_settings__section__put']
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/settings/telegram/test': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Test Telegram */
+    post: operations['test_telegram_api_v1_settings_telegram_test_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
 }
-export type webhooks = Record<string, never>;
+export type webhooks = Record<string, never>
 export interface components {
-    schemas: {
-        /**
-         * AppSettingsPublic
-         * @description Vista de API: conserva toda la configuración sin revelar secretos.
-         */
-        AppSettingsPublic: {
-            general: components["schemas"]["GeneralSettings"];
-            processing_defaults: components["schemas"]["ProcessOptions"];
-            export: components["schemas"]["ExportSettings"];
-            telegram: components["schemas"]["TelegramSettingsPublic"];
-            notifications: components["schemas"]["NotificationSettings"];
-            hot_folder: components["schemas"]["HotFolderSettings"];
-            importers: components["schemas"]["ImporterSettingsPublic"];
-            quality: components["schemas"]["QualitySettings"];
-            pipeline: components["schemas"]["PipelineSettings"];
-        };
-        /** Batch */
-        Batch: {
-            /** Id */
-            id: string;
-            /** Name */
-            name: string;
-            /**
-             * Status
-             * @enum {string}
-             */
-            status: "draft" | "queued" | "processing" | "done" | "failed" | "cancelled";
-            default_options: components["schemas"]["ProcessOptions"];
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
-            /** Finished At */
-            finished_at?: string | null;
-            counts?: components["schemas"]["BatchCounts"];
-        };
-        /** BatchCounts */
-        BatchCounts: {
-            /**
-             * Total
-             * @default 0
-             */
-            total: number;
-            /**
-             * Done
-             * @default 0
-             */
-            done: number;
-            /**
-             * Review
-             * @default 0
-             */
-            review: number;
-            /**
-             * Failed
-             * @default 0
-             */
-            failed: number;
-        };
-        /** BatchCreate */
-        BatchCreate: {
-            /** Name */
-            name: string;
-            default_options?: components["schemas"]["ProcessOptions"];
-        };
-        /** Body_import_metadata_csv_api_v1_batches__batch_id__metadata_csv_post */
-        Body_import_metadata_csv_api_v1_batches__batch_id__metadata_csv_post: {
-            /**
-             * File
-             * @description CSV con columnas archivo,nombre,sku
-             */
-            file: string;
-        };
-        /** Body_replace_mask_api_v1_images__image_id__mask_put */
-        Body_replace_mask_api_v1_images__image_id__mask_put: {
-            /**
-             * File
-             * @description Máscara PNG del tamaño del original
-             */
-            file: string;
-        };
-        /** Body_upload_images_api_v1_batches__batch_id__images_post */
-        Body_upload_images_api_v1_batches__batch_id__images_post: {
-            /**
-             * Files
-             * @description Imágenes o archivos ZIP
-             */
-            files: string[];
-        };
-        /** ExportSettings */
-        ExportSettings: {
-            /** Presets */
-            presets?: {
-                [key: string]: components["schemas"]["PresetOverride"];
-            };
-            /**
-             * Background Hex
-             * @default #FFFFFF
-             */
-            background_hex: string;
-            /**
-             * Filename Strategy
-             * @default sku_then_slug
-             * @enum {string}
-             */
-            filename_strategy: "sku_then_slug" | "slug" | "original";
-        };
-        /** GeneralSettings */
-        GeneralSettings: {
-            /**
-             * Language
-             * @default es
-             * @enum {string}
-             */
-            language: "es" | "en";
-            /**
-             * Public Base Url
-             * @default http://localhost:5180
-             */
-            public_base_url: string;
-        };
-        /** GpuInfo */
-        GpuInfo: {
-            /** Available */
-            available: boolean;
-            /** Name */
-            name?: string | null;
-            /** Vram Mb */
-            vram_mb?: number | null;
-        };
-        /** HTTPValidationError */
-        HTTPValidationError: {
-            /** Detail */
-            detail?: components["schemas"]["ValidationError"][];
-        };
-        /** Health */
-        Health: {
-            /**
-             * Status
-             * @constant
-             */
-            status: "ok";
-            /** Version */
-            version: string;
-            /**
-             * Pipeline Mode
-             * @enum {string}
-             */
-            pipeline_mode: "real" | "stub";
-            /**
-             * Device
-             * @enum {string}
-             */
-            device: "cuda" | "cpu";
-            gpu: components["schemas"]["GpuInfo"];
-        };
-        /** HotFolderSettings */
-        HotFolderSettings: {
-            /**
-             * Enabled
-             * @default false
-             */
-            enabled: boolean;
-            /** Inbox Dir */
-            inbox_dir?: string | null;
-            /** Outbox Dir */
-            outbox_dir?: string | null;
-            /**
-             * Poll Seconds
-             * @default 5
-             */
-            poll_seconds: number;
-        };
-        /** ImageItem */
-        ImageItem: {
-            /** Id */
-            id: string;
-            /** Batch Id */
-            batch_id: string;
-            /**
-             * Source
-             * @enum {string}
-             */
-            source: "upload" | "google_photos" | "google_drive" | "url" | "telegram" | "hot_folder";
-            /** Source Ref */
-            source_ref?: string | null;
-            /** Original Path */
-            original_path: string;
-            /** Product Name */
-            product_name?: string | null;
-            /** Sku */
-            sku?: string | null;
-            options_override?: components["schemas"]["ProcessOptions"] | null;
-            /**
-             * Status
-             * @enum {string}
-             */
-            status: "pending" | "processing" | "done" | "review" | "failed" | "approved";
-            /** Review Reasons */
-            review_reasons?: string[];
-            /** Outputs */
-            outputs?: components["schemas"]["OutputFile"][];
-            /** Error */
-            error?: string | null;
-            /** Mask Path */
-            mask_path?: string | null;
-        };
-        /** ImageUpdate */
-        ImageUpdate: {
-            /** Product Name */
-            product_name?: string | null;
-            /** Sku */
-            sku?: string | null;
-            options_override?: components["schemas"]["ProcessOptions"] | null;
-        };
-        /** ImporterSettings */
-        ImporterSettings: {
-            /** Google Drive Api Key */
-            google_drive_api_key?: string | null;
-            /**
-             * Max Download Mb
-             * @default 40
-             */
-            max_download_mb: number;
-            /**
-             * Max Images Per Import
-             * @default 300
-             */
-            max_images_per_import: number;
-        };
-        /** ImporterSettingsPublic */
-        ImporterSettingsPublic: {
-            google_drive_api_key: components["schemas"]["SecretConfigured"];
-            /** Max Download Mb */
-            max_download_mb: number;
-            /** Max Images Per Import */
-            max_images_per_import: number;
-        };
-        /** NotificationSettings */
-        NotificationSettings: {
-            /**
-             * Windows Toast
-             * @default true
-             */
-            windows_toast: boolean;
-            /**
-             * Browser
-             * @default true
-             */
-            browser: boolean;
-        };
-        /** OutputFile */
-        OutputFile: {
-            /**
-             * Preset
-             * @enum {string}
-             */
-            preset: "storefront" | "instagram_feed" | "instagram_square" | "original_hd";
-            /** Path */
-            path: string;
-            /** Width */
-            width: number;
-            /** Height */
-            height: number;
-            /** Bytes */
-            bytes: number;
-            /**
-             * Variant
-             * @default keep
-             * @enum {string}
-             */
-            variant: "keep" | "smooth";
-        };
-        /** PipelineSettings */
-        PipelineSettings: {
-            /**
-             * Segmentation Model
-             * @default birefnet
-             * @enum {string}
-             */
-            segmentation_model: "birefnet" | "rmbg2";
-            /**
-             * Segmentation Size
-             * @default 1024
-             */
-            segmentation_size: number;
-            /**
-             * Upscale Model
-             * @default realesrgan_x2plus
-             * @enum {string}
-             */
-            upscale_model: "realesrgan_x2plus" | "lanczos";
-            /**
-             * Tile Size
-             * @default 512
-             */
-            tile_size: number;
-            /**
-             * Tile Overlap
-             * @default 32
-             */
-            tile_overlap: number;
-            /**
-             * Half Precision
-             * @default false
-             */
-            half_precision: boolean;
-            /**
-             * Detail Reinjection
-             * @default 0.6
-             */
-            detail_reinjection: number;
-        };
-        /**
-         * PresetOverride
-         * @description Ajuste de un formato de salida; lo que quede en None usa el valor de PRESETS.
-         */
-        PresetOverride: {
-            /**
-             * Enabled
-             * @default true
-             */
-            enabled: boolean;
-            /** Width */
-            width?: number | null;
-            /** Height */
-            height?: number | null;
-            /** Format */
-            format?: ("webp" | "jpeg" | "png") | null;
-            /** Quality */
-            quality?: number | null;
-            /** Fill Ratio */
-            fill_ratio?: number | null;
-            /** Max Bytes */
-            max_bytes?: number | null;
-        };
-        /**
-         * ProcessOptions
-         * @description Cómo se procesa una imagen. El lote fija los valores por defecto; cada imagen puede cambiarlos.
-         */
-        ProcessOptions: {
-            /** Presets */
-            presets?: ("storefront" | "instagram_feed" | "instagram_square" | "original_hd")[];
-            /**
-             * Layer Lines
-             * @default keep
-             * @enum {string}
-             */
-            layer_lines: "keep" | "smooth";
-            /**
-             * Smooth Strength
-             * @description Solo aplica con layer_lines='smooth'.
-             * @default 35
-             */
-            smooth_strength: number;
-            /**
-             * Shadow
-             * @default auto
-             * @enum {string}
-             */
-            shadow: "none" | "soft" | "strong" | "auto";
-            /**
-             * Shadow Intensity
-             * @description Porcentaje de la opacidad del modo de sombra (100 = normal).
-             * @default 100
-             */
-            shadow_intensity: number;
-            /**
-             * Fill Ratio
-             * @description Fracción del lado mayor que ocupa la pieza. None = valor por defecto de cada preset.
-             */
-            fill_ratio?: number | null;
-            /**
-             * Upscale
-             * @default 2
-             * @enum {integer}
-             */
-            upscale: 1 | 2 | 4;
-            /**
-             * White Balance
-             * @default true
-             */
-            white_balance: boolean;
-            /**
-             * Generate Both Layer Variants
-             * @default false
-             */
-            generate_both_layer_variants: boolean;
-        };
-        /** QualitySettings */
-        QualitySettings: {
-            /**
-             * Min Object Area
-             * @default 0.05
-             */
-            min_object_area: number;
-            /**
-             * Max Object Area
-             * @default 0.95
-             */
-            max_object_area: number;
-            /**
-             * Flag Touching Border
-             * @default true
-             */
-            flag_touching_border: boolean;
-            /**
-             * Flag Multiple Objects
-             * @default true
-             */
-            flag_multiple_objects: boolean;
-            /**
-             * Low Confidence Edge Ratio
-             * @default 0.6
-             */
-            low_confidence_edge_ratio: number;
-        };
-        /** SecretConfigured */
-        SecretConfigured: {
-            /** Configured */
-            configured: boolean;
-        };
-        /** TelegramSettings */
-        TelegramSettings: {
-            /**
-             * Enabled
-             * @default false
-             */
-            enabled: boolean;
-            /** Bot Token */
-            bot_token?: string | null;
-            /** Allowed Chat Ids */
-            allowed_chat_ids?: number[];
-            /** Notify Chat Ids */
-            notify_chat_ids?: number[];
-            /**
-             * Notify On Start
-             * @default true
-             */
-            notify_on_start: boolean;
-            /**
-             * Notify Progress Step
-             * @description 0 = sin avisos de progreso.
-             * @default 25
-             */
-            notify_progress_step: number;
-            /**
-             * Notify On Finish
-             * @default true
-             */
-            notify_on_finish: boolean;
-            /**
-             * Input Bot Enabled
-             * @default false
-             */
-            input_bot_enabled: boolean;
-            /**
-             * Send Results As
-             * @default zip
-             * @enum {string}
-             */
-            send_results_as: "files" | "zip";
-        };
-        /** TelegramSettingsPublic */
-        TelegramSettingsPublic: {
-            /** Enabled */
-            enabled: boolean;
-            bot_token: components["schemas"]["SecretConfigured"];
-            /** Allowed Chat Ids */
-            allowed_chat_ids: number[];
-            /** Notify Chat Ids */
-            notify_chat_ids: number[];
-            /** Notify On Start */
-            notify_on_start: boolean;
-            /** Notify Progress Step */
-            notify_progress_step: number;
-            /** Notify On Finish */
-            notify_on_finish: boolean;
-            /** Input Bot Enabled */
-            input_bot_enabled: boolean;
-            /**
-             * Send Results As
-             * @enum {string}
-             */
-            send_results_as: "files" | "zip";
-        };
-        /** TelegramTestResult */
-        TelegramTestResult: {
-            /**
-             * Ok
-             * @default true
-             * @constant
-             */
-            ok: true;
-            /** Sent */
-            sent: number;
-        };
-        /** ValidationError */
-        ValidationError: {
-            /** Location */
-            loc: (string | number)[];
-            /** Message */
-            msg: string;
-            /** Error Type */
-            type: string;
-            /** Input */
-            input?: unknown;
-            /** Context */
-            ctx?: Record<string, never>;
-        };
-    };
-    responses: never;
-    parameters: never;
-    requestBodies: never;
-    headers: never;
-    pathItems: never;
+  schemas: {
+    /**
+     * AppSettingsPublic
+     * @description Vista de API: conserva toda la configuración sin revelar secretos.
+     */
+    AppSettingsPublic: {
+      general: components['schemas']['GeneralSettings']
+      processing_defaults: components['schemas']['ProcessOptions']
+      export: components['schemas']['ExportSettings']
+      telegram: components['schemas']['TelegramSettingsPublic']
+      notifications: components['schemas']['NotificationSettings']
+      hot_folder: components['schemas']['HotFolderSettings']
+      importers: components['schemas']['ImporterSettingsPublic']
+      quality: components['schemas']['QualitySettings']
+      pipeline: components['schemas']['PipelineSettings']
+    }
+    /** Batch */
+    Batch: {
+      /** Id */
+      id: string
+      /** Name */
+      name: string
+      /**
+       * Status
+       * @enum {string}
+       */
+      status: 'draft' | 'queued' | 'processing' | 'done' | 'failed' | 'cancelled'
+      default_options: components['schemas']['ProcessOptions']
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string
+      /** Finished At */
+      finished_at?: string | null
+      counts?: components['schemas']['BatchCounts']
+    }
+    /** BatchCounts */
+    BatchCounts: {
+      /**
+       * Total
+       * @default 0
+       */
+      total: number
+      /**
+       * Done
+       * @default 0
+       */
+      done: number
+      /**
+       * Review
+       * @default 0
+       */
+      review: number
+      /**
+       * Failed
+       * @default 0
+       */
+      failed: number
+    }
+    /** BatchCreate */
+    BatchCreate: {
+      /** Name */
+      name: string
+      default_options?: components['schemas']['ProcessOptions']
+    }
+    /** Body_import_metadata_csv_api_v1_batches__batch_id__metadata_csv_post */
+    Body_import_metadata_csv_api_v1_batches__batch_id__metadata_csv_post: {
+      /**
+       * File
+       * @description CSV con columnas archivo,nombre,sku
+       */
+      file: string
+    }
+    /** Body_replace_mask_api_v1_images__image_id__mask_put */
+    Body_replace_mask_api_v1_images__image_id__mask_put: {
+      /**
+       * File
+       * @description Máscara PNG del tamaño del original
+       */
+      file: string
+    }
+    /** Body_upload_images_api_v1_batches__batch_id__images_post */
+    Body_upload_images_api_v1_batches__batch_id__images_post: {
+      /**
+       * Files
+       * @description Imágenes o archivos ZIP
+       */
+      files: string[]
+    }
+    /** ExportSettings */
+    ExportSettings: {
+      /** Presets */
+      presets?: {
+        [key: string]: components['schemas']['PresetOverride']
+      }
+      /**
+       * Background Hex
+       * @default #FFFFFF
+       */
+      background_hex: string
+      /**
+       * Filename Strategy
+       * @default sku_then_slug
+       * @enum {string}
+       */
+      filename_strategy: 'sku_then_slug' | 'slug' | 'original'
+    }
+    /** GeneralSettings */
+    GeneralSettings: {
+      /**
+       * Language
+       * @default es
+       * @enum {string}
+       */
+      language: 'es' | 'en'
+      /**
+       * Public Base Url
+       * @default http://localhost:5180
+       */
+      public_base_url: string
+    }
+    /** GpuInfo */
+    GpuInfo: {
+      /** Available */
+      available: boolean
+      /** Name */
+      name?: string | null
+      /** Vram Mb */
+      vram_mb?: number | null
+    }
+    /** HTTPValidationError */
+    HTTPValidationError: {
+      /** Detail */
+      detail?: components['schemas']['ValidationError'][]
+    }
+    /** Health */
+    Health: {
+      /**
+       * Status
+       * @constant
+       */
+      status: 'ok'
+      /** Version */
+      version: string
+      /**
+       * Pipeline Mode
+       * @enum {string}
+       */
+      pipeline_mode: 'real' | 'stub'
+      /**
+       * Device
+       * @enum {string}
+       */
+      device: 'cuda' | 'cpu'
+      gpu: components['schemas']['GpuInfo']
+    }
+    /** HotFolderSettings */
+    HotFolderSettings: {
+      /**
+       * Enabled
+       * @default false
+       */
+      enabled: boolean
+      /** Inbox Dir */
+      inbox_dir?: string | null
+      /** Outbox Dir */
+      outbox_dir?: string | null
+      /**
+       * Poll Seconds
+       * @default 5
+       */
+      poll_seconds: number
+    }
+    /** ImageItem */
+    ImageItem: {
+      /** Id */
+      id: string
+      /** Batch Id */
+      batch_id: string
+      /**
+       * Source
+       * @enum {string}
+       */
+      source: 'upload' | 'google_photos' | 'google_drive' | 'url' | 'telegram' | 'hot_folder'
+      /** Source Ref */
+      source_ref?: string | null
+      /** Original Path */
+      original_path: string
+      /** Product Name */
+      product_name?: string | null
+      /** Sku */
+      sku?: string | null
+      options_override?: components['schemas']['ProcessOptions'] | null
+      /**
+       * Status
+       * @enum {string}
+       */
+      status: 'pending' | 'processing' | 'done' | 'review' | 'failed' | 'approved'
+      /** Review Reasons */
+      review_reasons?: string[]
+      /** Outputs */
+      outputs?: components['schemas']['OutputFile'][]
+      /** Error */
+      error?: string | null
+      /** Mask Path */
+      mask_path?: string | null
+    }
+    /** ImageUpdate */
+    ImageUpdate: {
+      /** Product Name */
+      product_name?: string | null
+      /** Sku */
+      sku?: string | null
+      options_override?: components['schemas']['ProcessOptions'] | null
+    }
+    /** ImporterSettings */
+    ImporterSettings: {
+      /** Google Drive Api Key */
+      google_drive_api_key?: string | null
+      /**
+       * Max Download Mb
+       * @default 40
+       */
+      max_download_mb: number
+      /**
+       * Max Images Per Import
+       * @default 300
+       */
+      max_images_per_import: number
+    }
+    /** ImporterSettingsPublic */
+    ImporterSettingsPublic: {
+      google_drive_api_key: components['schemas']['SecretConfigured']
+      /** Max Download Mb */
+      max_download_mb: number
+      /** Max Images Per Import */
+      max_images_per_import: number
+    }
+    /** NotificationSettings */
+    NotificationSettings: {
+      /**
+       * Windows Toast
+       * @default true
+       */
+      windows_toast: boolean
+      /**
+       * Browser
+       * @default true
+       */
+      browser: boolean
+    }
+    /** OutputFile */
+    OutputFile: {
+      /**
+       * Preset
+       * @enum {string}
+       */
+      preset: 'storefront' | 'instagram_feed' | 'instagram_square' | 'original_hd'
+      /** Path */
+      path: string
+      /** Width */
+      width: number
+      /** Height */
+      height: number
+      /** Bytes */
+      bytes: number
+      /**
+       * Variant
+       * @default keep
+       * @enum {string}
+       */
+      variant: 'keep' | 'smooth'
+    }
+    /** PipelineSettings */
+    PipelineSettings: {
+      /**
+       * Segmentation Model
+       * @default birefnet
+       * @enum {string}
+       */
+      segmentation_model: 'birefnet' | 'rmbg2'
+      /**
+       * Segmentation Size
+       * @default 1024
+       */
+      segmentation_size: number
+      /**
+       * Upscale Model
+       * @default realesrgan_x2plus
+       * @enum {string}
+       */
+      upscale_model: 'realesrgan_x2plus' | 'lanczos'
+      /**
+       * Tile Size
+       * @default 512
+       */
+      tile_size: number
+      /**
+       * Tile Overlap
+       * @default 32
+       */
+      tile_overlap: number
+      /**
+       * Half Precision
+       * @default false
+       */
+      half_precision: boolean
+      /**
+       * Detail Reinjection
+       * @default 0.6
+       */
+      detail_reinjection: number
+    }
+    /**
+     * PresetOverride
+     * @description Ajuste de un formato de salida; lo que quede en None usa el valor de PRESETS.
+     */
+    PresetOverride: {
+      /**
+       * Enabled
+       * @default true
+       */
+      enabled: boolean
+      /** Width */
+      width?: number | null
+      /** Height */
+      height?: number | null
+      /** Format */
+      format?: ('webp' | 'jpeg' | 'png') | null
+      /** Quality */
+      quality?: number | null
+      /** Fill Ratio */
+      fill_ratio?: number | null
+      /** Max Bytes */
+      max_bytes?: number | null
+    }
+    /**
+     * ProcessOptions
+     * @description Cómo se procesa una imagen. El lote fija los valores por defecto; cada imagen puede cambiarlos.
+     */
+    ProcessOptions: {
+      /** Presets */
+      presets?: ('storefront' | 'instagram_feed' | 'instagram_square' | 'original_hd')[]
+      /**
+       * Layer Lines
+       * @default keep
+       * @enum {string}
+       */
+      layer_lines: 'keep' | 'smooth'
+      /**
+       * Smooth Strength
+       * @description Solo aplica con layer_lines='smooth'.
+       * @default 35
+       */
+      smooth_strength: number
+      /**
+       * Shadow
+       * @default auto
+       * @enum {string}
+       */
+      shadow: 'none' | 'soft' | 'strong' | 'auto'
+      /**
+       * Shadow Intensity
+       * @description Porcentaje de la opacidad del modo de sombra (100 = normal).
+       * @default 100
+       */
+      shadow_intensity: number
+      /**
+       * Fill Ratio
+       * @description Fracción del lado mayor que ocupa la pieza. None = valor por defecto de cada preset.
+       */
+      fill_ratio?: number | null
+      /**
+       * Upscale
+       * @default 2
+       * @enum {integer}
+       */
+      upscale: 1 | 2 | 4
+      /**
+       * White Balance
+       * @default true
+       */
+      white_balance: boolean
+      /**
+       * Generate Both Layer Variants
+       * @default false
+       */
+      generate_both_layer_variants: boolean
+    }
+    /** QualitySettings */
+    QualitySettings: {
+      /**
+       * Min Object Area
+       * @default 0.05
+       */
+      min_object_area: number
+      /**
+       * Max Object Area
+       * @default 0.95
+       */
+      max_object_area: number
+      /**
+       * Flag Touching Border
+       * @default true
+       */
+      flag_touching_border: boolean
+      /**
+       * Flag Multiple Objects
+       * @default true
+       */
+      flag_multiple_objects: boolean
+      /**
+       * Low Confidence Edge Ratio
+       * @default 0.6
+       */
+      low_confidence_edge_ratio: number
+    }
+    /** SecretConfigured */
+    SecretConfigured: {
+      /** Configured */
+      configured: boolean
+    }
+    /** TelegramSettings */
+    TelegramSettings: {
+      /**
+       * Enabled
+       * @default false
+       */
+      enabled: boolean
+      /** Bot Token */
+      bot_token?: string | null
+      /** Allowed Chat Ids */
+      allowed_chat_ids?: number[]
+      /** Notify Chat Ids */
+      notify_chat_ids?: number[]
+      /**
+       * Notify On Start
+       * @default true
+       */
+      notify_on_start: boolean
+      /**
+       * Notify Progress Step
+       * @description 0 = sin avisos de progreso.
+       * @default 25
+       */
+      notify_progress_step: number
+      /**
+       * Notify On Finish
+       * @default true
+       */
+      notify_on_finish: boolean
+      /**
+       * Input Bot Enabled
+       * @default false
+       */
+      input_bot_enabled: boolean
+      /**
+       * Send Results As
+       * @default zip
+       * @enum {string}
+       */
+      send_results_as: 'files' | 'zip'
+    }
+    /** TelegramSettingsPublic */
+    TelegramSettingsPublic: {
+      /** Enabled */
+      enabled: boolean
+      bot_token: components['schemas']['SecretConfigured']
+      /** Allowed Chat Ids */
+      allowed_chat_ids: number[]
+      /** Notify Chat Ids */
+      notify_chat_ids: number[]
+      /** Notify On Start */
+      notify_on_start: boolean
+      /** Notify Progress Step */
+      notify_progress_step: number
+      /** Notify On Finish */
+      notify_on_finish: boolean
+      /** Input Bot Enabled */
+      input_bot_enabled: boolean
+      /**
+       * Send Results As
+       * @enum {string}
+       */
+      send_results_as: 'files' | 'zip'
+    }
+    /** TelegramTestResult */
+    TelegramTestResult: {
+      /**
+       * Ok
+       * @default true
+       * @constant
+       */
+      ok: true
+      /** Sent */
+      sent: number
+    }
+    /** ValidationError */
+    ValidationError: {
+      /** Location */
+      loc: (string | number)[]
+      /** Message */
+      msg: string
+      /** Error Type */
+      type: string
+      /** Input */
+      input?: unknown
+      /** Context */
+      ctx?: Record<string, never>
+    }
+  }
+  responses: never
+  parameters: never
+  requestBodies: never
+  headers: never
+  pathItems: never
 }
-export type $defs = Record<string, never>;
+export type $defs = Record<string, never>
 export interface operations {
-    health_api_v1_health_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Health"];
-                };
-            };
-        };
-    };
-    list_batches_api_v1_batches_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Batch"][];
-                };
-            };
-        };
-    };
-    create_batch_api_v1_batches_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["BatchCreate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Batch"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_batch_api_v1_batches__batch_id__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                batch_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Batch"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    replace_default_options_api_v1_batches__batch_id__default_options_put: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                batch_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ProcessOptions"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Batch"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    cancel_batch_api_v1_batches__batch_id__cancel_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                batch_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Batch"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    retry_failed_images_api_v1_batches__batch_id__retry_failed_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                batch_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Batch"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    download_batch_api_v1_batches__batch_id__download__preset__zip_get: {
-        parameters: {
-            query?: {
-                /** @description Incluir únicamente imágenes aprobadas. */
-                approved_only?: boolean;
-            };
-            header?: never;
-            path: {
-                batch_id: string;
-                preset: "storefront" | "instagram_feed" | "instagram_square" | "original_hd";
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    list_batch_images_api_v1_batches__batch_id__images_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                batch_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ImageItem"][];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    upload_images_api_v1_batches__batch_id__images_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                batch_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "multipart/form-data": components["schemas"]["Body_upload_images_api_v1_batches__batch_id__images_post"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ImageItem"][];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    import_metadata_csv_api_v1_batches__batch_id__metadata_csv_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                batch_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "multipart/form-data": components["schemas"]["Body_import_metadata_csv_api_v1_batches__batch_id__metadata_csv_post"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ImageItem"][];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_image_api_v1_images__image_id__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                image_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ImageItem"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    update_image_api_v1_images__image_id__patch: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                image_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ImageUpdate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ImageItem"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    approve_image_api_v1_images__image_id__approve_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                image_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ImageItem"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    reprocess_image_api_v1_images__image_id__reprocess_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                image_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": components["schemas"]["ProcessOptions"] | null;
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ImageItem"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    replace_mask_api_v1_images__image_id__mask_put: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                image_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "multipart/form-data": components["schemas"]["Body_replace_mask_api_v1_images__image_id__mask_put"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ImageItem"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    events_api_v1_events_get: {
-        parameters: {
-            query?: {
-                after_id?: number | null;
-            };
-            header?: {
-                "Last-Event-ID"?: string | null;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_file_api_v1_files__key__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                key: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_app_settings_api_v1_settings_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AppSettingsPublic"];
-                };
-            };
-        };
-    };
-    replace_settings_section_api_v1_settings__section__put: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                section: "general" | "processing_defaults" | "export" | "telegram" | "notifications" | "hot_folder" | "importers" | "quality" | "pipeline";
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["GeneralSettings"] | components["schemas"]["ProcessOptions"] | components["schemas"]["ExportSettings"] | components["schemas"]["TelegramSettings"] | components["schemas"]["NotificationSettings"] | components["schemas"]["HotFolderSettings"] | components["schemas"]["ImporterSettings"] | components["schemas"]["QualitySettings"] | components["schemas"]["PipelineSettings"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AppSettingsPublic"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    test_telegram_api_v1_settings_telegram_test_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["TelegramTestResult"];
-                };
-            };
-        };
-    };
+  health_api_v1_health_get: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Health']
+        }
+      }
+    }
+  }
+  list_batches_api_v1_batches_get: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Batch'][]
+        }
+      }
+    }
+  }
+  create_batch_api_v1_batches_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['BatchCreate']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Batch']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  get_batch_api_v1_batches__batch_id__get: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        batch_id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Batch']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  replace_default_options_api_v1_batches__batch_id__default_options_put: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        batch_id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ProcessOptions']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Batch']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  cancel_batch_api_v1_batches__batch_id__cancel_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        batch_id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Batch']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  retry_failed_images_api_v1_batches__batch_id__retry_failed_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        batch_id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Batch']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  download_batch_api_v1_batches__batch_id__download__preset__zip_get: {
+    parameters: {
+      query?: {
+        /** @description Incluir únicamente imágenes aprobadas. */
+        approved_only?: boolean
+      }
+      header?: never
+      path: {
+        batch_id: string
+        preset: 'storefront' | 'instagram_feed' | 'instagram_square' | 'original_hd'
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  list_batch_images_api_v1_batches__batch_id__images_get: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        batch_id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ImageItem'][]
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  upload_images_api_v1_batches__batch_id__images_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        batch_id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'multipart/form-data': components['schemas']['Body_upload_images_api_v1_batches__batch_id__images_post']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ImageItem'][]
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  import_metadata_csv_api_v1_batches__batch_id__metadata_csv_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        batch_id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'multipart/form-data': components['schemas']['Body_import_metadata_csv_api_v1_batches__batch_id__metadata_csv_post']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ImageItem'][]
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  get_image_api_v1_images__image_id__get: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        image_id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ImageItem']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  update_image_api_v1_images__image_id__patch: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        image_id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ImageUpdate']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ImageItem']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  approve_image_api_v1_images__image_id__approve_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        image_id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ImageItem']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  reprocess_image_api_v1_images__image_id__reprocess_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        image_id: string
+      }
+      cookie?: never
+    }
+    requestBody?: {
+      content: {
+        'application/json': components['schemas']['ProcessOptions'] | null
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ImageItem']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  replace_mask_api_v1_images__image_id__mask_put: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        image_id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'multipart/form-data': components['schemas']['Body_replace_mask_api_v1_images__image_id__mask_put']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ImageItem']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  events_api_v1_events_get: {
+    parameters: {
+      query?: {
+        after_id?: number | null
+      }
+      header?: {
+        'Last-Event-ID'?: string | null
+      }
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  get_file_api_v1_files__key__get: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        key: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  get_app_settings_api_v1_settings_get: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AppSettingsPublic']
+        }
+      }
+    }
+  }
+  replace_settings_section_api_v1_settings__section__put: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        section:
+          | 'general'
+          | 'processing_defaults'
+          | 'export'
+          | 'telegram'
+          | 'notifications'
+          | 'hot_folder'
+          | 'importers'
+          | 'quality'
+          | 'pipeline'
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json':
+          | components['schemas']['GeneralSettings']
+          | components['schemas']['ProcessOptions']
+          | components['schemas']['ExportSettings']
+          | components['schemas']['TelegramSettings']
+          | components['schemas']['NotificationSettings']
+          | components['schemas']['HotFolderSettings']
+          | components['schemas']['ImporterSettings']
+          | components['schemas']['QualitySettings']
+          | components['schemas']['PipelineSettings']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AppSettingsPublic']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  test_telegram_api_v1_settings_telegram_test_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['TelegramTestResult']
+        }
+      }
+    }
+  }
 }

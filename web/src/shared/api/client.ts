@@ -5,6 +5,7 @@ export type Batch = components['schemas']['Batch']
 export type ProcessOptions = components['schemas']['ProcessOptions']
 export type Preset = NonNullable<ProcessOptions['presets']>[number]
 export type AppSettingsPublic = components['schemas']['AppSettingsPublic']
+export type ImageItem = components['schemas']['ImageItem']
 
 const API_BASE = '/api/v1'
 

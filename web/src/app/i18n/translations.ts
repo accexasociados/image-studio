@@ -68,6 +68,11 @@ const es = {
     ready: 'Listas',
     review: 'Revisar',
     failed: 'Fallidas',
+    back: 'Volver a lotes',
+    refresh: 'Actualizar',
+    progress: 'Progreso del lote',
+    noImages: 'Este lote todavía no tiene imágenes.',
+    filter: { all: 'Todas', done: 'Listas', review: 'Para revisar', failed: 'Fallidas' },
     status: {
       draft: 'Borrador',
       queued: 'En cola',
@@ -153,6 +158,11 @@ const en: TranslationShape<typeof es> = {
     ready: 'Ready',
     review: 'Review',
     failed: 'Failed',
+    back: 'Back to batches',
+    refresh: 'Refresh',
+    progress: 'Batch progress',
+    noImages: 'This batch does not have images yet.',
+    filter: { all: 'All', done: 'Ready', review: 'Needs review', failed: 'Failed' },
     status: {
       draft: 'Draft',
       queued: 'Queued',

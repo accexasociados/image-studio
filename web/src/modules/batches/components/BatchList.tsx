@@ -6,6 +6,7 @@ import { BatchStatusBadge } from './BatchStatusBadge'
 
 interface BatchListProps {
   batches: Batch[]
+  onSelect?: (batch: Batch) => void
 }
 
 function formatDate(value: string, language: string): string {
@@ -15,7 +16,7 @@ function formatDate(value: string, language: string): string {
   }).format(new Date(value))
 }
 
-export function BatchList({ batches }: BatchListProps) {
+export function BatchList({ batches, onSelect }: BatchListProps) {
   const { t, i18n } = useTranslation()
 
   if (batches.length === 0) {
@@ -39,7 +40,8 @@ export function BatchList({ batches }: BatchListProps) {
       {batches.map((batch) => (
         <li
           key={batch.id}
-          className="grid gap-4 px-5 py-5 transition hover:bg-slate-50/80 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:px-6 dark:hover:bg-slate-800/30"
+          className="grid cursor-pointer gap-4 px-5 py-5 transition hover:bg-slate-50/80 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:px-6 dark:hover:bg-slate-800/30"
+          onClick={() => onSelect?.(batch)}
         >
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2.5">
@@ -52,11 +54,7 @@ export function BatchList({ batches }: BatchListProps) {
             </p>
           </div>
           <dl className="grid grid-cols-4 gap-2 sm:min-w-80">
-            <Count
-              icon={<Images size={14} />}
-              label={t('batches.total')}
-              value={batch.counts?.total ?? 0}
-            />
+            <Count icon={<Images size={14} />} label={t('batches.total')} value={batch.counts?.total ?? 0} />
             <Count
               icon={<CheckCircle2 size={14} />}
               label={t('batches.ready')}
