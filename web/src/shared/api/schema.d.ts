@@ -343,6 +343,23 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/api/v1/settings/upscale-models': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** List Upscale Models */
+    get: operations['list_upscale_models_api_v1_settings_upscale_models_get']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/api/v1/settings/telegram/test': {
     parameters: {
       query?: never
@@ -695,10 +712,9 @@ export interface components {
       segmentation_size: number
       /**
        * Upscale Model
-       * @default realesrgan_x2plus
-       * @enum {string}
+       * @default nmkd_siax
        */
-      upscale_model: 'realesrgan_x2plus' | 'lanczos'
+      upscale_model: ('realesrgan_x2plus' | 'nmkd_siax') | 'lanczos'
       /**
        * Tile Size
        * @default 512
@@ -716,7 +732,7 @@ export interface components {
       half_precision: boolean
       /**
        * Detail Reinjection
-       * @default 0.6
+       * @default 0.5
        */
       detail_reinjection: number
     }
@@ -785,6 +801,11 @@ export interface components {
        * @enum {integer}
        */
       upscale: 1 | 2 | 4
+      /**
+       * Upscale Fidelity
+       * @description Al agrandar, porcentaje del detalle fino que sale de la foto original y no del modelo (100 = lo más fiel, 0 = todo lo reconstruye la IA). None = Ajustes > Proceso.
+       */
+      upscale_fidelity?: number | null
       /**
        * White Balance
        * @default true
@@ -912,6 +933,25 @@ export interface components {
       ok: true
       /** Sent */
       sent: number
+    }
+    /**
+     * UpscaleModelInfo
+     * @description Opción del selector de Ajustes > Proceso > modelo de ampliación.
+     */
+    UpscaleModelInfo: {
+      /**
+       * Id
+       * @enum {string}
+       */
+      id: 'realesrgan_x2plus' | 'nmkd_siax'
+      /** Scale */
+      scale: number
+      /** Size Mb */
+      size_mb: number
+      /** License */
+      license: string
+      /** Installed */
+      installed: boolean
     }
     /** ValidationError */
     ValidationError: {
@@ -1674,6 +1714,26 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  list_upscale_models_api_v1_settings_upscale_models_get: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['UpscaleModelInfo'][]
         }
       }
     }

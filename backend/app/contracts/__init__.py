@@ -38,6 +38,8 @@ from app.contracts.settings import (
     AppSettingsPublic,
     SettingsSection,
     TelegramTestResult,
+    UpscaleModel,
+    UpscaleModelInfo,
 )
 
 __all__ = [
@@ -75,4 +77,6 @@ __all__ = [
     "ShadowMode",
     "TelegramTestResult",
     "UpscaleFactor",
+    "UpscaleModel",
+    "UpscaleModelInfo",
 ]

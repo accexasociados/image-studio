@@ -1,5 +1,6 @@
-"""Mejora de resolución: Real-ESRGAN x2 por tiles en FP32, solo cuando hace falta, más reinyección
-del detalle fino de la foto original para que las líneas de capa no queden "enceradas"."""
+"""Mejora de resolución: un modelo de spandrel (x2 o x4, ver `catalog.py`) por tiles en FP32, solo
+cuando hace falta, más reinyección del detalle fino de la foto original para que las líneas de capa
+no queden "enceradas"."""
 
 from dataclasses import dataclass
 from functools import lru_cache
@@ -21,13 +22,23 @@ class UpscaleParams:
     use_model: bool = True
 
 
+@dataclass(frozen=True)
+class Upscaler:
+    model: Any
+    scale: int
+
+
 @lru_cache(maxsize=1)
-def load_realesrgan(weights_path: Path, device: str) -> Any:
+def load_upscaler(weights_path: Path, device: str) -> Upscaler:
     import torch
     from spandrel import ModelLoader
 
+    if not weights_path.exists():
+        raise FileNotFoundError(
+            f"Falta el modelo de ampliación {weights_path.name}: ejecuta `python -m scripts.download_models`."
+        )
     descriptor = ModelLoader().load_from_file(str(weights_path))
-    return descriptor.model.to(torch.device(device)).float().eval()
+    return Upscaler(descriptor.model.to(torch.device(device)).float().eval(), descriptor.scale)
 
 
 def _run_tiles(image: FloatImage, model: Any, device: str, params: UpscaleParams, scale: int) -> FloatImage:
@@ -77,9 +88,9 @@ def reinject_detail(
 
 
 def upscale(
-    image: FloatImage, alpha: Alpha, factor: float, model: Any | None, device: str, params: UpscaleParams
+    image: FloatImage, alpha: Alpha, factor: float, model: Upscaler | None, device: str, params: UpscaleParams
 ) -> tuple[FloatImage, Alpha]:
-    """Escala `image` y `alpha` por `factor` (>= 1). Usa el modelo x2 tantas veces como haga falta."""
+    """Escala `image` y `alpha` por `factor` (>= 1). Pasa el modelo tantas veces como haga falta."""
     if factor <= 1.0:
         return image, alpha
     height, width = image.shape[:2]
@@ -90,10 +101,10 @@ def upscale(
     if model is None or not params.use_model:
         return np.clip(lanczos, 0, 1).astype(np.float32), scaled_alpha
 
-    current = image
-    # Una pasada x2 más Lanczos hasta 2,8x; la segunda pasada (4x más lenta) solo si hace falta más.
+    # Siempre una pasada; otra (mucho más lenta) solo si tras la anterior aún falta más de 1,4x.
+    current = _run_tiles(image, model.model, device, params, scale=model.scale)
     while current.shape[1] * 1.4 < target[0]:
-        current = _run_tiles(current, model, device, params, scale=2)
+        current = _run_tiles(current, model.model, device, params, scale=model.scale)
     enhanced: FloatImage = cv2.resize(current, target, interpolation=cv2.INTER_AREA).astype(np.float32)
     sigma = max(0.8, factor * 0.6)
     reference: FloatImage = np.clip(lanczos, 0, 1).astype(np.float32)

@@ -10,6 +10,9 @@ from pydantic import BaseModel, ConfigDict, Field, SecretStr
 from app.contracts.options import Preset, ProcessOptions
 from app.contracts.presets import OutputFormat
 
+# Pesos en `app/pipeline/catalog.py`. Elegidos el 2026-10-27 comparando con 6 piezas reales (Fase 10).
+UpscaleModel = Literal["realesrgan_x2plus", "nmkd_siax"]
+
 
 class _Section(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -76,12 +79,14 @@ class QualitySettings(_Section):
 class PipelineSettings(_Section):
     segmentation_model: Literal["birefnet", "rmbg2"] = "birefnet"
     segmentation_size: int = Field(default=1024, ge=512, le=2048)
-    upscale_model: Literal["realesrgan_x2plus", "lanczos"] = "realesrgan_x2plus"
+    # "lanczos" agranda sin IA.
+    upscale_model: UpscaleModel | Literal["lanczos"] = "nmkd_siax"
     tile_size: int = Field(default=512, ge=128, le=1024)
     tile_overlap: int = Field(default=32, ge=0, le=128)
     # La serie GTX 16xx produce NaN en FP16: mantener en False salvo GPU compatible.
     half_precision: bool = False
-    detail_reinjection: float = Field(default=0.6, ge=0, le=1)
+    # Con Siax, 0,5 da la nitidez más parecida a la real sin perder fidelidad (Fase 10).
+    detail_reinjection: float = Field(default=0.5, ge=0, le=1)
 
 
 class GeneralSettings(_Section):
@@ -141,6 +146,16 @@ class AppSettingsPublic(_Section):
 class TelegramTestResult(_Section):
     ok: Literal[True] = True
     sent: int
+
+
+class UpscaleModelInfo(_Section):
+    """Opción del selector de Ajustes > Proceso > modelo de ampliación."""
+
+    id: UpscaleModel
+    scale: int
+    size_mb: int
+    license: str
+    installed: bool
 
 
 SettingsSection = Literal[

@@ -15,6 +15,7 @@ from PIL import Image, ImageFilter, ImageOps
 
 from app.config import get_settings
 from app.contracts import PRESETS, AppSettings, LayerLines, OutputFile, Preset, ProcessOptions, ProcessResult
+from app.pipeline.catalog import model_path
 from app.pipeline.color import correct_color
 from app.pipeline.compose import Crop, compose_on_canvas, crop_to_piece, decontaminate_edges, piece_bounds
 from app.pipeline.export import encode, output_path, resolve_preset
@@ -24,7 +25,7 @@ from app.pipeline.quality import review_reasons
 from app.pipeline.segment import SegmentationParams, load_birefnet, segment
 from app.pipeline.shadow import ShadowParams, resolve_shadow
 from app.pipeline.types import Alpha, FloatImage, to_float, to_uint8
-from app.pipeline.upscale import UpscaleParams, load_realesrgan, upscale
+from app.pipeline.upscale import UpscaleParams, load_upscaler, upscale
 
 _EXTENSIONS = {"webp": "webp", "jpeg": "jpg", "png": "png"}
 _VARIANT_SUFFIX: dict[LayerLines, str] = {"keep": "", "smooth": "_smooth"}
@@ -160,17 +161,16 @@ def _process_real(
 
     with timer.stage("upscale"):
         factor = min(needed, float(options.upscale))
-        use_model = pipeline.upscale_model == "realesrgan_x2plus" and factor > 1.05
-        upscaler = (
-            load_realesrgan(models_dir / "realesrgan" / "RealESRGAN_x2plus.pth", device)
-            if use_model
-            else None
-        )
+        model_id = pipeline.upscale_model
+        upscaler = None
+        if model_id != "lanczos" and factor > 1.05:
+            upscaler = load_upscaler(model_path(models_dir, model_id), device)
+        fidelity = options.upscale_fidelity
         params = UpscaleParams(
             tile_size=pipeline.tile_size,
             tile_overlap=pipeline.tile_overlap,
-            detail_reinjection=pipeline.detail_reinjection,
-            use_model=use_model,
+            detail_reinjection=pipeline.detail_reinjection if fidelity is None else fidelity / 100,
+            use_model=upscaler is not None,
         )
         up_image, up_alpha = upscale(crop.image, crop.alpha, factor, upscaler, device, params)
         crop = Crop(up_image, up_alpha)

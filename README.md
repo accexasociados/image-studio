@@ -23,6 +23,8 @@ py -3.11 -m venv .venv
 # 3) Verificar GPU y descargar pesos (~1 GB a ../models)
 .venv\Scripts\python -m scripts.check_gpu
 .venv\Scripts\python -m scripts.download_models
+# Opcional: otros modelos de ampliación para elegir en Ajustes > Proceso (--upscale all o por coma)
+.venv\Scripts\python -m scripts.download_models --upscale all
 
 # Web
 cd ..\web

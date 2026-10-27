@@ -49,6 +49,15 @@ class ProcessOptions(BaseModel):
         description="Fracción del lado mayor que ocupa la pieza. None = valor por defecto de cada preset.",
     )
     upscale: UpscaleFactor = 2
+    upscale_fidelity: int | None = Field(
+        default=None,
+        ge=0,
+        le=100,
+        description=(
+            "Al agrandar, porcentaje del detalle fino que sale de la foto original y no del modelo "
+            "(100 = lo más fiel, 0 = todo lo reconstruye la IA). None = Ajustes > Proceso."
+        ),
+    )
     white_balance: bool = True
     generate_both_layer_variants: bool = False
     rotate: Rotation = Field(default=0, description="Giro en grados, en sentido horario, antes de recortar.")

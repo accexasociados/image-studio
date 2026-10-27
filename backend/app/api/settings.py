@@ -5,7 +5,15 @@ from fastapi import APIRouter, Body, Depends, HTTPException, status
 from pydantic import BaseModel, ValidationError
 from sqlalchemy.orm import Session
 
-from app.contracts import SECRET_FIELDS, AppSettings, AppSettingsPublic, SettingsSection, TelegramTestResult
+from app.config import get_settings
+from app.contracts import (
+    SECRET_FIELDS,
+    AppSettings,
+    AppSettingsPublic,
+    SettingsSection,
+    TelegramTestResult,
+    UpscaleModelInfo,
+)
 from app.contracts.options import ProcessOptions
 from app.contracts.settings import (
     ExportSettings,
@@ -22,6 +30,7 @@ from app.contracts.settings import (
 )
 from app.db.session import get_session
 from app.db.settings_store import load_settings, save_settings
+from app.pipeline.catalog import UPSCALE_MODELS, model_path
 
 router = APIRouter(prefix="/settings", tags=["settings"])
 SessionDep = Annotated[Session, Depends(get_session)]
@@ -105,6 +114,21 @@ def replace_settings_section(
     updated = AppSettings.model_validate(complete)
     save_settings(session, updated)
     return _public_settings(updated)
+
+
+@router.get("/upscale-models", response_model=list[UpscaleModelInfo])
+def list_upscale_models() -> list[UpscaleModelInfo]:
+    models_dir = get_settings().models_dir
+    return [
+        UpscaleModelInfo(
+            id=spec.id,
+            scale=spec.scale,
+            size_mb=spec.size_mb,
+            license=spec.license,
+            installed=model_path(models_dir, spec.id).exists(),
+        )
+        for spec in UPSCALE_MODELS.values()
+    ]
 
 
 @router.post("/telegram/test", response_model=TelegramTestResult)
