@@ -346,3 +346,21 @@ def test_cancellation_during_processing_stays_cancelled(
     assert batch is not None and batch.status == "cancelled"
     assert image is not None and image.status == "pending"
     assert job is not None and job.status == "cancelled"
+
+
+def test_worker_album_import_keeps_photo_order(monkeypatch: pytest.MonkeyPatch) -> None:
+    with TestClient(create_app()) as client:
+        batch_id = client.post("/api/v1/batches", json={"name": "Album order"}).json()["id"]
+    get_job_queue().enqueue("import", batch_id=batch_id, payload={"url": "https://photos.app.goo.gl/abc"})
+
+    def album(_url: str, **_kwargs: object) -> Iterator[DownloadedImage]:
+        for name in ("a.png", "b.png", "c.png"):
+            yield DownloadedImage(data=_image_bytes(), filename=name, media_type="image/png")
+
+    monkeypatch.setattr(worker_module, "download_album", album)
+    assert _worker(PipelineProcessor()).run_once() is True
+
+    with get_sessionmaker()() as session:
+        images = session.query(ImageRow).filter_by(batch_id=batch_id).order_by(ImageRow.position).all()
+    order = [(image.source_ref, image.position) for image in images]
+    assert order == [("a.png", 0), ("b.png", 1), ("c.png", 2)]

@@ -200,7 +200,7 @@ class Worker:
                         source_ref=image.filename,
                         original_path="pending",
                         status="pending",
-                        position=len(batch.images),
+                        position=len(batch.images) + imported,
                     )
                     session.add(row)
                     session.flush()

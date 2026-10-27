@@ -2,6 +2,7 @@
 
 import re
 from collections.abc import Iterable
+from dataclasses import replace
 
 import httpx
 
@@ -60,5 +61,8 @@ def download_album(
     url: str, *, max_bytes: int = MAX_IMAGE_BYTES, client: httpx.Client | None = None
 ) -> Iterable[DownloadedImage]:
     """Descarga las imágenes del álbum; la paginación queda aislada aquí."""
-    for photo_url in fetch_album_urls(url, client=client):
-        yield download_image(photo_url, max_bytes=max_bytes, client=client)
+    for index, photo_url in enumerate(fetch_album_urls(url, client=client), start=1):
+        image = download_image(photo_url, max_bytes=max_bytes, client=client)
+        extension = image.filename.rsplit(".", 1)[-1]
+        # El nombre de la URL es un token opaco: se numera en el orden del álbum.
+        yield replace(image, filename=f"google-photos-{index:03d}.{extension}")

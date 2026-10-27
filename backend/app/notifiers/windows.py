@@ -27,8 +27,12 @@ class WindowsNotifier:
     @staticmethod
     def notify_finished(event: Event) -> None:
         counts = event.payload.get("counts", {})
-        title = "Image Studio"
-        message = f"Lote terminado: {counts}"
+        counts = counts if isinstance(counts, dict) else {}
+        title = str(event.payload.get("batch_name", "Image Studio"))
+        message = (
+            f"Lote terminado: {counts.get('done', 0)} listas, {counts.get('review', 0)} para revisar, "
+            f"{counts.get('failed', 0)} fallidas."
+        )
         try:
             from win11toast import toast
 

@@ -1,5 +1,5 @@
 import { ArrowLeft, ImageOff, RefreshCw } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { Batch } from '@/shared/api/client'
 import { ExportBar } from '@/modules/review/components/ExportBar'
@@ -15,20 +15,6 @@ export function BatchDetailPanel({ batch, onBack }: { batch: Batch; onBack: () =
   const [filter, setFilter] = useState<Filter>('all')
   const [reviewing, setReviewing] = useState<number | null>(null)
   const { data: images = [], isPending, refetch } = useBatchImages(batch.id)
-  useEffect(() => {
-    const stream = new EventSource('/api/v1/events')
-    const refresh = () => void refetch()
-    stream.addEventListener('batch.progress', refresh)
-    stream.addEventListener('image.updated', refresh)
-    stream.addEventListener('batch.finished', refresh)
-    stream.addEventListener('batch.finished', () => {
-      if (document.visibilityState === 'visible' || !('Notification' in window)) return
-      void Notification.requestPermission().then((permission) => {
-        if (permission === 'granted') new Notification(t('batches.browserFinished'), { body: batch.name })
-      })
-    })
-    return () => stream.close()
-  }, [batch.name, refetch, t])
 
   const visible = useMemo(
     () =>

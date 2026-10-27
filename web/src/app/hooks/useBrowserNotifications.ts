@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
+/** Aviso del navegador al terminar cualquier lote; el permiso se pide con un clic (Chrome lo exige). */
 export function useBrowserNotifications() {
+  const { t } = useTranslation()
   const [permission, setPermission] = useState<NotificationPermission | 'unsupported'>(() =>
     typeof Notification === 'undefined' ? 'unsupported' : Notification.permission,
   )
@@ -16,8 +19,8 @@ export function useBrowserNotifications() {
     const onFinished = (event: MessageEvent<string>) => {
       try {
         const payload = JSON.parse(event.data) as { batch_id?: string; batch_name?: string }
-        new Notification(payload.batch_name ?? 'Image Studio', {
-          body: 'El lote terminó de procesarse.',
+        new Notification(payload.batch_name ?? t('app.title'), {
+          body: t('batches.browserFinished'),
           tag: payload.batch_id ? `batch-${payload.batch_id}` : undefined,
         })
       } catch {
@@ -29,7 +32,7 @@ export function useBrowserNotifications() {
       stream.removeEventListener('batch.finished', onFinished)
       stream.close()
     }
-  }, [permission])
+  }, [permission, t])
 
   return { permission, requestPermission }
 }

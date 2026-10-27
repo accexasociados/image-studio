@@ -12,6 +12,9 @@ from PIL import Image, UnidentifiedImageError
 
 MAX_IMAGE_BYTES = 40 * 1024 * 1024
 MAX_REDIRECTS = 5
+# Las URL de Google traen tokens de cientos de caracteres; con nombres largos la ruta de salida
+# supera el límite de 260 caracteres de Windows.
+MAX_NAME_CHARS = 60
 
 
 @dataclass(frozen=True)
@@ -85,8 +88,8 @@ def download_image(
             if extension is None:
                 raise ValueError("Solo se admiten JPEG, PNG y WebP.")
             name = (urlparse(current).path.rsplit("/", 1)[-1] or f"imagen.{extension}").split("?")[0]
-            if "." not in name:
-                name = f"{name}.{extension}"
+            stem = name.rsplit(".", 1)[0] if "." in name else name
+            name = f"{stem[:MAX_NAME_CHARS]}.{extension}"
             return DownloadedImage(
                 data=data, filename=name, media_type=f"image/{'jpeg' if extension == 'jpg' else extension}"
             )

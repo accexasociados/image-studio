@@ -8,7 +8,7 @@ import httpx
 
 from app.importers.direct_url import MAX_IMAGE_BYTES, DownloadedImage, download_image
 
-_FILE_ID = re.compile(r"/file/d/([\w-]+)")
+_FILE_ID = re.compile(r"/(?:file/d|drive/(?:u/\d+/)?folders)/([\w-]+)")
 
 
 def extract_drive_id(url: str) -> str:
@@ -34,18 +34,22 @@ def download_drive(
     session = client or httpx.Client(timeout=30.0, follow_redirects=False)
     try:
         resource_id = extract_drive_id(url)
-        params = {"key": api_key} if api_key else {}
-        metadata = session.get(
-            f"https://www.googleapis.com/drive/v3/files/{resource_id}",
-            params={**params, "fields": "id,name,mimeType"},
-        )
-        if metadata.status_code == 404 and not api_key:
+        if not api_key:
+            # Sin clave la API de Drive responde 403: el archivo público se baja directo;
+            # una carpeta no se puede listar.
+            if "/folders/" in urlparse(url).path:
+                raise ValueError("Las carpetas de Drive necesitan la clave de API (Ajustes > Importadores).")
             yield download_image(
                 f"https://drive.usercontent.google.com/download?id={resource_id}&export=download",
                 max_bytes=max_bytes,
                 client=session,
             )
             return
+        params = {"key": api_key}
+        metadata = session.get(
+            f"https://www.googleapis.com/drive/v3/files/{resource_id}",
+            params={**params, "fields": "id,name,mimeType"},
+        )
         metadata.raise_for_status()
         item = metadata.json()
         if item.get("mimeType") == "application/vnd.google-apps.folder":

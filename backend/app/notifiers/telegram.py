@@ -54,7 +54,7 @@ class TelegramNotifier:
             step = (percent // telegram.notify_progress_step) * telegram.notify_progress_step
             if step and step > self._last_progress.get(batch_id, 0):
                 self._last_progress[batch_id] = step
-                message = f"Image Studio: lote {batch_id} al {step} %."
+                message = f"Image Studio: {event.payload.get('batch_name', batch_id)} al {step} %."
         elif event.type == "batch.finished" and telegram.notify_on_finish:
             counts = event.payload.get("counts", {})
             done = int(counts.get("done", 0)) if isinstance(counts, dict) else 0
