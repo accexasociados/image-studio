@@ -15,11 +15,12 @@ from uuid import uuid4
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.contracts import AppSettings, Job, ProcessOptions, ProcessResult
+from app.contracts import AppSettings, Event, Job, ProcessOptions, ProcessResult
 from app.db.migrate import upgrade_to_head
 from app.db.models import BatchRow, ImageRow, OutputRow, utcnow
 from app.db.session import get_sessionmaker
 from app.db.settings_store import load_settings
+from app.events import EventPublisher, get_event_store
 from app.gpu import release_gpu_memory
 from app.pipeline.run import process_image
 from app.queue import JobQueue, get_job_queue
@@ -88,12 +89,14 @@ class Worker:
         storage: Storage,
         processor: ImageProcessor,
         release_memory: Callable[[], None] = release_gpu_memory,
+        publisher: EventPublisher | None = None,
     ) -> None:
         self.worker_id = worker_id
         self.queue = queue
         self.storage = storage
         self.processor = processor
         self.release_memory = release_memory
+        self.publisher = publisher
 
     def run_once(self) -> bool:
         job = self.queue.claim_next(self.worker_id)
@@ -122,6 +125,7 @@ class Worker:
         if job.kind not in {"process", "reprocess"} or job.image_id is None:
             raise ValueError(f"Tipo de trabajo no soportado por este worker: {job.kind}")
         context = self._load_context(job.image_id)
+        self._publish_state(context.image_id)
 
         with TemporaryDirectory(prefix=f"image-studio-{job.id}-") as temp_dir:
             temp_root = Path(temp_dir)
@@ -150,6 +154,7 @@ class Worker:
 
             self._persist_result(context, result, result_dir)
         self.queue.complete(job.id)
+        self._publish_state(context.image_id)
 
     def _invoke(self, context: _ImageContext, out_dir: Path) -> tuple[ProcessResult, Path]:
         result = self.processor(
@@ -190,6 +195,46 @@ class Worker:
             )
             session.commit()
             return context
+
+    def _publish_state(self, image_id: str) -> None:
+        if self.publisher is None:
+            return
+        try:
+            with get_sessionmaker()() as session:
+                image = session.get(ImageRow, image_id)
+                if image is None:
+                    return
+                batch = session.get(BatchRow, image.batch_id)
+                if batch is None:
+                    return
+                statuses = session.scalars(select(ImageRow.status).where(ImageRow.batch_id == batch.id)).all()
+                counts = {
+                    "total": len(statuses),
+                    "done": sum(item in {"done", "approved"} for item in statuses),
+                    "review": statuses.count("review"),
+                    "failed": statuses.count("failed"),
+                }
+                self.publisher.publish(
+                    Event(
+                        type="image.updated",
+                        payload={"batch_id": batch.id, "image_id": image.id, "status": image.status},
+                    )
+                )
+                self.publisher.publish(
+                    Event(
+                        type="batch.progress",
+                        payload={"batch_id": batch.id, "status": batch.status, "counts": counts},
+                    )
+                )
+                if batch.status in {"done", "failed", "cancelled"}:
+                    self.publisher.publish(
+                        Event(
+                            type="batch.finished",
+                            payload={"batch_id": batch.id, "status": batch.status, "counts": counts},
+                        )
+                    )
+        except Exception:
+            logger.exception("No se pudo publicar el estado de la imagen %s", image_id)
 
     def _persist_result(
         self,
@@ -255,6 +300,7 @@ class Worker:
                 batch.status = "queued" if will_retry else "failed"
                 batch.finished_at = None if will_retry else utcnow()
             session.commit()
+        self._publish_state(job.image_id)
 
 
 def _safe_result_path(path: str, root: Path) -> Path:
@@ -317,6 +363,7 @@ def main() -> None:
         queue=get_job_queue(),
         storage=get_storage(),
         processor=PipelineProcessor(),
+        publisher=get_event_store(),
     )
     try:
         worker.run(poll_seconds=args.poll_seconds, once=args.once)

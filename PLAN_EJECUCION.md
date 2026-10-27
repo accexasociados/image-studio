@@ -284,7 +284,7 @@ Puede empezar con `PIPELINE_MODE=stub`.
 - [x] F2.4 `queue/`: interfaz `JobQueue` + implementación SQLite (tomar trabajo con bloqueo, reintentos x2 y recuperación de trabajos que quedaron "processing" tras un reinicio). — (codex)
 - [x] F2.5 Worker como proceso aparte (`python -m app.queue.worker`) con concurrencia 1. Carga los modelos una sola vez y libera VRAM si hay error de memoria (reintento con tiles más pequeños). — (codex)
 - [x] F2.6 Reprocesar una imagen con otras opciones o con máscara editada (`kind=reprocess`), conservando versiones anteriores. — (codex)
-- [ ] F2.7 SSE `/api/v1/events` con progreso por lote e imagen.
+- [x] F2.7 SSE `/api/v1/events` con progreso por lote e imagen. — (codex)
 - [ ] F2.8 Descarga `.zip` por lote y por preset (solo aprobadas, o todas), con nombres por SKU.
 - [ ] F2.9 Router `settings` sobre `settings_store`: `GET /settings` (secretos enmascarados como `{configured: true}`), `PUT /settings/{section}` por sección (un secreto vacío u omitido conserva el actual; `null` explícito lo borra) y `POST /settings/telegram/test`. Cubre **todas** las secciones de `AppSettings`.
 - [ ] F2.10 Tests de API (`httpx` + BD temporal) y del worker con el stub.

@@ -9,6 +9,7 @@ from PIL import Image
 from app.contracts import AppSettings, OutputFile, ProcessOptions, ProcessResult
 from app.db.models import BatchRow, ImageRow, JobRow, OutputRow
 from app.db.session import get_sessionmaker
+from app.events import EventPublisher, get_event_store
 from app.main import create_app
 from app.queue import get_job_queue
 from app.queue.worker import ImageProcessor, PipelineProcessor, Worker
@@ -39,6 +40,7 @@ def _worker(
     processor: ImageProcessor,
     *,
     release_memory: Callable[[], None] = lambda: None,
+    publisher: EventPublisher | None = None,
 ) -> Worker:
     return Worker(
         worker_id="test-worker",
@@ -46,6 +48,7 @@ def _worker(
         storage=get_storage(),
         processor=processor,
         release_memory=release_memory,
+        publisher=publisher,
     )
 
 
@@ -189,3 +192,23 @@ def test_worker_marks_review_results(queued_image: tuple[str, str, str]) -> None
     assert image is not None
     assert image.status == "review"
     assert image.review_reasons == ["touching_border"]
+
+
+def test_worker_publishes_progress_and_completion_events(
+    queued_image: tuple[str, str, str],
+) -> None:
+    _batch_id, _image_id, _job_id = queued_image
+    store = get_event_store()
+
+    assert _worker(PipelineProcessor(), publisher=store).run_once() is True
+
+    events = store.read_after(0)
+    assert [stored.event.type for stored in events] == [
+        "image.updated",
+        "batch.progress",
+        "image.updated",
+        "batch.progress",
+        "batch.finished",
+    ]
+    assert events[0].event.payload["status"] == "processing"
+    assert events[-1].event.payload["status"] == "done"
