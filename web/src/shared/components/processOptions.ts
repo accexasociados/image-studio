@@ -9,6 +9,7 @@ export const FALLBACK_OPTIONS: ProcessOptions = {
   shadow_intensity: 100,
   fill_ratio: null,
   upscale: 2,
+  upscale_fidelity: null,
   white_balance: true,
   generate_both_layer_variants: false,
   rotate: 0,
