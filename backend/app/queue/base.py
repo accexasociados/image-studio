@@ -3,6 +3,8 @@ La web, el bot de Telegram y la carpeta vigilada solo encolan; el worker consume
 
 from typing import Any, Protocol
 
+from sqlalchemy.orm import Session
+
 from app.contracts import Job, JobKind
 
 
@@ -14,6 +16,7 @@ class JobQueue(Protocol):
         image_id: str | None = None,
         batch_id: str | None = None,
         payload: dict[str, Any] | None = None,
+        session: Session | None = None,
     ) -> Job: ...
 
     def claim_next(self, worker_id: str) -> Job | None:
@@ -24,9 +27,11 @@ class JobQueue(Protocol):
 
     def fail(self, job_id: str, error: str, *, retry: bool) -> None: ...
 
-    def cancel_batch(self, batch_id: str) -> int:
+    def cancel_batch(self, batch_id: str, *, session: Session | None = None) -> int:
         """Cancela los trabajos pendientes de un lote y devuelve cuántos canceló."""
         ...
+
+    def cancel_job(self, job_id: str) -> None: ...
 
     def recover_stale(self) -> int:
         """Devuelve a `queued` los trabajos que quedaron `running` tras un reinicio del worker."""

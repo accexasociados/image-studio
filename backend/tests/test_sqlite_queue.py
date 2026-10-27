@@ -4,7 +4,7 @@ from concurrent.futures import ThreadPoolExecutor
 import pytest
 
 from app.db.migrate import upgrade_to_head
-from app.db.models import BatchRow, JobRow
+from app.db.models import BatchRow, JobRow, utcnow
 from app.db.session import get_sessionmaker
 from app.queue.sqlite import SQLiteJobQueue
 
@@ -103,7 +103,7 @@ def test_complete_requires_running_job() -> None:
         assert row.finished_at is not None
 
 
-def test_cancel_batch_leaves_running_jobs_and_recover_stale_requeues_them() -> None:
+def test_cancel_batch_marks_queued_and_running_jobs_terminal() -> None:
     batch_id = _batch_id()
     queue = _queue()
     running = queue.enqueue("import", batch_id=batch_id)
@@ -112,20 +112,35 @@ def test_cancel_batch_leaves_running_jobs_and_recover_stale_requeues_them() -> N
     assert claimed is not None
     assert claimed.id == running.id
 
-    assert queue.cancel_batch(batch_id) == 1
-    assert queue.recover_stale() == 1
+    assert queue.cancel_batch(batch_id) == 2
+    assert queue.recover_stale() == 0
 
     recovered = queue.claim_next("other-worker")
-    assert recovered is not None
-    assert recovered.id == running.id
-    assert recovered.attempts == 2
-    assert queue.claim_next("other-worker") is None
+    assert recovered is None
 
     with get_sessionmaker()() as session:
         cancelled = session.get(JobRow, queued.id)
         assert cancelled is not None
         assert cancelled.status == "cancelled"
         assert cancelled.finished_at is not None
+
+
+def test_recover_stale_only_requeues_old_running_jobs_and_counts_attempt() -> None:
+    from datetime import timedelta
+
+    batch_id = _batch_id()
+    queue = _queue()
+    running = queue.enqueue("import", batch_id=batch_id)
+    claimed = queue.claim_next("worker")
+    assert claimed is not None
+    with get_sessionmaker()() as session:
+        row = session.get(JobRow, running.id)
+        assert row is not None
+        row.started_at = utcnow() - timedelta(minutes=10)
+        session.commit()
+    assert queue.recover_stale() == 1
+    recovered = queue.claim_next("other-worker")
+    assert recovered is not None and recovered.attempts == 3
 
 
 def test_enqueue_requires_an_owner_and_missing_job_raises() -> None:

@@ -16,7 +16,6 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.contracts import AppSettings, Event, Job, ProcessOptions, ProcessResult
-from app.db.migrate import upgrade_to_head
 from app.db.models import BatchRow, ImageRow, OutputRow, utcnow
 from app.db.session import get_sessionmaker
 from app.db.settings_store import load_settings
@@ -56,8 +55,6 @@ class PipelineProcessor:
         mask_override: Path | None,
         settings: AppSettings,
     ) -> ProcessResult:
-        # F1.9 conectará `settings.pipeline/export/quality`; el stub conserva esta firma estable.
-        del settings
         return process_image(
             input_path,
             options,
@@ -105,6 +102,8 @@ class Worker:
 
         try:
             self._process(job)
+        except JobCancelled:
+            self.queue.cancel_job(job.id)
         except Exception as error:
             logger.exception("Falló el trabajo %s", job.id)
             self._record_failure(job, error, retry=job.kind in {"process", "reprocess"})
@@ -152,8 +151,11 @@ class Worker:
                 )
                 result, result_dir = self._invoke(retry_context, temp_root / "reduced-tiles")
 
-            self._persist_result(context, result, result_dir)
-        self.queue.complete(job.id)
+            persisted = self._persist_result(context, result, result_dir)
+        if persisted:
+            self.queue.complete(job.id)
+        else:
+            self.queue.cancel_job(job.id)
         self._publish_state(context.image_id)
 
     def _invoke(self, context: _ImageContext, out_dir: Path) -> tuple[ProcessResult, Path]:
@@ -176,7 +178,7 @@ class Worker:
             if batch is None:
                 raise ValueError(f"Lote no encontrado para la imagen: {image_id}")
             if batch.status == "cancelled":
-                raise ValueError("El lote fue cancelado.")
+                raise JobCancelled("El lote fue cancelado.")
 
             image.status = "processing"
             image.error = None
@@ -241,12 +243,17 @@ class Worker:
         context: _ImageContext,
         result: ProcessResult,
         result_dir: Path,
-    ) -> None:
+    ) -> bool:
         with get_sessionmaker()() as session:
             image = session.get(ImageRow, context.image_id)
             batch = session.get(BatchRow, context.batch_id)
             if image is None or batch is None:
                 raise ValueError("La imagen o su lote desaparecieron durante el proceso.")
+            if batch.status == "cancelled":
+                image.status = "pending"
+                image.error = "El lote fue cancelado."
+                session.commit()
+                return False
 
             current_version = session.scalar(
                 select(func.max(OutputRow.version)).where(OutputRow.image_id == image.id)
@@ -283,6 +290,7 @@ class Worker:
             session.flush()
             _refresh_batch_status(session, batch)
             session.commit()
+            return True
 
     def _record_failure(self, job: Job, error: Exception, *, retry: bool) -> None:
         will_retry = retry and job.attempts < 3
@@ -297,8 +305,7 @@ class Worker:
             image.status = "pending" if will_retry else "failed"
             image.error = str(error)
             if batch is not None:
-                batch.status = "queued" if will_retry else "failed"
-                batch.finished_at = None if will_retry else utcnow()
+                _refresh_batch_status(session, batch)
             session.commit()
         self._publish_state(job.image_id)
 
@@ -318,8 +325,13 @@ def _refresh_batch_status(session: Session, batch: BatchRow) -> None:
         batch.status = "failed" if all(image_status == "failed" for image_status in statuses) else "done"
         batch.finished_at = utcnow()
     else:
-        batch.status = "processing"
+        if batch.status != "cancelled":
+            batch.status = "processing"
         batch.finished_at = None
+
+
+class JobCancelled(Exception):
+    """Trabajo descartado porque su lote se canceló."""
 
 
 def _base_name(image: ImageRow) -> str:
@@ -357,7 +369,6 @@ def main() -> None:
         parser.error("--poll-seconds debe ser mayor que cero")
 
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
-    upgrade_to_head()
     worker = Worker(
         worker_id=_worker_id(),
         queue=get_job_queue(),

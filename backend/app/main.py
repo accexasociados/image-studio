@@ -8,6 +8,7 @@ from app import __version__
 from app.api.batches import router as batches_router
 from app.api.downloads import router as downloads_router
 from app.api.events import router as events_router
+from app.api.files import router as files_router
 from app.api.health import router as health_router
 from app.api.images import router as images_router
 from app.api.settings import router as settings_router
@@ -40,6 +41,7 @@ def create_app() -> FastAPI:
     app.include_router(downloads_router, prefix=API_PREFIX)
     app.include_router(images_router, prefix=API_PREFIX)
     app.include_router(events_router, prefix=API_PREFIX)
+    app.include_router(files_router, prefix=API_PREFIX)
     app.include_router(settings_router, prefix=API_PREFIX)
     return app
 

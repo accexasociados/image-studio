@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, TypeAlias
 
 import httpx
 from fastapi import APIRouter, Body, Depends, HTTPException, status
@@ -37,6 +37,17 @@ _SECTION_MODELS: dict[SettingsSection, type[BaseModel]] = {
     "quality": QualitySettings,
     "pipeline": PipelineSettings,
 }
+SettingsPayload: TypeAlias = (
+    GeneralSettings
+    | ProcessOptions
+    | ExportSettings
+    | TelegramSettings
+    | NotificationSettings
+    | HotFolderSettings
+    | ImporterSettings
+    | QualitySettings
+    | PipelineSettings
+)
 
 
 def _public_settings(settings: AppSettings) -> AppSettingsPublic:
@@ -72,10 +83,10 @@ def get_app_settings(session: SessionDep) -> AppSettingsPublic:
 def replace_settings_section(
     section: SettingsSection,
     session: SessionDep,
-    payload: Annotated[dict[str, object], Body()],
+    payload: Annotated[SettingsPayload, Body()],
 ) -> AppSettingsPublic:
     current = load_settings(session)
-    section_payload = dict(payload)
+    section_payload = payload.model_dump(mode="python", exclude_unset=True)
     current_section = getattr(current, section)
     for secret_section, field in SECRET_FIELDS:
         if secret_section == section and (field not in section_payload or section_payload[field] == ""):

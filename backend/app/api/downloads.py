@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session, selectinload
 from app.contracts import PRESETS, Preset
 from app.db.models import BatchRow, ImageRow, OutputRow
 from app.db.session import get_session
+from app.db.settings_store import load_settings
 from app.storage import Storage, get_storage
 
 router = APIRouter(prefix="/batches", tags=["batches"])
@@ -53,11 +54,23 @@ def _unique_name(name: str, used_names: set[str]) -> str:
     return candidate
 
 
-def _archive_name(image: ImageRow, output: OutputRow, output_count: int, extension: str) -> str:
-    original_stem = PurePosixPath(image.original_path).stem
-    base = _safe_name(image.sku or image.product_name or original_stem, fallback=image.id)
+def _archive_name(
+    image: ImageRow,
+    output: OutputRow,
+    output_count: int,
+    extension: str,
+    filename_strategy: str,
+) -> str:
+    original_stem = PurePosixPath(image.source_ref or image.original_path).stem
+    if filename_strategy == "original":
+        candidate = original_stem
+    elif filename_strategy == "slug":
+        candidate = image.product_name or original_stem
+    else:
+        candidate = image.sku or image.product_name or original_stem
+    base = _safe_name(candidate, fallback=image.id)
     variant = _safe_name(output.variant, fallback="variant")
-    suffix = f"_{variant}" if output_count > 1 or output.variant != "keep" else ""
+    suffix = f"_{variant}" if output.variant != "keep" else ""
     return f"{base}{suffix}.{extension}"
 
 
@@ -103,10 +116,13 @@ def download_batch(
     archive = SpooledTemporaryFile(max_size=_SPOOL_LIMIT, mode="w+b")  # noqa: SIM115
     used_names: set[str] = set()
     extension = _EXTENSIONS[PRESETS[preset].format]
+    filename_strategy = load_settings(session).export.filename_strategy
     try:
         with ZipFile(archive, mode="w", compression=ZIP_STORED) as zipped:
             for image, output, output_count in entries:
-                name = _unique_name(_archive_name(image, output, output_count, extension), used_names)
+                name = _unique_name(
+                    _archive_name(image, output, output_count, extension, filename_strategy), used_names
+                )
                 try:
                     content = storage.read_bytes(output.path)
                 except FileNotFoundError:

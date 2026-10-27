@@ -44,6 +44,18 @@ class SQLiteEventStore:
                 for row in rows
             ]
 
+    def latest_id(self) -> int:
+        with self._session_factory() as session:
+            return session.scalar(select(EventRow.id).order_by(EventRow.id.desc()).limit(1)) or 0
+
+    def prune(self, *, keep: int = 1000) -> int:
+        with self._session_factory() as session:
+            ids = session.scalars(select(EventRow.id).order_by(EventRow.id.desc()).offset(keep)).all()
+            if ids:
+                session.query(EventRow).filter(EventRow.id.in_(ids)).delete(synchronize_session=False)
+                session.commit()
+            return len(ids)
+
 
 def get_event_store() -> SQLiteEventStore:
     return SQLiteEventStore(get_sessionmaker())

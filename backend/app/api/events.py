@@ -6,6 +6,7 @@ from typing import Annotated, Protocol
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, status
 from fastapi.responses import StreamingResponse
+from starlette.concurrency import run_in_threadpool
 
 from app.events import SQLiteEventStore, get_event_store
 
@@ -53,7 +54,7 @@ async def event_stream(
     cursor = after_id
     last_output = time.monotonic()
     while not await request.is_disconnected():
-        events = store.read_after(cursor)
+        events = await run_in_threadpool(store.read_after, cursor)
         for stored in events:
             cursor = stored.id
             last_output = time.monotonic()
@@ -75,7 +76,11 @@ def events(
     after_id: Annotated[int | None, Query(ge=0)] = None,
     last_event_id: Annotated[str | None, Header(alias="Last-Event-ID")] = None,
 ) -> StreamingResponse:
-    stream = event_stream(request, store, after_id=_cursor(after_id, last_event_id))
+    initial = _cursor(after_id, last_event_id)
+    if after_id is None and last_event_id is None:
+        initial = store.latest_id()
+    store.prune()
+    stream = event_stream(request, store, after_id=initial)
     return StreamingResponse(
         stream,
         media_type="text/event-stream",

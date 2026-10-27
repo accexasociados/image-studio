@@ -15,9 +15,10 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
 from app.contracts import ImageItem, ImageSource, ImageStatus, ImageUpdate, OutputFile, ProcessOptions
-from app.db.models import BatchRow, ImageRow, JobRow
+from app.db.models import BatchRow, ImageRow, OutputRow
 from app.db.session import get_session
 from app.db.settings_store import load_settings
+from app.queue import get_job_queue
 from app.storage import Storage, get_storage
 
 router = APIRouter(tags=["images"])
@@ -40,6 +41,12 @@ class _MetadataRow:
 
 
 def _image_response(row: ImageRow) -> ImageItem:
+    latest: dict[tuple[str, str], OutputRow] = {}
+    for output in row.outputs:
+        key = (output.preset, output.variant)
+        current = latest.get(key)
+        if current is None or output.version > current.version:
+            latest[key] = output
     return ImageItem(
         id=row.id,
         batch_id=row.batch_id,
@@ -53,7 +60,7 @@ def _image_response(row: ImageRow) -> ImageItem:
         ),
         status=cast(ImageStatus, row.status),
         review_reasons=row.review_reasons,
-        outputs=[OutputFile.model_validate(output) for output in row.outputs],
+        outputs=[OutputFile.model_validate(output) for output in latest.values()],
         error=row.error,
         mask_path=row.mask_path,
     )
@@ -140,9 +147,16 @@ def _zip_images(upload: UploadFile, max_image_bytes: int) -> Iterator[tuple[str,
 
             for info in infos:
                 source_name = PurePosixPath(info.filename).name
+                if PurePosixPath(source_name).suffix.casefold() in {".csv", ".json", ".txt", ".xml", ".db"}:
+                    continue
                 with archive.open(info) as member:
                     data = _read_limited(member, max_image_bytes)
-                validated, extension = _validated_image(data, source_name)
+                try:
+                    validated, extension = _validated_image(data, source_name)
+                except HTTPException as error:
+                    if error.status_code == status.HTTP_415_UNSUPPORTED_MEDIA_TYPE:
+                        continue
+                    raise
                 yield source_name, validated, extension
     except BadZipFile:
         raise HTTPException(
@@ -244,7 +258,7 @@ def _enqueue_reprocess(row: ImageRow, session: Session) -> None:
     row.review_reasons = []
     row.batch.status = "queued"
     row.batch.finished_at = None
-    session.add(JobRow(kind="reprocess", status="queued", image_id=row.id, batch_id=row.batch_id))
+    get_job_queue().enqueue("reprocess", image_id=row.id, batch_id=row.batch_id, session=session)
 
 
 def _normalized_mask(data: bytes, source_name: str, expected_size: tuple[int, int]) -> bytes:
@@ -326,7 +340,7 @@ def upload_images(
                 storage.save_bytes(key, data)
                 saved_keys.append(key)
                 row.original_path = key
-                session.add(JobRow(kind="process", status="queued", image_id=row.id, batch_id=batch.id))
+                get_job_queue().enqueue("process", image_id=row.id, batch_id=batch.id, session=session)
                 created.append(row)
 
         if not created:

@@ -1,12 +1,13 @@
 from typing import Annotated, cast
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select, update
+from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
 from app.contracts import Batch, BatchCounts, BatchCreate, BatchStatus, ProcessOptions
-from app.db.models import BatchRow, JobRow, utcnow
+from app.db.models import BatchRow, utcnow
 from app.db.session import get_session
+from app.queue import get_job_queue
 
 router = APIRouter(prefix="/batches", tags=["batches"])
 SessionDep = Annotated[Session, Depends(get_session)]
@@ -89,11 +90,7 @@ def cancel_batch(batch_id: str, session: SessionDep) -> Batch:
         now = utcnow()
         row.status = "cancelled"
         row.finished_at = now
-        session.execute(
-            update(JobRow)
-            .where(JobRow.batch_id == batch_id, JobRow.status == "queued")
-            .values(status="cancelled", finished_at=now)
-        )
+        get_job_queue().cancel_batch(batch_id, session=session)
         session.commit()
         session.refresh(row)
     return _batch_response(row)
@@ -113,7 +110,7 @@ def retry_failed_images(batch_id: str, session: SessionDep) -> Batch:
         image.status = "pending"
         image.error = None
         image.review_reasons = []
-        session.add(JobRow(kind="process", status="queued", image_id=image.id, batch_id=row.id))
+        get_job_queue().enqueue("process", image_id=image.id, batch_id=row.id, session=session)
 
     row.status = "queued"
     row.finished_at = None

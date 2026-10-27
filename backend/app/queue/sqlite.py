@@ -1,3 +1,4 @@
+from datetime import timedelta
 from typing import Any, cast
 
 from sqlalchemy import select, text
@@ -7,6 +8,7 @@ from app.contracts import Job, JobKind, JobStatus
 from app.db.models import JobRow, utcnow
 
 _MAX_ATTEMPTS = 3
+_STALE_AFTER = timedelta(minutes=5)
 
 
 class SQLiteJobQueue:
@@ -22,10 +24,13 @@ class SQLiteJobQueue:
         image_id: str | None = None,
         batch_id: str | None = None,
         payload: dict[str, Any] | None = None,
+        session: Session | None = None,
     ) -> Job:
         if image_id is None and batch_id is None:
             raise ValueError("Un trabajo debe pertenecer a una imagen o a un lote.")
-        with self._session_factory() as session:
+        own_session = session is None
+        active_session = session or self._session_factory()
+        try:
             row = JobRow(
                 kind=kind,
                 status="queued",
@@ -33,10 +38,16 @@ class SQLiteJobQueue:
                 batch_id=batch_id,
                 payload=dict(payload or {}),
             )
-            session.add(row)
-            session.commit()
-            session.refresh(row)
+            active_session.add(row)
+            if own_session:
+                active_session.commit()
+            else:
+                active_session.flush()
+            active_session.refresh(row)
             return _job_response(row)
+        finally:
+            if own_session:
+                active_session.close()
 
     def claim_next(self, worker_id: str) -> Job | None:
         if not worker_id.strip():
@@ -88,26 +99,48 @@ class SQLiteJobQueue:
                 row.finished_at = utcnow()
             session.commit()
 
-    def cancel_batch(self, batch_id: str) -> int:
+    def cancel_batch(self, batch_id: str, *, session: Session | None = None) -> int:
         now = utcnow()
-        with self._session_factory() as session:
-            rows = session.scalars(
-                select(JobRow).where(JobRow.batch_id == batch_id, JobRow.status == "queued")
+        own_session = session is None
+        active_session = session or self._session_factory()
+        try:
+            rows = active_session.scalars(
+                select(JobRow).where(JobRow.batch_id == batch_id, JobRow.status.in_(("queued", "running")))
             ).all()
             for row in rows:
                 row.status = "cancelled"
                 row.finished_at = now
-            session.commit()
+            if own_session:
+                active_session.commit()
             return len(rows)
+        finally:
+            if own_session:
+                active_session.close()
+
+    def cancel_job(self, job_id: str) -> None:
+        with self._session_factory() as session:
+            row = _get_job(session, job_id)
+            if row.status in {"queued", "running"}:
+                row.status = "cancelled"
+                row.finished_at = utcnow()
+                session.commit()
 
     def recover_stale(self) -> int:
         with self._session_factory() as session:
-            rows = session.scalars(select(JobRow).where(JobRow.status == "running")).all()
+            cutoff = utcnow() - _STALE_AFTER
+            rows = session.scalars(
+                select(JobRow).where(JobRow.status == "running", JobRow.started_at < cutoff)
+            ).all()
             for row in rows:
-                row.status = "queued"
-                row.started_at = None
-                row.finished_at = None
-                row.payload = {key: value for key, value in row.payload.items() if key != "worker_id"}
+                if row.attempts >= _MAX_ATTEMPTS:
+                    row.status = "failed"
+                    row.finished_at = utcnow()
+                else:
+                    row.attempts += 1
+                    row.status = "queued"
+                    row.started_at = None
+                    row.finished_at = None
+                    row.payload = {key: value for key, value in row.payload.items() if key != "worker_id"}
             session.commit()
             return len(rows)
 

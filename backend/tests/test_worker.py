@@ -212,3 +212,52 @@ def test_worker_publishes_progress_and_completion_events(
     ]
     assert events[0].event.payload["status"] == "processing"
     assert events[-1].event.payload["status"] == "done"
+
+
+def test_cancelled_batch_job_is_terminal_and_never_requeued(
+    queued_image: tuple[str, str, str],
+) -> None:
+    batch_id, _image_id, job_id = queued_image
+    with get_sessionmaker()() as session:
+        batch = session.get(BatchRow, batch_id)
+        assert batch is not None
+        batch.status = "cancelled"
+        session.commit()
+
+    assert _worker(PipelineProcessor()).run_once() is True
+    with get_sessionmaker()() as session:
+        job = session.get(JobRow, job_id)
+        assert job is not None
+        assert job.status == "cancelled"
+
+
+def test_cancellation_during_processing_stays_cancelled(
+    queued_image: tuple[str, str, str],
+) -> None:
+    batch_id, image_id, job_id = queued_image
+
+    def processor(
+        input_path: Path,
+        options: ProcessOptions,
+        out_dir: Path,
+        *,
+        base_name: str,
+        mask_override: Path | None,
+        settings: AppSettings,
+    ) -> ProcessResult:
+        del input_path, options, mask_override, settings
+        with get_sessionmaker()() as session:
+            batch = session.get(BatchRow, batch_id)
+            assert batch is not None
+            batch.status = "cancelled"
+            session.commit()
+        return _successful_result(out_dir, base_name)
+
+    assert _worker(processor).run_once() is True
+    with get_sessionmaker()() as session:
+        batch = session.get(BatchRow, batch_id)
+        image = session.get(ImageRow, image_id)
+        job = session.get(JobRow, job_id)
+    assert batch is not None and batch.status == "cancelled"
+    assert image is not None and image.status == "pending"
+    assert job is not None and job.status == "cancelled"
