@@ -50,6 +50,12 @@ class BatchCreate(BaseModel):
     default_options: ProcessOptions = Field(default_factory=ProcessOptions)
 
 
+class ImportRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    url: str = Field(min_length=1, max_length=2000)
+
+
 class ImageItem(_ReadModel):
     id: str
     batch_id: str

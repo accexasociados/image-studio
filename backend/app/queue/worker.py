@@ -21,6 +21,9 @@ from app.db.session import get_sessionmaker
 from app.db.settings_store import load_settings
 from app.events import EventPublisher, get_event_store
 from app.gpu import release_gpu_memory
+from app.importers.direct_url import download_image
+from app.importers.google_drive import download_drive
+from app.importers.google_photos import download_album
 from app.pipeline.run import process_image
 from app.queue import JobQueue, get_job_queue
 from app.storage import Storage, get_storage
@@ -122,6 +125,9 @@ class Worker:
                 time.sleep(poll_seconds)
 
     def _process(self, job: Job) -> None:
+        if job.kind == "import":
+            self._process_import(job)
+            return
         if job.kind not in {"process", "reprocess"} or job.image_id is None:
             raise ValueError(f"Tipo de trabajo no soportado por este worker: {job.kind}")
         context = self._load_context(job.image_id)
@@ -158,6 +164,50 @@ class Worker:
         else:
             self.queue.cancel_job(job.id)
         self._publish_state(context.image_id)
+
+    def _process_import(self, job: Job) -> None:
+        if job.batch_id is None or not isinstance(job.payload.get("url"), str):
+            raise ValueError("El trabajo de importación no tiene lote o URL.")
+        url = job.payload["url"]
+        with get_sessionmaker()() as session:
+            settings = load_settings(session)
+            if "photos.google.com" in url or "photos.app.goo.gl" in url:
+                images = download_album(url)
+            elif "drive.google.com" in url:
+                key = settings.importers.google_drive_api_key
+                images = download_drive(url, api_key=key.get_secret_value() if key else None)
+            else:
+                images = (download_image(url),)
+            batch = session.get(BatchRow, job.batch_id)
+            if batch is None:
+                raise ValueError("El lote de importación no existe.")
+            imported = 0
+            for image in images:
+                row = ImageRow(
+                    batch_id=batch.id,
+                    source="url",
+                    source_ref=image.filename,
+                    original_path="pending",
+                    status="pending",
+                    position=len(batch.images),
+                )
+                session.add(row)
+                session.flush()
+                extension = image.filename.rsplit(".", 1)[-1].lower()
+                key = f"batches/{batch.id}/originals/{row.id}.{extension}"
+                self.storage.save_bytes(key, image.data)
+                row.original_path = key
+                self.queue.enqueue("process", image_id=row.id, batch_id=batch.id, session=session)
+                imported += 1
+                if self.publisher:
+                    self.publisher.publish(
+                        Event(type="import.progress", payload={"batch_id": batch.id, "imported": imported})
+                    )
+            if imported == 0:
+                raise ValueError("El enlace no contiene imágenes.")
+            batch.status = "queued"
+            batch.finished_at = None
+            session.commit()
 
     def _invoke(self, context: _ImageContext, out_dir: Path) -> tuple[ProcessResult, Path]:
         result = self.processor(
