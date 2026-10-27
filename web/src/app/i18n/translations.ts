@@ -16,6 +16,7 @@ const es = {
     english: 'Inglés',
     enableDarkTheme: 'Activar tema oscuro',
     enableLightTheme: 'Activar tema claro',
+    enableNotifications: 'Activar avisos',
   },
   app: {
     title: 'Image Studio',
@@ -293,6 +294,7 @@ const en: TranslationShape<typeof es> = {
     english: 'English',
     enableDarkTheme: 'Enable dark theme',
     enableLightTheme: 'Enable light theme',
+    enableNotifications: 'Enable notifications',
   },
   app: {
     title: 'Image Studio',

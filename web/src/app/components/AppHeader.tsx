@@ -8,9 +8,17 @@ interface AppHeaderProps {
   theme: Theme
   onToggleTheme: () => void
   onSettings: () => void
+  notificationPermission: NotificationPermission | 'unsupported'
+  onEnableNotifications: () => void
 }
 
-export function AppHeader({ theme, onToggleTheme, onSettings }: AppHeaderProps) {
+export function AppHeader({
+  theme,
+  onToggleTheme,
+  onSettings,
+  notificationPermission,
+  onEnableNotifications,
+}: AppHeaderProps) {
   const { t, i18n } = useTranslation()
 
   const changeLanguage = (language: Language) => {
@@ -64,6 +72,15 @@ export function AppHeader({ theme, onToggleTheme, onSettings }: AppHeaderProps) 
           >
             {theme === 'light' ? <Moon size={18} aria-hidden /> : <Sun size={18} aria-hidden />}
           </button>
+          {notificationPermission !== 'unsupported' && notificationPermission !== 'granted' && (
+            <button
+              type="button"
+              onClick={onEnableNotifications}
+              className="h-10 rounded-xl border border-slate-200 px-3 text-xs font-semibold text-slate-600 dark:border-slate-700 dark:text-slate-300"
+            >
+              {t('common.enableNotifications')}
+            </button>
+          )}
           <button
             type="button"
             onClick={onSettings}
