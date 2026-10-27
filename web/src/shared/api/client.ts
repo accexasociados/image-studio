@@ -1,6 +1,7 @@
 import type { components } from './schema'
 
 export type Health = components['schemas']['Health']
+export type Batch = components['schemas']['Batch']
 
 const API_BASE = '/api/v1'
 

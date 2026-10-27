@@ -298,7 +298,7 @@ Puede empezar con `PIPELINE_MODE=stub`.
 
 Todo texto visible en **español e inglés** (i18next), sin textos fijos en el código.
 
-- [ ] F3.1 Layout base, selector de idioma, tema claro/oscuro y lista de lotes con estado y contadores.
+- [x] F3.1 Layout base, selector de idioma, tema claro/oscuro y lista de lotes con estado y contadores. — (codex)
 - [ ] F3.2 Crear lote: nombre, opciones por defecto (presets, líneas de capa, sombra) y zona de arrastrar y soltar para fotos o `.zip`, con progreso de subida.
 - [ ] F3.3 Pestaña "Desde enlace" en el mismo formulario (se conecta en la Fase 4).
 - [ ] F3.4 Tabla editable de nombre y SKU por imagen, más carga de CSV.
