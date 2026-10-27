@@ -127,7 +127,6 @@ function BackgroundLibrary({
   onRefresh: () => void
 }) {
   const { t } = useTranslation()
-  const [name, setName] = useState('')
   const patch = async (id: string, body: Record<string, unknown>) => {
     await apiPatch(`/backgrounds/${id}`, body)
     onRefresh()
@@ -154,14 +153,6 @@ function BackgroundLibrary({
       {items.map((item) => (
         <BackgroundCard key={item.id} item={item} patch={patch} />
       ))}
-      <input
-        aria-label={t('common.backgroundName')}
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        placeholder={t('common.backgroundName')}
-        className="rounded-lg border px-3 py-2"
-      />
-      {name && <span className="text-xs text-slate-500">{t('common.rename')}</span>}
     </div>
   )
 }
@@ -174,6 +165,7 @@ function BackgroundCard({
   patch: (id: string, body: Record<string, unknown>) => Promise<void>
 }) {
   const { t } = useTranslation()
+  const [name, setName] = useState(item.name)
   const point = (event: React.MouseEvent<HTMLImageElement>) => {
     const rect = event.currentTarget.getBoundingClientRect()
     void patch(item.id, {
@@ -183,7 +175,21 @@ function BackgroundCard({
   }
   return (
     <article className="rounded-xl border p-3">
-      <p className="mb-2 text-sm font-semibold">{item.name}</p>
+      <div className="mb-2 flex gap-2">
+        <input
+          aria-label={t('common.backgroundName')}
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          className="min-w-0 flex-1 rounded border px-2 py-1 text-sm font-semibold"
+        />
+        <button
+          type="button"
+          className="text-xs text-indigo-600"
+          onClick={() => void patch(item.id, { name })}
+        >
+          {t('common.rename')}
+        </button>
+      </div>
       <div className="relative">
         <img
           src={item.url}
