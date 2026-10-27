@@ -1,4 +1,4 @@
-import { Languages, Moon, Sparkles, Sun } from 'lucide-react'
+import { Languages, Moon, Settings, Sparkles, Sun } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import type { Language } from '@/app/i18n/translations'
 import { saveLanguage } from '@/app/i18n/i18n'
@@ -7,9 +7,10 @@ import type { Theme } from '@/app/theme/useTheme'
 interface AppHeaderProps {
   theme: Theme
   onToggleTheme: () => void
+  onSettings: () => void
 }
 
-export function AppHeader({ theme, onToggleTheme }: AppHeaderProps) {
+export function AppHeader({ theme, onToggleTheme, onSettings }: AppHeaderProps) {
   const { t, i18n } = useTranslation()
 
   const changeLanguage = (language: Language) => {
@@ -62,6 +63,15 @@ export function AppHeader({ theme, onToggleTheme }: AppHeaderProps) {
             className="grid size-10 place-items-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:border-indigo-300 hover:text-indigo-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-indigo-600 dark:hover:text-indigo-400"
           >
             {theme === 'light' ? <Moon size={18} aria-hidden /> : <Sun size={18} aria-hidden />}
+          </button>
+          <button
+            type="button"
+            onClick={onSettings}
+            aria-label={t('settings.title')}
+            title={t('settings.title')}
+            className="grid size-10 place-items-center rounded-xl border border-slate-200 bg-white text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
+          >
+            <Settings size={18} aria-hidden />
           </button>
         </div>
       </div>
