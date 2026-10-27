@@ -127,6 +127,7 @@ class Worker:
     def _process(self, job: Job) -> None:
         if job.kind == "import":
             self._process_import(job)
+            self.queue.complete(job.id)
             return
         if job.kind not in {"process", "reprocess"} or job.image_id is None:
             raise ValueError(f"Tipo de trabajo no soportado por este worker: {job.kind}")
@@ -174,14 +175,15 @@ class Worker:
             if "photos.google.com" in url or "photos.app.goo.gl" in url:
                 images = download_album(url)
             elif "drive.google.com" in url:
-                key = settings.importers.google_drive_api_key
-                images = download_drive(url, api_key=key.get_secret_value() if key else None)
+                api_key = settings.importers.google_drive_api_key
+                images = download_drive(url, api_key=api_key.get_secret_value() if api_key else None)
             else:
                 images = (download_image(url),)
             batch = session.get(BatchRow, job.batch_id)
             if batch is None:
                 raise ValueError("El lote de importación no existe.")
             imported = 0
+            progress_counts: list[int] = []
             for image in images:
                 row = ImageRow(
                     batch_id=batch.id,
@@ -194,20 +196,22 @@ class Worker:
                 session.add(row)
                 session.flush()
                 extension = image.filename.rsplit(".", 1)[-1].lower()
-                key = f"batches/{batch.id}/originals/{row.id}.{extension}"
-                self.storage.save_bytes(key, image.data)
-                row.original_path = key
+                storage_key = f"batches/{batch.id}/originals/{row.id}.{extension}"
+                self.storage.save_bytes(storage_key, image.data)
+                row.original_path = storage_key
                 self.queue.enqueue("process", image_id=row.id, batch_id=batch.id, session=session)
                 imported += 1
-                if self.publisher:
-                    self.publisher.publish(
-                        Event(type="import.progress", payload={"batch_id": batch.id, "imported": imported})
-                    )
+                progress_counts.append(imported)
             if imported == 0:
                 raise ValueError("El enlace no contiene imágenes.")
             batch.status = "queued"
             batch.finished_at = None
             session.commit()
+        if self.publisher:
+            for count in progress_counts:
+                self.publisher.publish(
+                    Event(type="import.progress", payload={"batch_id": job.batch_id, "imported": count})
+                )
 
     def _invoke(self, context: _ImageContext, out_dir: Path) -> tuple[ProcessResult, Path]:
         result = self.processor(
@@ -352,6 +356,14 @@ class Worker:
         will_retry = retry and job.attempts < 3
         self.queue.fail(job.id, str(error), retry=retry)
         if job.image_id is None:
+            if job.batch_id is not None and not will_retry:
+                with get_sessionmaker()() as session:
+                    batch = session.get(BatchRow, job.batch_id)
+                    if batch is not None and batch.status not in {"cancelled", "done"}:
+                        batch.status = "failed"
+                        batch.finished_at = utcnow()
+                        session.commit()
+                self._publish_batch_failure(job.batch_id)
             return
         with get_sessionmaker()() as session:
             image = session.get(ImageRow, job.image_id)
@@ -364,6 +376,30 @@ class Worker:
                 _refresh_batch_status(session, batch)
             session.commit()
         self._publish_state(job.image_id)
+
+    def _publish_batch_failure(self, batch_id: str) -> None:
+        if self.publisher is None:
+            return
+        with get_sessionmaker()() as session:
+            batch = session.get(BatchRow, batch_id)
+            if batch is None:
+                return
+            statuses = session.scalars(select(ImageRow.status).where(ImageRow.batch_id == batch_id)).all()
+            self.publisher.publish(
+                Event(
+                    type="batch.finished",
+                    payload={
+                        "batch_id": batch_id,
+                        "status": batch.status,
+                        "counts": {
+                            "total": len(statuses),
+                            "done": sum(item in {"done", "approved"} for item in statuses),
+                            "review": statuses.count("review"),
+                            "failed": statuses.count("failed"),
+                        },
+                    },
+                )
+            )
 
 
 def _safe_result_path(path: str, root: Path) -> Path:

@@ -10,8 +10,10 @@ from app.contracts import AppSettings, OutputFile, ProcessOptions, ProcessResult
 from app.db.models import BatchRow, ImageRow, JobRow, OutputRow
 from app.db.session import get_sessionmaker
 from app.events import EventPublisher, get_event_store
+from app.importers.direct_url import DownloadedImage
 from app.main import create_app
 from app.queue import get_job_queue
+from app.queue import worker as worker_module
 from app.queue.worker import ImageProcessor, PipelineProcessor, Worker
 from app.storage import get_storage
 
@@ -212,6 +214,64 @@ def test_worker_publishes_progress_and_completion_events(
     ]
     assert events[0].event.payload["status"] == "processing"
     assert events[-1].event.payload["status"] == "done"
+
+
+def test_worker_import_failure_marks_batch_failed_and_publishes_event(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    with TestClient(create_app()) as client:
+        batch_id = client.post("/api/v1/batches", json={"name": "Import failure"}).json()["id"]
+    with get_sessionmaker()() as session:
+        batch = session.get(BatchRow, batch_id)
+        assert batch is not None
+        batch.status = "queued"
+        session.commit()
+    job = get_job_queue().enqueue(
+        "import", batch_id=batch_id, payload={"url": "https://example.com/image.png"}
+    )
+
+    monkeypatch.setattr(
+        worker_module,
+        "download_image",
+        lambda _url, **_kwargs: (_ for _ in ()).throw(RuntimeError("download failed")),
+    )
+    events = get_event_store()
+
+    assert _worker(PipelineProcessor(), publisher=events).run_once() is True
+
+    with get_sessionmaker()() as session:
+        batch = session.get(BatchRow, batch_id)
+        row = session.get(JobRow, job.id)
+    assert batch is not None and batch.status == "failed"
+    assert row is not None and row.status == "failed"
+    finished = [event for event in events.read_after(0) if event.event.type == "batch.finished"]
+    assert finished and finished[-1].event.payload["batch_id"] == batch_id
+    assert finished[-1].event.payload["status"] == "failed"
+
+
+def test_worker_import_persists_image_and_completes_job(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    with TestClient(create_app()) as client:
+        batch_id = client.post("/api/v1/batches", json={"name": "Import success"}).json()["id"]
+    job = get_job_queue().enqueue(
+        "import", batch_id=batch_id, payload={"url": "https://example.com/image.png"}
+    )
+    monkeypatch.setattr(
+        worker_module,
+        "download_image",
+        lambda _url, **_kwargs: DownloadedImage(
+            data=_image_bytes(), filename="image.png", media_type="image/png"
+        ),
+    )
+
+    assert _worker(PipelineProcessor(), publisher=get_event_store()).run_once() is True
+
+    with get_sessionmaker()() as session:
+        images = session.query(ImageRow).filter_by(batch_id=batch_id).all()
+        row = session.get(JobRow, job.id)
+    assert len(images) == 1
+    assert row is not None and row.status == "done"
 
 
 def test_cancelled_batch_job_is_terminal_and_never_requeued(

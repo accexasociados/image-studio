@@ -30,6 +30,7 @@ Fecha de creación: **2026-10-26**.
 | 7 | Entradas extra: bot de Telegram y carpeta vigilada | Codex | F2, F5 | Pendiente |
 | 8 | Validación con lote real de 100 fotos y ajuste fino | Claude + usuario | F1–F6 | Pendiente |
 | 9 | Nube (opción C): Docker, Redis, S3, autenticación e integración con el ecommerce | Codex (9.1–9.7) + Claude (9.8) | F8 | Pendiente |
+| 10 | Mejora de resolución: modelo elegible y fidelidad por foto | Claude (10.1–10.4) + Codex (10.5–10.7) | F1, F6 | Backend listo (rama `feat/F10-upscale-models`); falta la web |
 
 Las fases 1, 2 y 3 pueden avanzar **en paralelo**: la Fase 0 ya dejó los contratos, la configuración y el proceso en modo `stub`.
 
@@ -331,14 +332,24 @@ Todo texto visible en **español e inglés** (i18next), sin textos fijos en el c
 
 ## Fase 4 — Importar desde enlaces (Codex)
 
-- [x] F4.1 `direct_url.py`: descarga de una URL de imagen con validación de tipo, límite de tamaño y bloqueo de IPs privadas. — (codex, 2026-10-27)
-- [x] F4.2 `google_photos.py`: seguir la redirección de `photos.app.goo.gl/...`, extraer del HTML del álbum compartido las URLs `lh3.googleusercontent.com` y descargarlas en resolución original (sufijo `=d`). Quitar duplicados. **No hay API oficial para álbumes compartidos**: dejar el lector aislado y con test de contrato sobre un HTML guardado, para ajustarlo fácil si Google cambia la página. — (codex, 2026-10-27)
-- [x] F4.3 `google_drive.py`: carpeta o archivo público de Drive. Para carpetas, usar la API de Drive con una API key guardada en `settings` (`gdown` limita las carpetas a 50 archivos). — (codex, 2026-10-27)
-- [x] F4.4 Endpoint `POST /api/v1/batches/{id}/imports` con `{ url }`: detecta el tipo de enlace, crea un trabajo `import` y reporta progreso por SSE. — (codex, 2026-10-27)
-- [x] F4.5 Conexión con la pestaña "Desde enlace" de la web. — (codex, 2026-10-27)
-- [x] F4.6 Tests con respuestas simuladas. — (codex, 2026-10-27)
+- [ ] F4.1 `direct_url.py`: descarga de una URL de imagen con validación de tipo, límite de tamaño y bloqueo de IPs privadas.
+- [ ] F4.2 `google_photos.py`: seguir la redirección de `photos.app.goo.gl/...`, extraer del HTML del álbum compartido las URLs `lh3.googleusercontent.com` y descargarlas en resolución original (sufijo `=d`). Quitar duplicados. **No hay API oficial para álbumes compartidos**: dejar el lector aislado y con test de contrato sobre un HTML guardado, para ajustarlo fácil si Google cambia la página.
+- [ ] F4.3 `google_drive.py`: carpeta o archivo público de Drive. Para carpetas, usar la API de Drive con una API key guardada en `settings` (`gdown` limita las carpetas a 50 archivos).
+- [ ] F4.4 Endpoint `POST /api/v1/batches/{id}/imports` con `{ url }`: detecta el tipo de enlace, crea un trabajo `import` y reporta progreso por SSE.
+- [ ] F4.5 Conexión con la pestaña "Desde enlace" de la web.
+- [ ] F4.6 Tests con respuestas simuladas.
 
 **Criterio de salida:** pegar un enlace de álbum de Google Photos de unas 100 fotos crea el lote con todas las imágenes en resolución original.
+
+### Correcciones tras la revisión del 2026-10-27 (claude, sobre `733e908`)
+
+Pasan los 91 tests, pero **mypy falla con 7 errores**, `ruff format` falla en `tests/test_telegram_notifier.py` y ningún test ejecuta una importación a través del worker. Probado a mano:
+
+- [x] F4.7 **(bloqueante)** Toda importación falla: `Worker._process_import` usa `job.payload`, pero el contrato `Job` no tiene `payload` (`AttributeError`). Además `_record_failure` no toca el lote cuando `job.image_id` es `None`, así que el lote queda en `queued` para siempre. Agregar `payload` a `Job` (con nota en el registro de contrato), marcar el lote como `failed` con el mensaje del error y publicar un evento. Test que pase por el worker con la descarga simulada. — (codex, 2026-10-27)
+- [ ] F4.8 Google Photos con el álbum real (`photos.app.goo.gl/U6S7WECz2sseLrdK7`) devuelve 6 URLs: la portada con `=w600-h315-p-k=d` (responde 400) y avatares (`/a/…`, `/ogw/…`). Aceptar solo `/pw/`, reemplazar el parámetro de tamaño existente por `=d` en vez de añadirlo, y resolver que la página inicial solo trae una foto (el resto llega por `batchexecute`). Guardar ese HTML real como fixture del test de contrato. Si no se logra, decirlo en la web en vez de importar solo la portada.
+- [ ] F4.9 SSRF: el tipo de enlace se detecta con subcadenas (`"photos.app.goo.gl" in url`), así que `http://127.0.0.1:8090/?photos.app.goo.gl` pasa, y el cliente del álbum sigue redirecciones sin validar el host. El cliente de Drive (`follow_redirects=True`) se pasa a `download_image` y se salta su validación de cada salto. Comparar el `hostname` exacto y validar cada redirección en todos los importadores.
+- [ ] F4.10 Usar `settings.importers.max_download_mb` (no 40 MB fijo) y el mismo validador de las subidas (bomba de descompresión, formatos). En `_process_import` la variable `key` es la API key (`SecretStr`) y luego la clave de almacenamiento: renombrar.
+- [ ] F4.11 Si la importación falla a la mitad, los archivos ya guardados quedan huérfanos y no se crea ninguna fila: confirmar por imagen o limpiar lo guardado.
 
 ---
 
@@ -350,6 +361,13 @@ Todo texto visible en **español e inglés** (i18next), sin textos fijos en el c
 - [ ] F5.4 Suscripción a eventos del worker (sin acoplar los notificadores al proceso de imagen).
 
 **Criterio de salida:** al terminar un lote llegan el mensaje de Telegram y la notificación de Windows.
+
+### Correcciones tras la revisión del 2026-10-27 (claude, sobre `733e908`)
+
+- [ ] F5.5 Telegram manda el `id` del lote y el `dict` crudo de conteos (`{'total': 3, ...}`). Usar el nombre del lote y "X listas, Y para revisar, Z fallidas" más el enlace a la galería (`general.public_base_url`), como dice F5.1. El progreso cuenta `done` sin `review`, así que nunca llega al 100 % si alguna queda para revisar.
+- [ ] F5.6 `win11toast` no está en las dependencias: la notificación de Windows nunca aparece y solo queda un log. Agregarlo a un extra opcional (`notify`) y documentarlo en el README, o usar otra vía sin dependencia. Tipar `settings_loader` (mypy).
+- [ ] F5.7 Navegador: `BatchDetailPanel` abre un segundo `EventSource` que vuelve a pedir la lista en cada evento (`useBatchImages` ya escucha y agrupa), avisa al terminar **cualquier** lote (no filtra `batch_id`) y pide el permiso dentro de un evento SSE, cosa que Chrome rechaza sin un clic del usuario. Pedir el permiso con un botón y mover el aviso a un hook global para que funcione aunque el detalle del lote no esté abierto.
+- [ ] F5.8 Antes de marcar `[x]`: `ruff check`, `ruff format --check`, `mypy app`, `tsc -b`, `eslint` y una prueba real (importar un enlace y terminar un lote con el worker corriendo).
 
 ---
 
@@ -385,8 +403,8 @@ Correcciones incluidas: (1) el worker reutilizaba la máscara del proceso anteri
 
 ## Fase 8 — Validación con lote real (Claude + usuario)
 
-- [ ] F8.1 Procesar un lote real de unas 100 fotos y medir el tiempo total y por imagen.
-- [ ] F8.2 Revisar el porcentaje "para revisar" y ajustar los umbrales de `quality.py`.
+- [~] F8.1 Procesar un lote real de unas 100 fotos y medir el tiempo total y por imagen. — (claude) 2026-10-27, 35 fotos de `Photos-1-001` (27 de 12 MP) en la GTX 1660, con tienda + Instagram 4:5 y las dos variantes: **3 min 52 s, 6,6 s por foto** (100 fotos ≈ 11 min). Cero fallos. Falta repetirlo con 100.
+- [x] F8.2 Revisar el porcentaje "para revisar" y ajustar los umbrales de `quality.py`. — (claude) 2 de 35 (6 %), las dos con razón: una foto de 800×800 (`low_resolution`) y una con los pies cortados por el encuadre (`touches_border`). Revisadas a ojo las 35: recortes correctos también con fondos de cocina, madera y mantel con flores, piezas metálicas y extremidades finas. Los umbrales se quedan como están.
 - [ ] F8.3 Subir el `.zip` de storefront con el importador masivo del `ecommerce-dashboard` y verificar que cada foto cae en su producto por SKU.
 - [ ] F8.4 Verificar en el storefront y en una vista previa de Instagram que se ven naturales.
 - [ ] F8.5 Documentar en el README el flujo final y los problemas conocidos.
@@ -407,6 +425,33 @@ Parte del alcance desde el 2026-10-26. Las interfaces ya existen (`JobQueue`, `S
 - [ ] F9.6 Webhook de Telegram como alternativa al long polling cuando haya URL pública (configurable en Ajustes).
 - [ ] F9.7 Backend de proceso remoto opcional (servidor con GPU o fal.ai/Replicate) para cuando no haya GPU local, elegible en Ajustes > Modelos.
 - [ ] F9.8 Integración con `ecommerce-dashboard`: botón "Mejorar fotos" en productos que crea un lote vía API key y asigna las aprobadas al producto por SKU.
+
+## Fase 10 — Mejora de resolución (Claude + Codex)
+
+Objetivo: que las fotos pequeñas o reenviadas por WhatsApp suban de resolución sin "dañarse" (sin texturas inventadas ni aspecto de plástico).
+
+**Resultado de la comparación (2026-10-27, claude).** Seis piezas de fotos reales de 12 MP se redujeron a 600 px de lado largo (limpias y con JPEG calidad 72, como WhatsApp) y se volvieron a agrandar a 1640 px (la pieza en el formato tienda), midiendo contra la pieza real:
+
+| Modelo (+ detalle) | SSIM limpia | SSIM WhatsApp | Nitidez vs. real | s/pieza | Licencia |
+|---|---|---|---|---|---|
+| **4x NMKD Siax + 60 %** | **0,944** | **0,909** | 0,68 | 4,1 | WTFPL |
+| Lanczos (sin IA) | 0,940 | 0,899 | 0,33 (borrosa) | 0 | — |
+| 4x Nomos8kDAT + 60 % | 0,936 | 0,905 | 0,58 | 26 | CC-BY-4.0 |
+| 4x RealESRGAN x4plus + 60 % | 0,930 | 0,899 | 0,63 | 4,0 | BSD-3 |
+| 4x-UltraSharp + 60 % | 0,926 | 0,901 | 0,97 | 4,1 | **CC-BY-NC-SA** (no comercial) |
+| RealESRGAN x2plus + 60 % (el de antes) | 0,924 | 0,897 | 0,52 | 1,2 | BSD-3 |
+
+Barrido de fidelidad con Siax: la calidad es casi igual entre 50 % y 80 % (SSIM 0,943–0,944); con 50 % la nitidez (0,79) queda más cerca de la real. Sin reinyección los modelos inventan texturas (UltraSharp dibuja grietas negras; Siax, arrugas en fotos con JPEG). Ninguno recupera las líneas de capa que la foto pequeña ya no tiene: el límite real es la captura. En el proceso completo, Siax tarda 6–12 s más que x2plus solo en las fotos que necesitan agrandarse (2 de 35 en la Fase 8).
+
+- [x] F10.1 Catálogo de modelos (`app/pipeline/catalog.py`): `realesrgan_x2plus` y `nmkd_siax`, con URL, SHA-256 y licencia. Siax queda por defecto y `detail_reinjection` baja de 0,6 a 0,5. Se descartan Nomos8kDAT (no mejora y tarda 6 veces más), x4plus (peor que Siax en todo) y UltraSharp (licencia no comercial).
+- [x] F10.2 El ampliador acepta modelos x2 y x4 de spandrel y siempre hace al menos una pasada (antes, entre 1,05x y 1,4x se cargaba el modelo pero no se usaba).
+- [x] F10.3 `ProcessOptions.upscale_fidelity` (0–100 o `null` = Ajustes) y `GET /settings/upscale-models` (id, escala, tamaño, licencia, instalado). Si el modelo elegido no está descargado, la imagen falla con el comando para descargarlo.
+- [x] F10.4 `python -m scripts.download_models --upscale <ids|all>` (por defecto, el modelo por defecto) y README.
+- [x] F10.5 (codex) Ajustes > Proceso: `upscale_model` como selector con las opciones de `GET /settings/upscale-models` más "Sin IA (Lanczos)"; las no instaladas se muestran deshabilitadas con el comando de descarga. `detail_reinjection` como deslizador 0–100 %. Hoy los dos son campos de texto. — (codex, 2026-10-27)
+- [x] F10.6 (codex) En `ProcessOptionsFields` (crear lote, Ajustes > Procesamiento por defecto y ajustes por foto del visor): deslizador "Fidelidad al agrandar" para `upscale_fidelity` con la opción "Usar la de Ajustes" (`null`) y una ayuda corta: más alto = más fiel a la foto, más bajo = más nitidez reconstruida por la IA. Agregar `upscale_fidelity: null` a `FALLBACK_OPTIONS`. Textos en español e inglés. — (codex, 2026-10-27)
+- [x] F10.7 (codex) Tests de componentes de F10.5 y F10.6, y `tsc -b`, `eslint` y `vitest` en verde. — (codex, 2026-10-27)
+
+**Criterio de salida:** desde la web se elige el modelo y la fidelidad, y una foto reenviada por WhatsApp sale para la tienda sin texturas inventadas.
 
 ---
 
@@ -440,5 +485,6 @@ _(Fecha · agente · cambio · motivo. El otro agente marca "revisado".)_
 - 2026-10-27 · codex · Se agregan `AppSettingsPublic` y `TelegramTestResult` para documentar la vista enmascarada de ajustes y el resultado de la prueba de Telegram. Motivo: F2.9 requiere que OpenAPI describa respuestas sin secretos. Revisado por claude: [x]
 - 2026-10-27 · claude · (rama `feat/F1-pipeline`) `process_image` recibe `settings: AppSettings | None = None` (el worker ya lo pasa; quitar el `del settings` de `PipelineProcessor` al unir). `QualitySettings.low_confidence_edge_ratio` por defecto pasa de 0,15 a 0,6 (calibrado con 12 fotos reales). `ImageItem.review_reasons` usa los códigos de F1.8 (la web debe traducirlos). Con `generate_both_layer_variants` el proceso nombra `SKU.webp` (conservar) y `SKU_smooth.webp` (suavizar). Revisado por codex: [x]
 - 2026-10-27 · claude · `ProcessOptions.shadow_intensity: int` (0 a 200, por defecto 100) escala la opacidad del modo de sombra; en `main` desde `feat/F1.13-shadow-intensity`. **Codex:** regenerar `web/src/shared/api/schema.d.ts` (`npm run gen:api`) e incluir en los formularios de opciones (F3.2 crear lote, F3.6 Ajustes > Procesamiento por defecto) y en el panel por imagen (F6.3) todos los campos de `ProcessOptions`: formatos, líneas de capa + intensidad, sombra + intensidad, margen (`fill_ratio`), agrandado máximo, balance de blancos y las dos variantes. Revisado por codex: [x]
-- 2026-10-27 · claude · Fase 6 (rama `feat/F6-review-gallery`): `ProcessOptions.rotate` (0/90/180/270, horario) y `ProcessOptions.crop: CropBox | None` (fracciones de la foto ya girada) se aplican antes de segmentar; la máscara se guarda siempre en coordenadas del original. `ImageItem.selected_variant` y `ImageItem.mask_edited` (migración `0003`). Nuevos: `ApproveRequest` (`POST /images/{id}/approve` con `{variant}`: el `.zip` exporta solo esa variante y sin sufijo), `BulkImagesRequest` (`POST /batches/{id}/images/approve` y `/reprocess`), `DELETE /images/{id}/mask` (descarta la corrección a mano) y `GET /files/{key}?w=320|640|1280` (miniaturas WebP cacheadas). El worker pasa `mask_override` solo si `mask_edited`. El modo stub genera las dos variantes. **Codex:** regenerar `schema.d.ts`; los formularios de opciones deben partir de `FALLBACK_OPTIONS` (`web/src/shared/components/processOptions.ts`) y usar `ProcessOptionsFields`; `rotate` y `crop` son por imagen (no van en crear lote). Revisado por codex: [x]
-- 2026-10-27 · codex · `ImportRequest` fija el contrato `{url}` de `POST /batches/{id}/imports` para encolar importaciones de enlaces. Revisado por codex: [x]
+- 2026-10-27 · claude · Fase 6 (rama `feat/F6-review-gallery`): `ProcessOptions.rotate` (0/90/180/270, horario) y `ProcessOptions.crop: CropBox | None` (fracciones de la foto ya girada) se aplican antes de segmentar; la máscara se guarda siempre en coordenadas del original. `ImageItem.selected_variant` y `ImageItem.mask_edited` (migración `0003`). Nuevos: `ApproveRequest` (`POST /images/{id}/approve` con `{variant}`: el `.zip` exporta solo esa variante y sin sufijo), `BulkImagesRequest` (`POST /batches/{id}/images/approve` y `/reprocess`), `DELETE /images/{id}/mask` (descarta la corrección a mano) y `GET /files/{key}?w=320|640|1280` (miniaturas WebP cacheadas). El worker pasa `mask_override` solo si `mask_edited`. El modo stub genera las dos variantes. **Codex:** regenerar `schema.d.ts`; los formularios de opciones deben partir de `FALLBACK_OPTIONS` (`web/src/shared/components/processOptions.ts`) y usar `ProcessOptionsFields`; `rotate` y `crop` son por imagen (no van en crear lote). Revisado por codex: [ ]
+- 2026-10-27 · claude · Fase 10 (rama `feat/F10-upscale-models`): `PipelineSettings.upscale_model` pasa a `"realesrgan_x2plus" | "nmkd_siax" | "lanczos"` con `nmkd_siax` por defecto, y `detail_reinjection` por defecto pasa de 0,6 a 0,5. Nuevos: `ProcessOptions.upscale_fidelity: int | None` (0–100), `UpscaleModelInfo` y `GET /settings/upscale-models`. `schema.d.ts` ya regenerado en la rama. **Codex:** F10.5–F10.7. Revisado por codex: [x]
+- 2026-10-27 · codex · `Job.payload` expone el payload persistido de la cola para que el worker procese importaciones; los fallos de un trabajo `import` marcan el lote como `failed` y publican `batch.finished`. Motivo: corrección F4.7 de importaciones bloqueadas. Revisado por codex: [x]

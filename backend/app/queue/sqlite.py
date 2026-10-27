@@ -164,4 +164,5 @@ def _job_response(row: JobRow) -> Job:
         created_at=row.created_at,
         started_at=row.started_at,
         finished_at=row.finished_at,
+        payload=dict(row.payload),
     )

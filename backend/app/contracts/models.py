@@ -114,6 +114,7 @@ class Job(_ReadModel):
     created_at: datetime
     started_at: datetime | None = None
     finished_at: datetime | None = None
+    payload: dict[str, Any] = Field(default_factory=dict)
 
 
 class Event(BaseModel):
