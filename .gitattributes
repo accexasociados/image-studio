@@ -1,0 +1,2 @@
+# Codigo copiado de BiRefNet: sin conversion de fin de linea, para que su SHA-256 siga coincidiendo.
+backend/app/pipeline/vendor/** -text
