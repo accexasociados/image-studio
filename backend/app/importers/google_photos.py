@@ -5,7 +5,7 @@ from collections.abc import Iterable
 
 import httpx
 
-from app.importers.direct_url import DownloadedImage, download_image
+from app.importers.direct_url import DownloadedImage, _validate_url, download_image
 
 _PHOTO_URL = re.compile(r"https://lh3\.googleusercontent\.com/[A-Za-z0-9_/?=&%-]+")
 
@@ -28,10 +28,22 @@ def extract_photo_urls(html: str) -> list[str]:
 def fetch_album_urls(url: str, *, client: httpx.Client | None = None) -> list[str]:
     owns_client = client is None
     session = client or httpx.Client(
-        timeout=20.0, follow_redirects=True, headers={"User-Agent": "Mozilla/5.0"}
+        timeout=20.0, follow_redirects=False, headers={"User-Agent": "Mozilla/5.0"}
     )
     try:
-        response = session.get(url, headers={"User-Agent": "Mozilla/5.0"})
+        current = url
+        for _ in range(6):
+            _validate_url(current)
+            response = session.get(current, headers={"User-Agent": "Mozilla/5.0"})
+            if response.is_redirect:
+                location = response.headers.get("location")
+                if not location:
+                    raise ValueError("La redirección no tiene destino.")
+                current = str(httpx.URL(current).join(location))
+                continue
+            break
+        else:
+            raise ValueError("Demasiadas redirecciones.")
         response.raise_for_status()
         urls = extract_photo_urls(response.text)
         if not urls:

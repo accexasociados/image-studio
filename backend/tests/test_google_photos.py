@@ -49,3 +49,20 @@ def test_fetch_album_reports_when_page_only_contains_cover() -> None:
             fetch_album_urls("https://photos.google.com/share/test", client=client)
     finally:
         client.close()
+
+
+def test_fetch_album_validates_each_redirect(monkeypatch: pytest.MonkeyPatch) -> None:
+    checked: list[str] = []
+    monkeypatch.setattr("app.importers.google_photos._validate_url", lambda value: checked.append(value))
+    responses = [
+        httpx.Response(302, headers={"location": "https://photos.google.com/share/test"}),
+        httpx.Response(200, text='"https://lh3.googleusercontent.com/pw/photo=w1200"'),
+    ]
+    client = httpx.Client(
+        transport=httpx.MockTransport(lambda _request: responses.pop(0)), follow_redirects=False
+    )
+    try:
+        assert fetch_album_urls("https://photos.app.goo.gl/test", client=client)
+    finally:
+        client.close()
+    assert checked == ["https://photos.app.goo.gl/test", "https://photos.google.com/share/test"]

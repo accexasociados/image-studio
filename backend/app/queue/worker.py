@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from tempfile import TemporaryDirectory
 from typing import Protocol
+from urllib.parse import urlparse
 from uuid import uuid4
 
 from sqlalchemy import func, select
@@ -172,9 +173,10 @@ class Worker:
         url = job.payload["url"]
         with get_sessionmaker()() as session:
             settings = load_settings(session)
-            if "photos.google.com" in url or "photos.app.goo.gl" in url:
+            hostname = (urlparse(url).hostname or "").casefold().rstrip(".")
+            if hostname in {"photos.google.com", "photos.app.goo.gl"}:
                 images = download_album(url)
-            elif "drive.google.com" in url:
+            elif hostname == "drive.google.com":
                 api_key = settings.importers.google_drive_api_key
                 images = download_drive(url, api_key=api_key.get_secret_value() if api_key else None)
             else:

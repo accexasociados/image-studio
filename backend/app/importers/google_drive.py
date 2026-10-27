@@ -27,7 +27,7 @@ def download_drive(
 ) -> Iterator[DownloadedImage]:
     """Descarga un archivo o las imágenes de una carpeta pública."""
     owns_client = client is None
-    session = client or httpx.Client(timeout=30.0, follow_redirects=True)
+    session = client or httpx.Client(timeout=30.0, follow_redirects=False)
     try:
         resource_id = extract_drive_id(url)
         params = {"key": api_key} if api_key else {}
