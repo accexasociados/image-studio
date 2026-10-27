@@ -29,11 +29,12 @@ export function SceneSettingsSection({
   const update = <K extends keyof SceneSettings>(key: K, next: SceneSettings[K]) =>
     onChange({ ...value, [key]: next })
 
-  const upload = async (file: File) => {
+  const upload = async (file: File, name: string) => {
     setUploading(true)
     try {
       const form = new FormData()
       form.append('file', file, file.name)
+      if (name.trim()) form.append('name', name.trim())
       const response = await fetch('/api/v1/backgrounds', { method: 'POST', body: form })
       if (!response.ok) throw new Error('upload')
       await queryClient.invalidateQueries({ queryKey: ['backgrounds'] })
@@ -123,10 +124,11 @@ function BackgroundLibrary({
 }: {
   items: SceneBackground[]
   uploading: boolean
-  onUpload: (file: File) => Promise<void>
+  onUpload: (file: File, name: string) => Promise<void>
   onRefresh: () => void
 }) {
   const { t } = useTranslation()
+  const [uploadName, setUploadName] = useState('')
   const patch = async (id: string, body: Record<string, unknown>) => {
     await apiPatch(`/backgrounds/${id}`, body)
     onRefresh()
@@ -135,19 +137,28 @@ function BackgroundLibrary({
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="font-semibold">{t('common.backgroundLibrary')}</h3>
-        <label className="cursor-pointer rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white">
-          {uploading ? t('common.loading') : t('common.uploadBackground')}
+        <div className="flex items-center gap-2">
           <input
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            className="hidden"
-            disabled={uploading}
-            onChange={(e) => {
-              const file = e.target.files?.[0]
-              if (file) void onUpload(file)
-            }}
+            aria-label={t('common.backgroundName')}
+            value={uploadName}
+            onChange={(e) => setUploadName(e.target.value)}
+            placeholder={t('common.backgroundName')}
+            className="w-36 rounded border px-2 py-1 text-sm"
           />
-        </label>
+          <label className="cursor-pointer rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white">
+            {uploading ? t('common.loading') : t('common.uploadBackground')}
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="hidden"
+              disabled={uploading}
+              onChange={(e) => {
+                const file = e.target.files?.[0]
+                if (file) void onUpload(file, uploadName)
+              }}
+            />
+          </label>
+        </div>
       </div>
       {items.length === 0 && <p className="text-sm text-slate-500">{t('common.backgroundEmpty')}</p>}
       {items.map((item) => (

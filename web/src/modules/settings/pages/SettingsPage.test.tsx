@@ -1,7 +1,8 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, vi } from 'vitest'
 import { SettingsPage } from './SettingsPage'
+import { FALLBACK_OPTIONS } from '@/shared/components/processOptions'
 
 afterEach(() => vi.unstubAllGlobals())
 
@@ -70,4 +71,42 @@ it('muestra las secciones de ajustes recibidas desde la API', async () => {
   )
   expect(await screen.findByText('Procesamiento por defecto')).toBeInTheDocument()
   expect(screen.getByText('URL pública')).toBeInTheDocument()
+})
+
+it('muestra el editor de escenas y la biblioteca de fondos en Exportación', async () => {
+  const settings = {
+    general: { language: 'es', public_base_url: 'http://localhost:5180' },
+    processing_defaults: FALLBACK_OPTIONS,
+    export: {
+      presets: {},
+      background_hex: '#FFFFFF',
+      filename_strategy: 'sku_then_slug',
+      scene: {
+        style: 'studio',
+        studio_wall_hex: '#FFFFFF',
+        studio_floor_hex: '#ECEAE6',
+        brand_hex: '#C9D9EA',
+        pedestal_hex: '#E4DFD6',
+        reflection: 14,
+        default_background_id: null,
+      },
+    },
+  }
+  vi.stubGlobal(
+    'fetch',
+    vi
+      .fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify(settings)))
+      .mockResolvedValueOnce(new Response('[]')),
+  )
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  render(
+    <QueryClientProvider client={client}>
+      <SettingsPage onClose={() => undefined} />
+    </QueryClientProvider>,
+  )
+  fireEvent.click(await screen.findByRole('button', { name: 'Formatos de salida' }))
+  expect(screen.getByLabelText('Estilo de escena')).toHaveValue('studio')
+  expect(screen.getByText('Biblioteca de fondos')).toBeInTheDocument()
+  expect(screen.getByRole('slider')).toHaveValue('14')
 })
