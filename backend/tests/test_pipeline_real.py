@@ -59,6 +59,9 @@ def test_shadow_auto_is_strong_for_light_pieces() -> None:
     white = np.ones_like(image)
     assert resolve_shadow("auto", white, alpha, ShadowParams()) == "strong"
     assert shadow_map(alpha, "none", ShadowParams()).max() == 0.0
+    normal = shadow_map(alpha, "soft", ShadowParams()).max()
+    assert shadow_map(alpha, "soft", ShadowParams(intensity=2.0)).max() > normal * 1.9
+    assert shadow_map(alpha, "soft", ShadowParams(intensity=0.0)).max() == 0.0
 
 
 def test_compose_keeps_pure_white_background_and_contact_shadow() -> None:

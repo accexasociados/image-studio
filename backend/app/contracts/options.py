@@ -21,6 +21,9 @@ class ProcessOptions(BaseModel):
         default=35, ge=0, le=100, description="Solo aplica con layer_lines='smooth'."
     )
     shadow: ShadowMode = "auto"
+    shadow_intensity: int = Field(
+        default=100, ge=0, le=200, description="Porcentaje de la opacidad del modo de sombra (100 = normal)."
+    )
     fill_ratio: float | None = Field(
         default=None,
         ge=0.5,

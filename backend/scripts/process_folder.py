@@ -31,6 +31,9 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--layers", choices=["keep", "smooth", "both"], default="both")
     parser.add_argument("--smooth-strength", type=int, default=35)
     parser.add_argument("--shadow", choices=["auto", "none", "soft", "strong"], default="auto")
+    parser.add_argument("--shadow-intensity", type=int, default=100, help="0 a 200 (%% de la sombra normal)")
+    parser.add_argument("--fill", type=float, default=None, help="0.5 a 0.95; vacío = el de cada formato")
+    parser.add_argument("--no-white-balance", action="store_true")
     parser.add_argument("--upscale", type=int, choices=[1, 2, 4], default=4)
     return parser.parse_args(argv)
 
@@ -89,6 +92,9 @@ def main(argv: list[str] | None = None) -> int:
         layer_lines="smooth" if args.layers == "smooth" else "keep",
         smooth_strength=args.smooth_strength,
         shadow=args.shadow,
+        shadow_intensity=args.shadow_intensity,
+        fill_ratio=args.fill,
+        white_balance=not args.no_white_balance,
         upscale=args.upscale,
         generate_both_layer_variants=args.layers == "both",
     )

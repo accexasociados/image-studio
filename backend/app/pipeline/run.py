@@ -171,7 +171,8 @@ def _process_real(
         up_image, up_alpha = upscale(crop.image, crop.alpha, factor, upscaler, device, params)
         crop = Crop(up_image, up_alpha)
 
-    shadow_mode = resolve_shadow(options.shadow, crop.image, crop.alpha, ShadowParams())
+    shadow_params = ShadowParams(intensity=options.shadow_intensity / 100.0)
+    shadow_mode = resolve_shadow(options.shadow, crop.image, crop.alpha, shadow_params)
     background = _hex_to_rgb(settings.export.background_hex)
     variants: list[LayerLines] = (
         ["keep", "smooth"] if options.generate_both_layer_variants else [options.layer_lines]
@@ -192,7 +193,9 @@ def _process_real(
                 spec = resolve_preset(preset, settings.export)
                 size, hd_fill = _canvas_for(preset, variant_crop, settings)
                 fill = hd_fill or options.fill_ratio or spec.default_fill_ratio
-                composed = compose_on_canvas(variant_crop, size, fill, shadow_mode, background)
+                composed = compose_on_canvas(
+                    variant_crop, size, fill, shadow_mode, background, shadow_params=shadow_params
+                )
                 path = output_path(out_dir, base_name, preset, spec, suffix)
                 data = encode(composed, spec)
                 path.write_bytes(data)

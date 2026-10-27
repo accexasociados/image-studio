@@ -23,6 +23,8 @@ class ShadowParams:
     )
     # Piezas con luminancia media superior a esto se consideran claras (modo auto -> strong).
     light_piece_luminance: float = 0.62
+    # Multiplicador de la opacidad (ProcessOptions.shadow_intensity / 100).
+    intensity: float = 1.0
 
 
 def resolve_shadow(mode: ShadowMode, image: FloatImage, alpha: Alpha, params: ShadowParams) -> ResolvedShadow:
@@ -63,7 +65,9 @@ def shadow_map(alpha: Alpha, mode: ResolvedShadow, params: ShadowParams) -> Alph
     cv2.ellipse(ambient, (round(center[0]), round(center[1])), ambient_axes, 0, 0, 360, 1.0, -1)
     ambient = cv2.GaussianBlur(ambient, (0, 0), max(footprint * 0.12, 3.0)).astype(np.float32)
 
-    combined = contact * params.contact_opacity[mode] + ambient * params.ambient_opacity[mode]
+    combined = (
+        contact * params.contact_opacity[mode] + ambient * params.ambient_opacity[mode]
+    ) * params.intensity
     # Debajo de la pieza la sombra no se ve; fuera, por debajo de 1/255 se descarta (fondo blanco puro).
     combined[combined < 1.0 / 255.0] = 0.0
     return np.clip(combined, 0.0, 1.0).astype(np.float32)
