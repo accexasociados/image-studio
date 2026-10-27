@@ -402,8 +402,8 @@ Correcciones incluidas: (1) el worker reutilizaba la máscara del proceso anteri
 
 ## Fase 8 — Validación con lote real (Claude + usuario)
 
-- [ ] F8.1 Procesar un lote real de unas 100 fotos y medir el tiempo total y por imagen.
-- [ ] F8.2 Revisar el porcentaje "para revisar" y ajustar los umbrales de `quality.py`.
+- [~] F8.1 Procesar un lote real de unas 100 fotos y medir el tiempo total y por imagen. — (claude) 2026-10-27, 35 fotos de `Photos-1-001` (27 de 12 MP) en la GTX 1660, con tienda + Instagram 4:5 y las dos variantes: **3 min 52 s, 6,6 s por foto** (100 fotos ≈ 11 min). Cero fallos. Falta repetirlo con 100.
+- [x] F8.2 Revisar el porcentaje "para revisar" y ajustar los umbrales de `quality.py`. — (claude) 2 de 35 (6 %), las dos con razón: una foto de 800×800 (`low_resolution`) y una con los pies cortados por el encuadre (`touches_border`). Revisadas a ojo las 35: recortes correctos también con fondos de cocina, madera y mantel con flores, piezas metálicas y extremidades finas. Los umbrales se quedan como están.
 - [ ] F8.3 Subir el `.zip` de storefront con el importador masivo del `ecommerce-dashboard` y verificar que cada foto cae en su producto por SKU.
 - [ ] F8.4 Verificar en el storefront y en una vista previa de Instagram que se ven naturales.
 - [ ] F8.5 Documentar en el README el flujo final y los problemas conocidos.
