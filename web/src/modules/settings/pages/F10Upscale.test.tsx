@@ -65,7 +65,10 @@ it('muestra el selector de modelo y deshabilita los modelos no instalados', asyn
     </QueryClientProvider>,
   )
   fireEvent.click(await screen.findByRole('button', { name: 'Modelos' }))
-  expect(await screen.findByRole('option', { name: /nmkd_siax/ })).toBeDisabled()
+  expect(await screen.findByRole('option', { name: /Siax 4×/ })).toBeDisabled()
+  // Los demás campos de la sección siguen siendo editables.
+  expect(screen.getByLabelText('Tamaño de segmentación')).toHaveValue(1024)
+  expect(screen.getByLabelText('Media precisión')).not.toBeChecked()
 })
 
 it('permite usar la fidelidad de Ajustes o fijarla por imagen', () => {
@@ -74,4 +77,11 @@ it('permite usar la fidelidad de Ajustes o fijarla por imagen', () => {
   expect(screen.getByText('Usar la fidelidad de Ajustes')).toBeInTheDocument()
   fireEvent.click(screen.getByRole('checkbox', { name: 'Usar la fidelidad de Ajustes' }))
   expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ upscale_fidelity: 50 }))
+})
+
+it('trata las opciones sin fidelidad (guardadas antes) como "usar la de Ajustes"', () => {
+  const { upscale_fidelity: _omit, ...legacy } = FALLBACK_OPTIONS
+  render(<ProcessOptionsFields value={legacy} onChange={vi.fn()} />)
+  expect(screen.getByRole('checkbox', { name: 'Usar la fidelidad de Ajustes' })).toBeChecked()
+  expect(screen.getByRole('slider', { name: /Fidelidad al agrandar/ })).toBeDisabled()
 })

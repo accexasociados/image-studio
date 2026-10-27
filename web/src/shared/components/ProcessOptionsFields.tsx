@@ -27,6 +27,8 @@ export function ProcessOptionsFields({
       presets.includes(preset) ? presets.filter((item) => item !== preset) : [...presets, preset],
     )
   const grid = compact ? 'grid gap-4' : 'grid gap-4 sm:grid-cols-2'
+  // Opciones guardadas antes de la Fase 10 no traen el campo: equivale a "usar la de Ajustes".
+  const fidelity = value.upscale_fidelity ?? null
 
   return (
     <div className="space-y-5">
@@ -84,21 +86,19 @@ export function ProcessOptionsFields({
             type="range"
             min="0"
             max="100"
-            value={value.upscale_fidelity ?? 50}
-            disabled={value.upscale_fidelity === null}
+            value={fidelity ?? 50}
+            disabled={fidelity === null}
             onChange={(event) => set('upscale_fidelity', Number(event.target.value))}
             className="mt-2 w-full"
           />
           <span className="text-xs text-slate-500">
-            {value.upscale_fidelity === null
-              ? t('batches.upscaleFidelitySettings')
-              : `${value.upscale_fidelity}%`}
+            {fidelity === null ? t('batches.upscaleFidelitySettings') : `${fidelity}%`}
           </span>
         </label>
         <label className="mt-2 flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
           <input
             type="checkbox"
-            checked={value.upscale_fidelity === null}
+            checked={fidelity === null}
             onChange={(event) => set('upscale_fidelity', event.target.checked ? null : 50)}
           />
           {t('batches.upscaleFidelityUseSettings')}

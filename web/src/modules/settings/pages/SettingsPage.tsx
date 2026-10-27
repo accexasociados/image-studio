@@ -25,6 +25,8 @@ const SECTIONS = [
 ] as const
 type Section = (typeof SECTIONS)[number]
 type Values = Record<string, unknown>
+// Campos de Proceso con control propio (PipelineFields); el resto usa SettingField.
+const PIPELINE_CUSTOM_FIELDS = ['upscale_model', 'detail_reinjection']
 
 export function SettingsPage({ onClose }: { onClose: () => void }) {
   const { t } = useTranslation()
@@ -101,19 +103,22 @@ export function SettingsPage({ onClose }: { onClose: () => void }) {
                   onChange={(next) => setValues(next as unknown as Values)}
                 />
               </div>
-            ) : section === 'pipeline' ? (
-              <PipelineFields value={draft} models={upscaleModels.data ?? []} onChange={update} t={t} />
             ) : (
               <div className="mt-5 grid gap-4 sm:grid-cols-2">
-                {Object.entries(draft).map(([key, value]) => (
-                  <SettingField
-                    key={key}
-                    name={key}
-                    value={value}
-                    onChange={(next) => update(key, next)}
-                    t={t}
-                  />
-                ))}
+                {section === 'pipeline' && (
+                  <PipelineFields value={draft} models={upscaleModels.data ?? []} onChange={update} t={t} />
+                )}
+                {Object.entries(draft)
+                  .filter(([key]) => section !== 'pipeline' || !PIPELINE_CUSTOM_FIELDS.includes(key))
+                  .map(([key, value]) => (
+                    <SettingField
+                      key={key}
+                      name={key}
+                      value={value}
+                      onChange={(next) => update(key, next)}
+                      t={t}
+                    />
+                  ))}
               </div>
             )}
             <div className="mt-6 flex items-center gap-3">
@@ -155,7 +160,7 @@ function PipelineFields({
   t: (key: string) => string
 }) {
   return (
-    <div className="mt-5 grid gap-4 sm:grid-cols-2">
+    <>
       <label className="text-sm font-medium text-slate-700 dark:text-slate-200">
         {t('settings.fields.upscale_model')}
         <select
@@ -166,7 +171,8 @@ function PipelineFields({
           <option value="lanczos">{t('settings.lanczos')}</option>
           {models.map((model) => (
             <option key={model.id} value={model.id} disabled={!model.installed}>
-              {model.id} · {model.scale}×{model.installed ? '' : ` (${t('settings.notInstalled')})`}
+              {t(`settings.upscaleModels.${model.id}`)}
+              {model.installed ? '' : ` (${t('settings.notInstalled')})`}
             </option>
           ))}
         </select>
@@ -190,7 +196,7 @@ function PipelineFields({
           {Math.round(Number(value.detail_reinjection ?? 0.5) * 100)}%
         </span>
       </label>
-    </div>
+    </>
   )
 }
 
