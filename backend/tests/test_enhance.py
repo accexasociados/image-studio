@@ -84,3 +84,15 @@ def test_enhance_does_not_brighten_existing_glints() -> None:
     # Sin el límite el realce sube el reflejo; con él queda como en la foto (un poco de margen por la curva).
     assert glint(unchecked) > glint(image) * 1.15
     assert glint(kept) < glint(image) * 1.08
+
+
+def test_exposure_does_not_brighten_a_piece_without_white_when_the_photo_is_well_lit() -> None:
+    from app.pipeline.color import correct_color
+
+    image = np.full((300, 300, 3), 0.86, np.float32)  # cartulina bien iluminada
+    alpha = np.zeros((300, 300), np.float32)
+    alpha[80:220, 80:220] = 1.0
+    image[80:220, 80:220] = (0.3, 0.18, 0.5)  # pieza morada, sin blanco
+    result = correct_color(image, alpha, white_balance=False)
+    # Antes la parte más clara de la pieza se llevaba a 0,94 (ganancia 1,35); ahora manda el fondo.
+    assert result.exposure_gain < 1.1

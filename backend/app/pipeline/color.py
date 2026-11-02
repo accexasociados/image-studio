@@ -20,6 +20,9 @@ class ColorParams:
     exposure_percentile: float = 99.0
     exposure_target: float = 0.94
     max_exposure_gain: float = 1.35
+    # Fondo claro (percentil) de una foto bien expuesta: con este valor no hace falta aclarar más.
+    background_percentile: float = 90.0
+    background_target: float = 0.92
 
 
 @dataclass(frozen=True)
@@ -93,6 +96,16 @@ def correct_color(
         bright = float(np.percentile(luminance(small_image * gain_vector)[piece], params.exposure_percentile))
         if 0.05 < bright < params.exposure_target:
             exposure_gain = min(params.exposure_target / bright, params.max_exposure_gain)
+        # La pieza no siempre tiene blanco (un Gengar morado y negro): llevar su parte más clara a 0,94 la
+        # aclaraba un 28 % aunque la foto estuviera bien expuesta. El fondo claro dice cuánta luz tenía la
+        # foto de verdad, así que la ganancia no pasa de lo que necesita el fondo para verse bien expuesto.
+        background = small_alpha < 0.02
+        if background.sum() > 500:
+            card = float(
+                np.percentile(luminance(small_image * gain_vector)[background], params.background_percentile)
+            )
+            if card > 0.05:
+                exposure_gain = min(exposure_gain, max(params.background_target / card, 1.0))
 
     target = image if apply_to is None else apply_to
     corrected = target * (gain_vector * exposure_gain)
