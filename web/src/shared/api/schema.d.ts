@@ -1011,12 +1011,12 @@ export interface components {
       style: 'white' | 'studio' | 'pedestal' | 'color' | 'photo'
       /**
        * Studio Wall Hex
-       * @default #ECECEC
+       * @default #E3E3E3
        */
       studio_wall_hex: string
       /**
        * Studio Floor Hex
-       * @default #FDFDFD
+       * @default #F3F3F3
        */
       studio_floor_hex: string
       /**

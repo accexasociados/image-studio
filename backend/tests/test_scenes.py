@@ -40,8 +40,8 @@ def test_studio_rests_piece_on_floor_with_contact_shadow() -> None:
     without_shadow = render_scene(_crop(), (W, H), 0.8, spec, shadow_strength=0.0)
 
     top, bottom = _piece_rows(with_shadow)
-    # Centrada con algo de piso debajo: base = 53 % del alto + media pieza (400 px de alto aquí).
-    assert abs(bottom - (H * 0.53 + 200)) <= 3
+    # Con piso visible debajo: la base no baja del 86 % del alto (antes llegaba al 94 % y parecía flotar).
+    assert abs(bottom - H * 0.86) <= 3
     assert top >= H * 0.04
     # Justo al lado de la base la sombra oscurece el piso; sin sombra no.
     _rows, columns = np.nonzero((with_shadow[..., 0] > 0.8) & (with_shadow[..., 2] < 0.2))
@@ -58,10 +58,25 @@ def test_studio_floor_moves_with_piece_size() -> None:
     large = render_scene(_crop(), (W, H), 0.95, spec, shadow_strength=0.0)
     _small_top, small_bottom = _piece_rows(small)
     large_top, large_bottom = _piece_rows(large)
-    assert small_bottom >= H * 0.78 - 2
-    assert large_bottom <= H * 0.94 + 2
-    # Una pieza grande puede ocupar casi 90 % del alto (antes el tope era 73 %).
-    assert (large_bottom - large_top) / H > 0.85
+    assert small_bottom >= H * 0.72 - 2
+    assert large_bottom <= H * 0.86 + 2
+    # Una pieza grande ocupa ~80 % del alto y deja ~14 % de piso debajo para que se lea la mesa.
+    assert (large_bottom - large_top) / H > 0.78
+
+
+def test_studio_front_shadow_is_short_and_soft() -> None:
+    spec = SceneSpec(
+        kind="studio", reflection=0.0, shadow_side="none", floor=(243, 243, 243), wall=(243, 243, 243)
+    )
+    lit = render_scene(_crop(), (W, H), 0.8, spec, shadow_strength=1.0)
+    flat = render_scene(_crop(), (W, H), 0.8, spec, shadow_strength=0.0)
+    top, bottom = _piece_rows(lit)
+    piece_h = bottom - top
+    darkening = (flat - lit).mean(axis=2)[:, W // 2]
+    # Pegada a la base se nota (la apoya en la mesa; antes a 1,3 % del alto quedaba 0,02) y a 6 % del alto
+    # de la pieza ya casi no queda (no forma franja). Medido en la foto de referencia: 0,13 y ~0,01.
+    assert darkening[bottom + int(piece_h * 0.013) + 1] > 0.08
+    assert darkening[bottom + int(piece_h * 0.06)] < 0.03
 
 
 def test_cast_shadow_falls_to_the_chosen_side() -> None:
@@ -162,9 +177,10 @@ def test_pipeline_uses_scene_from_options_and_4x5_hd(tmp_path: Path, real_mode: 
     assert hd.width * 5 == hd.height * 4
     with Image.open(hd.path) as rendered:
         pixels = np.asarray(rendered.convert("RGB"))
-    # Estudio: pared gris arriba y piso casi blanco (no es el blanco liso de "white").
-    assert pixels[5, 5].max() < 240
-    assert pixels[-5, -5].min() > 245
+    # Estudio: pared gris arriba y piso gris muy claro, más claro que la pared (no es el blanco de "white").
+    assert pixels[5, 5].max() < 235
+    assert 235 < pixels[-5, -5].min() < 250
+    assert pixels[5, 5].max() < pixels[-5, -5].min()
 
 
 def test_pipeline_photo_scene_needs_a_background(tmp_path: Path, real_mode: None) -> None:

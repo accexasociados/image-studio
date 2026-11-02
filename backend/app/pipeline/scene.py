@@ -22,7 +22,9 @@ ShadowSide = Literal["left", "right", "none"]
 
 # Estudio y color: la base baja cuanto más grande es la pieza, entre estos límites (fracciones del alto),
 # para que una pieza al 85-90 % quepa con poco piso (como en una foto de catálogo).
-_FLOOR_Y_RANGE = (0.78, 0.94)
+# La base nunca queda más abajo del 86 %: con ~14 % de piso bajo la pieza se lee la mesa (con 6-7 %, como
+# antes, el piso casi no se veía y la pieza parecía flotar; la foto de referencia del Gengar deja 16 %).
+_FLOOR_Y_RANGE = (0.72, 0.86)
 _PEDESTAL_TOP_Y = 0.70
 _TOP_MARGIN = 0.07
 _STUDIO_TOP_MARGIN = 0.05
@@ -36,9 +38,13 @@ _CAST_OPACITY = 0.17
 # Lo más alto de la pieza: sombra con este peso y este múltiplo del desenfoque.
 _CAST_FAR_WEIGHT = 0.6
 _CAST_FAR_BLUR = 3.0
-# Oclusión de contacto por delante de la base: la foto de referencia casi no tiene (≈ 2 %); la base se
-# apoya con la sombra pegada a sus lados y detrás.
+# Oclusión de contacto pegada a los lados y detrás de la base.
 _CONTACT_CORE = 0.2
+# Sombra justo por delante de la base, medida en la foto de referencia del Gengar (sobre una mesa):
+# oscurece ~0,26 en el borde, ~0,13 a 1,3 % del alto de la pieza y ~0,04 a 3,3 %. Se apaga tan rápido que
+# no forma la franja que hacía flotar al Snoopy, pero sin ella la base no se ve apoyada.
+_FRONT_WEIGHT = 0.26
+_FRONT_DECAY = 0.016
 # Fin de la transición pared → piso (fracción del alto) y oscurecimiento de los bordes de la pared.
 _STUDIO_BLEND_END = 0.6
 _STUDIO_WALL_VIGNETTE = 0.06
@@ -166,7 +172,34 @@ def _contact_shadow(placed: _Placed, canvas_size: tuple[int, int], strength: flo
         soft, soft_center, (max(int(footprint * 0.62), 2), max(int(footprint * 0.1), 2)), 0, 0, 360, 1.0, -1
     )
     soft = cv2.GaussianBlur(soft, (0, 0), max(footprint * 0.045, 3.0)).astype(np.float32)
-    return np.clip((core * _CONTACT_CORE + soft * 0.25) * strength, 0, 1).astype(np.float32)
+    return np.clip(
+        (core * _CONTACT_CORE + soft * 0.25 + _front_shadow(placed, height)) * strength, 0, 1
+    ).astype(np.float32)
+
+
+def _front_shadow(placed: _Placed, height: int) -> Alpha:
+    """Franja muy corta por delante de la base que sigue su borde inferior: lo que la apoya en la mesa.
+
+    Arranca en el borde de la base de cada columna (no en una recta en el punto más bajo: con una base curva
+    esa recta dejaba un corte visible a los lados)."""
+    piece_h = placed.bottom - placed.top + 1
+    band_top = max(int(placed.bottom - piece_h * 0.08), 0)
+    band: np.ndarray = np.asarray(placed.alpha[band_top : placed.bottom + 1] > 0.5)
+    present: np.ndarray = np.asarray(band.any(axis=0))
+    if not present.any():
+        return np.zeros((height, placed.alpha.shape[1]), np.float32)
+    # Fila del borde inferior de la base en cada columna.
+    edge = band_top + band.shape[0] - 1 - np.argmax(band[::-1], axis=0)
+    rows = np.arange(height, dtype=np.float32)[:, None]
+    ahead = rows - edge[None, :].astype(np.float32)
+    decay = np.where(ahead > 0, np.exp(-np.clip(ahead, 0, None) / max(piece_h * _FRONT_DECAY, 1.0)), 0.0)
+    front = (decay * present[None, :] * _FRONT_WEIGHT).astype(np.float32)
+    footprint = placed.foot_right - placed.foot_left + 1
+    # Puntas suaves a los lados de la huella y sin escalones entre columnas.
+    blurred: Alpha = cv2.GaussianBlur(front, (0, 0), sigmaX=max(footprint * 0.03, 2.0), sigmaY=1.0).astype(
+        np.float32
+    )
+    return blurred
 
 
 def _reflection(placed: _Placed, opacity: float) -> tuple[FloatImage, Alpha]:
@@ -245,7 +278,11 @@ def _cast_shadow(placed: _Placed, canvas_size: tuple[int, int], strength: float,
     shadow = shadow.astype(np.float32)
     # La sombra cae detrás de la pieza: por delante de la base se desvanece enseguida (el desenfoque la
     # derramaba hacia el frente y la base parecía flotar sobre una mancha).
-    fade = np.exp(-np.clip(rows - placed.bottom, 0, None) / max(height * 0.008, 1.0))
+    # Caída gaussiana (sin quiebre en el arranque): con una exponencial que empezaba de golpe en la fila más
+    # baja de la base quedaba una línea recta visible a los lados de bases anchas (Gengar).
+    start = placed.bottom - piece_h * 0.02
+    reach = max(piece_h * 0.03, 1.0)
+    fade = np.exp(-0.5 * (np.clip(rows - start, 0, None) / reach) ** 2)
     cast: Alpha = np.clip(shadow * fade * _CAST_OPACITY * strength, 0, 1).astype(np.float32)
     return cast
 

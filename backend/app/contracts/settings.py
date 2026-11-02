@@ -55,9 +55,10 @@ class SceneSettings(_Section):
     """Fondo con el que se componen todos los formatos (Fase 11). Cada lote o foto puede cambiar el estilo."""
 
     style: SceneStyle = "studio"
-    # Fase 12: gris claro arriba que se aclara hasta un piso casi blanco, como una foto de catálogo.
-    studio_wall_hex: str = Field(default="#ECECEC", pattern=_HEX)
-    studio_floor_hex: str = Field(default="#FDFDFD", pattern=_HEX)
+    # Fase 12: pared gris claro y piso un poco más oscuro que el blanco puro (0,95, medido en una foto de la
+    # pieza sobre una mesa): con el piso blanco puro se confundía con la pared y la pieza parecía flotar.
+    studio_wall_hex: str = Field(default="#E3E3E3", pattern=_HEX)
+    studio_floor_hex: str = Field(default="#F3F3F3", pattern=_HEX)
     brand_hex: str = Field(default="#C9D9EA", pattern=_HEX)
     pedestal_hex: str = Field(default="#E4DFD6", pattern=_HEX)
     reflection: int = Field(default=0, ge=0, le=60, description="Opacidad del reflejo en el piso (%).")
