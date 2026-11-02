@@ -58,7 +58,9 @@ try {
     Start-ImageStudioProcess `
         -Name "api" `
         -Executable $uvicorn `
-        -Arguments @("app.main:app", "--port", "8090", "--reload") `
+        # El canal de avisos del navegador (SSE) nunca se cierra solo: sin tope, la recarga automática
+        # se quedaba esperando para siempre y la API dejaba de responder.
+        -Arguments @("app.main:app", "--port", "8090", "--reload", "--timeout-graceful-shutdown", "3") `
         -WorkingDirectory $backendRoot
     Start-ImageStudioProcess `
         -Name "worker" `
