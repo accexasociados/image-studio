@@ -175,6 +175,11 @@ function Reviewer({
               {t('review.reviewer.failed', { message: image.error })}
             </p>
           )}
+          {image.status !== 'failed' && image.error && image.review_reasons?.includes('ai_failed') && (
+            <p role="alert" className="text-sm text-amber-800 dark:text-amber-300">
+              {t('review.reviewer.aiError', { message: image.error })}
+            </p>
+          )}
           {image.review_reasons && image.review_reasons.length > 0 && (
             <ul className="flex flex-wrap gap-2 text-xs text-amber-800 dark:text-amber-300">
               {image.review_reasons.map((reason) => (

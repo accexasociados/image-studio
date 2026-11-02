@@ -456,7 +456,7 @@ export interface components {
       openai_api_key?: string | null
       /**
        * Openai Model
-       * @default gpt-image-1
+       * @default gpt-image-2
        */
       openai_model: string
       /**

@@ -116,7 +116,7 @@ it('la sección IA elige el servicio y no reenvía una clave sin tocar', async (
     fal_api_key: { configured: true },
     fal_model: 'fal-ai/flux-pro/kontext',
     openai_api_key: { configured: false },
-    openai_model: 'gpt-image-1',
+    openai_model: 'gpt-image-2',
     openai_quality: 'medium',
     extra_prompt: '',
     timeout_seconds: 120,

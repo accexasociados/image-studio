@@ -86,7 +86,7 @@ def test_openai_asks_for_high_fidelity_and_a_portrait_size() -> None:
     body = seen["body"]
     assert isinstance(body, bytes)
     assert seen["auth"] == "Bearer sk-prueba"
-    for field in (b"gpt-image-1", b"1024x1536", b"input_fidelity", b"high"):
+    for field in (b"gpt-image-2", b"1024x1536", b"input_fidelity", b"high"):
         assert field in body
     assert result.shape == (1350, 1080, 3)
 
@@ -101,8 +101,47 @@ def test_service_errors_never_include_the_key() -> None:
         pytest.raises(AiEnhanceError) as error,
     ):
         enhance_with_ai(_image(), settings, client)
-    assert "401" in str(error.value)
+    assert "clave" in str(error.value) and "bad key" in str(error.value)
     assert "sk-secreta" not in str(error.value)
+
+
+def test_no_credits_is_explained_with_the_service_detail() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        body = {"error": {"message": "You have no credits remaining.", "code": "credit_balance_exhausted"}}
+        return httpx.Response(429, json=body)
+
+    settings = AiSettings(provider="openai", openai_api_key=SecretStr("sk-secreta"))
+    with (
+        httpx.Client(transport=httpx.MockTransport(handler)) as client,
+        pytest.raises(AiEnhanceError) as error,
+    ):
+        enhance_with_ai(_image(), settings, client)
+    assert "no tiene saldo" in str(error.value)
+    assert "You have no credits remaining." in str(error.value)
+
+
+def test_a_model_without_input_fidelity_is_asked_again_without_it() -> None:
+    bodies: list[bytes] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        bodies.append(request.content)
+        if b"input_fidelity" in request.content:
+            error = {"message": "Unknown parameter: 'input_fidelity'.", "param": "input_fidelity"}
+            return httpx.Response(400, json={"error": error})
+        b64 = base64.b64encode(_png(1024, 1024, (20, 20, 200))).decode()
+        return httpx.Response(200, json={"data": [{"b64_json": b64}]})
+
+    settings = AiSettings(provider="openai", openai_api_key=SecretStr("sk-prueba"))
+    with httpx.Client(transport=httpx.MockTransport(handler)) as client:
+        result = enhance_with_ai(_image(), settings, client)
+    assert len(bodies) == 2 and b"input_fidelity" not in bodies[1]
+    assert result.shape == (500, 400, 3)
+
+
+def test_the_retired_openai_model_is_replaced() -> None:
+    assert AiSettings().openai_model == "gpt-image-2"
+    assert AiSettings(openai_model="gpt-image-1").openai_model == "gpt-image-2"
+    assert AiSettings(openai_model="gpt-image-1.5").openai_model == "gpt-image-1.5"
 
 
 def test_ai_keys_are_encrypted_and_never_returned() -> None:
@@ -181,6 +220,7 @@ def test_a_failing_service_keeps_the_studio_photo_and_flags_it(
     result = _process(tmp_path, _settings())
     assert [output.variant for output in result.outputs] == ["smooth"]
     assert "ai_failed" in result.review_reasons
+    assert result.ai_error == "El servicio de IA respondió con error 500."
 
 
 def test_without_a_service_the_photo_is_flagged_and_nothing_is_sent(

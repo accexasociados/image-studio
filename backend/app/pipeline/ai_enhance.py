@@ -6,7 +6,8 @@ detalles) con luz de estudio y como fotografía real, nunca animada; Ajustes > I
 
 Servicios:
 - `fal_flux_kontext`: FLUX.1 Kontext de Black Forest Labs, servido por fal.ai (edición guiada por texto).
-- `openai`: edición de imágenes de OpenAI (gpt-image-1 con `input_fidelity=high` para conservar detalles).
+- `openai`: edición de imágenes de OpenAI (gpt-image-2; pide `input_fidelity=high` para conservar
+  detalles y, si el modelo no lo admite, repite la petición sin él).
 """
 
 import base64
@@ -71,9 +72,7 @@ def enhance_with_ai(
     except httpx.TimeoutException as error:
         raise AiEnhanceError("El servicio de IA tardó demasiado en responder.") from error
     except httpx.HTTPStatusError as error:
-        raise AiEnhanceError(
-            f"El servicio de IA respondió con error {error.response.status_code}."
-        ) from error
+        raise AiEnhanceError(_status_message(error.response, _secrets(settings))) from error
     except httpx.HTTPError as error:
         raise AiEnhanceError("No se pudo conectar con el servicio de IA.") from error
     except (KeyError, IndexError, TypeError, ValueError, OSError) as error:
@@ -82,6 +81,55 @@ def enhance_with_ai(
         if own_client:
             http.close()
     return _fit(result, image.shape[1], image.shape[0])
+
+
+def _secrets(settings: AiSettings) -> list[str]:
+    keys = (settings.fal_api_key, settings.openai_api_key)
+    return [key.get_secret_value() for key in keys if key is not None and key.get_secret_value()]
+
+
+def _service_detail(response: httpx.Response) -> tuple[str, str]:
+    """(código, mensaje) del error según lo devuelve OpenAI (`error.code/message`) o fal.ai (`detail`)."""
+    try:
+        body = response.json()
+    except ValueError:
+        return "", response.text[:200]
+    if not isinstance(body, dict):
+        return "", ""
+    error = body.get("error")
+    if isinstance(error, dict):
+        return str(error.get("code") or error.get("type") or ""), str(error.get("message") or "")
+    detail = body.get("detail")
+    if isinstance(detail, list) and detail and isinstance(detail[0], dict):
+        return "", str(detail[0].get("msg") or "")
+    return "", str(detail or body.get("message") or "")
+
+
+def _status_message(response: httpx.Response, secrets: list[str]) -> str:
+    """Mensaje en español para la persona; agrega el texto del servicio sin la clave."""
+    status = response.status_code
+    code, detail = _service_detail(response)
+    for secret in secrets:
+        detail = detail.replace(secret, "***")
+    detail = " ".join(detail.split())[:300]
+    if status == 401:
+        text = "La clave del servicio de IA no es válida: revísala en Ajustes > IA."
+    elif status == 403:
+        text = (
+            "El servicio de IA no permite usar este modelo con tu cuenta "
+            "(en OpenAI suele faltar verificar la organización)."
+        )
+    elif code in {"insufficient_quota", "credit_balance_exhausted", "billing_hard_limit_reached"} or (
+        status in {402, 429} and any(word in detail.lower() for word in ("credit", "balance", "quota"))
+    ):
+        text = "La cuenta del servicio de IA no tiene saldo: recarga créditos y vuelve a procesar."
+    elif status == 429:
+        text = "El servicio de IA recibió demasiadas peticiones: espera un momento y vuelve a procesar."
+    elif status == 404 or code == "model_not_found":
+        text = "El modelo de IA elegido no existe o fue retirado: cámbialo en Ajustes > IA."
+    else:
+        text = f"El servicio de IA respondió con error {status}."
+    return f"{text} Detalle: {detail}" if detail else text
 
 
 def _encode_png(image: FloatImage) -> bytes:
@@ -132,17 +180,22 @@ def _openai(
         "quality": settings.openai_quality,
         "n": "1",
     }
-    # Conserva más fielmente los detalles de la foto de entrada (disponible en gpt-image-1).
-    if settings.openai_model == "gpt-image-1":
-        data["input_fidelity"] = "high"
-    response = http.post(
-        _OPENAI_URL,
-        headers={"Authorization": f"Bearer {settings.openai_api_key.get_secret_value()}"},
-        data=data,
-        files={"image": ("pieza.png", png, "image/png")},
-    )
+    headers = {"Authorization": f"Bearer {settings.openai_api_key.get_secret_value()}"}
+    files = {"image": ("pieza.png", png, "image/png")}
+    # Conserva más fielmente los detalles de la foto de entrada; no todos los modelos lo admiten.
+    response = http.post(_OPENAI_URL, headers=headers, data={**data, "input_fidelity": "high"}, files=files)
+    if response.status_code == 400 and _rejects_param(response, "input_fidelity"):
+        response = http.post(_OPENAI_URL, headers=headers, data=data, files=files)
     response.raise_for_status()
     return _decode(base64.b64decode(response.json()["data"][0]["b64_json"]))
+
+
+def _rejects_param(response: httpx.Response, param: str) -> bool:
+    try:
+        error = response.json().get("error") or {}
+    except (ValueError, AttributeError):
+        return False
+    return isinstance(error, dict) and (error.get("param") == param or param in str(error.get("message")))
 
 
 def _fit(image: FloatImage, width: int, height: int) -> FloatImage:

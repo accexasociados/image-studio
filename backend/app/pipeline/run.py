@@ -304,29 +304,34 @@ def _process_real(
                     )
                 )
 
+    ai_error: str | None = None
     if options.ai_enhance:
-        outputs.extend(_ai_outputs(primary, options, settings, out_dir, base_name, reasons, timer))
+        ai_files, ai_error = _ai_outputs(primary, settings, out_dir, base_name, reasons, timer)
+        outputs.extend(ai_files)
 
     timer.timings["total"] = round(sum(timer.timings.values()), 1)
     return ProcessResult(
-        outputs=outputs, mask_path=str(mask_path), review_reasons=reasons, timings_ms=timer.timings
+        outputs=outputs,
+        mask_path=str(mask_path),
+        review_reasons=reasons,
+        timings_ms=timer.timings,
+        ai_error=ai_error,
     )
 
 
 def _ai_outputs(
     primary: dict[Preset, FloatImage],
-    options: ProcessOptions,
     settings: AppSettings,
     out_dir: Path,
     base_name: str,
     reasons: list[str],
     timer: _Timer,
-) -> list[OutputFile]:
+) -> tuple[list[OutputFile], str | None]:
     """Variante "ai" de cada formato. Si el servicio falla, la foto queda con las variantes normales y un
     motivo de revisión: nunca se pierde el trabajo del estudio por un error de la nube."""
     if not is_configured(settings.ai):
         reasons.append("ai_not_configured")
-        return []
+        return [], None
     outputs: list[OutputFile] = []
     for preset, composed in primary.items():
         spec = resolve_preset(preset, settings.export)
@@ -336,7 +341,7 @@ def _ai_outputs(
             except AiEnhanceError as error:
                 logger.warning("Mejorar con IA falló para %s (%s): %s", base_name, preset, error)
                 reasons.append("ai_failed")
-                return outputs
+                return outputs, str(error)
         path = output_path(out_dir, base_name, preset, spec, _AI_SUFFIX)
         data = encode(improved, spec)
         path.write_bytes(data)
@@ -346,7 +351,7 @@ def _ai_outputs(
                 preset=preset, path=str(path), width=width, height=height, bytes=len(data), variant="ai"
             )
         )
-    return outputs
+    return outputs, None
 
 
 def _process_stub(

@@ -179,7 +179,7 @@ const es = {
       multiple_objects: 'Hay más de un objeto',
       uncertain_edges: 'Bordes dudosos en el recorte',
       low_resolution: 'Resolución baja para el formato',
-      ai_failed: 'La IA no pudo mejorar la foto (revisa la clave o vuelve a intentar)',
+      ai_failed: 'La IA no pudo mejorar la foto (el motivo aparece abajo)',
       ai_not_configured: 'Mejorar con IA no está configurado en Ajustes > IA',
     },
     reviewer: {
@@ -202,6 +202,7 @@ const es = {
       resetOptions: 'Volver a los ajustes del lote',
       processing: 'Procesando… el resultado aparecerá aquí.',
       failed: 'Falló el proceso: {{message}}',
+      aiError: 'Motivo de la IA: {{message}}',
       shortcuts: 'Atajos: A aprobar · R reprocesar · ← → navegar · Esc cerrar',
     },
     variant: {
@@ -528,7 +529,7 @@ const en: TranslationShape<typeof es> = {
       multiple_objects: 'There is more than one object',
       uncertain_edges: 'Uncertain edges in the cutout',
       low_resolution: 'Low resolution for the format',
-      ai_failed: 'The AI could not improve the photo (check the key or try again)',
+      ai_failed: 'The AI could not improve the photo (the reason is shown below)',
       ai_not_configured: 'Improve with AI is not set up in Settings > AI',
     },
     reviewer: {
@@ -551,6 +552,7 @@ const en: TranslationShape<typeof es> = {
       resetOptions: 'Go back to the batch settings',
       processing: 'Processing… the result will show up here.',
       failed: 'Processing failed: {{message}}',
+      aiError: 'AI reason: {{message}}',
       shortcuts: 'Shortcuts: A approve · R reprocess · ← → navigate · Esc close',
     },
     variant: {

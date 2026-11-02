@@ -119,3 +119,18 @@ it('el visor aprueba con A, navega con las flechas y elige una variante', async 
   await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
   expect(JSON.parse(fetchMock.mock.calls[1][1]?.body as string)).toEqual({ variant: 'smooth' })
 })
+
+it('el visor muestra el motivo cuando la IA no pudo mejorar la foto', () => {
+  mockFetch(() => ({}))
+  const failed: ImageItem = {
+    ...item('i1', 'A', 'review'),
+    review_reasons: ['ai_failed'],
+    error: 'La cuenta del servicio de IA no tiene saldo: recarga créditos y vuelve a procesar.',
+  }
+  wrap(<ImageReviewer batch={batch} images={[failed]} index={0} onIndexChange={vi.fn()} onClose={vi.fn()} />)
+
+  expect(screen.getByText('La IA no pudo mejorar la foto (el motivo aparece abajo)')).toBeInTheDocument()
+  expect(screen.getByRole('alert')).toHaveTextContent(
+    'Motivo de la IA: La cuenta del servicio de IA no tiene saldo',
+  )
+})

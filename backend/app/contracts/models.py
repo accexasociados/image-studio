@@ -156,6 +156,8 @@ class ProcessResult(BaseModel):
     mask_path: str | None = None
     review_reasons: list[str] = Field(default_factory=list)
     timings_ms: dict[str, float] = Field(default_factory=dict)
+    # Motivo que dio el servicio cuando "Mejorar con IA" falló (la foto queda con su versión normal).
+    ai_error: str | None = None
 
 
 class GpuInfo(BaseModel):

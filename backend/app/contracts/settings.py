@@ -5,7 +5,7 @@ solo informa si están configurados (ver `AppSettingsPublic`)."""
 
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, SecretStr
+from pydantic import BaseModel, ConfigDict, Field, SecretStr, field_validator
 
 from app.contracts.options import Preset, ProcessOptions, SceneStyle
 from app.contracts.presets import OutputFormat
@@ -102,11 +102,21 @@ class AiSettings(_Section):
         default="fal-ai/flux-pro/kontext", min_length=3, max_length=100, pattern=r"^[\w./-]+$"
     )
     openai_api_key: SecretStr | None = None
-    openai_model: str = Field(default="gpt-image-1", min_length=3, max_length=60, pattern=r"^[\w.-]+$")
+    openai_model: str = Field(default="gpt-image-2", min_length=3, max_length=60, pattern=r"^[\w.-]+$")
     openai_quality: Literal["low", "medium", "high"] = "medium"
     # Se agrega a la instrucción fija (foto de producto realista, misma pieza, nada animado).
     extra_prompt: str = Field(default="", max_length=500)
     timeout_seconds: int = Field(default=120, ge=10, le=600)
+
+    @field_validator("openai_model")
+    @classmethod
+    def _replace_retired_model(cls, value: str) -> str:
+        # OpenAI retiró gpt-image-1 el 2026-10-23; un ajuste guardado con él seguiría fallando.
+        return RETIRED_OPENAI_MODELS.get(value, value)
+
+
+# Modelos de imagen que OpenAI dio de baja -> su reemplazo.
+RETIRED_OPENAI_MODELS = {"gpt-image-1": "gpt-image-2"}
 
 
 class QualitySettings(_Section):
