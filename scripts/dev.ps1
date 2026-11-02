@@ -55,11 +55,12 @@ function Start-ImageStudioProcess {
 }
 
 try {
+    # El canal de avisos del navegador (SSE) nunca se cierra solo: sin tope, la recarga automática
+    # se quedaba esperando para siempre y la API dejaba de responder. (El comentario va aquí arriba:
+    # dentro de un comando partido con ` corta el comando y PowerShell pide los parámetros que faltan.)
     Start-ImageStudioProcess `
         -Name "api" `
         -Executable $uvicorn `
-        # El canal de avisos del navegador (SSE) nunca se cierra solo: sin tope, la recarga automática
-        # se quedaba esperando para siempre y la API dejaba de responder.
         -Arguments @("app.main:app", "--port", "8090", "--reload", "--timeout-graceful-shutdown", "3") `
         -WorkingDirectory $backendRoot
     Start-ImageStudioProcess `
