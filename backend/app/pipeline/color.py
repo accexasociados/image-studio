@@ -128,14 +128,16 @@ class EnhanceParams:
     white_percentile: float = 99.5
     white_target: float = 0.97
     max_white_gain: float = 1.15
-    # Curva de tonos: con fuerza 1, gamma 0,8 aclara los medios tonos (blancos en sombra, colores) sin
-    # tocar el negro ni el blanco puros. Es lo que más acerca una foto de celular a una de estudio.
-    midtone_gamma: float = 0.8
+    # Curva de tonos: con fuerza 1 aclara los medios tonos (blancos en sombra, colores) sin tocar el negro
+    # ni el blanco puros. Era 0,8; con 0,88 una pieza oscura a propósito (el Arthas azul marino, 2026-11-02)
+    # no queda azul claro, y una foto de celular igual gana luz.
+    midtone_gamma: float = 0.88
     # Por debajo de `shadow_floor` la curva no actúa; entre los dos límites entra de forma gradual.
     shadow_floor: float = 0.06
     shadow_ceiling: float = 0.4
-    # Aumento de saturación que crece en los colores apagados y casi no toca los ya saturados.
-    vibrance: float = 0.45
+    # Aumento de saturación que crece en los colores apagados y casi no toca los ya saturados. Era 0,45:
+    # volvía naranja el dorado envejecido del Arthas (croma +74 %); con 0,2 el Gengar sigue vivo (+25 %).
+    vibrance: float = 0.2
     # Peso del detalle de luminancia (máscara de enfoque con radio del 1 % del lado mayor).
     local_contrast: float = 0.35
     # Reflejos: entorno con el que se miden (fracción del lado mayor), cuánto pueden crecer (1 = igual que
@@ -232,11 +234,27 @@ def soften_glare(image: FloatImage, alpha: Alpha, strength: float) -> FloatImage
     surface = cv2.GaussianBlur(lum * colored, (0, 0), sigma) / np.maximum(
         cv2.GaussianBlur(colored, (0, 0), sigma), 1e-3
     )
-    excess = np.clip(lum - surface, 0.0, None) * colored
+    excess = np.clip(lum - surface, 0.0, None) * colored * _glare_gate(image, size)
     softened: FloatImage = np.clip(image - (excess * strength)[..., None], 0.0, 1.0).astype(np.float32)
     return softened
 
 
+def _glare_gate(image: FloatImage, size: int) -> np.ndarray:
+    """Solo un reflejo de verdad es luz casi plena: su canal más claro pasa de ~0,7 (Gengar: 0,71 a 0,99).
+    Las luces pintadas a pincel seco sobre un color oscuro (el caballo azul del Arthas: canal más claro
+    0,44 a 0,57) también sobresalen de su superficie, pero son pintura: sin esta puerta se borraban y la
+    pieza quedaba plana. El halo alrededor de un reflejo fuerte entra por vecindad."""
+    brightest = image.max(axis=-1)
+    gate = np.clip((brightest - _GLARE_GATE_LOW) / (_GLARE_GATE_HIGH - _GLARE_GATE_LOW), 0.0, 1.0)
+    gate = gate * gate * (3.0 - 2.0 * gate)
+    halo = cv2.GaussianBlur(gate, (0, 0), max(size * _GLARE_HALO, 1.0)) * 2.0
+    result: np.ndarray = np.maximum(gate, np.clip(halo, 0.0, 1.0))
+    return result
+
+
+_GLARE_GATE_LOW = 0.55
+_GLARE_GATE_HIGH = 0.75
+_GLARE_HALO = 0.006
 _GLARE_MIN_CHROMA = 0.03
 _GLARE_CHROMA_RAMP = 0.05
 # Entorno con el que se mide la superficie (fracción del lado mayor): más grande que un reflejo amplio.

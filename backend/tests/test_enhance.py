@@ -24,7 +24,7 @@ def test_strength_zero_leaves_colors_untouched() -> None:
 def test_enhance_brightens_midtones_and_saturates_colors() -> None:
     image, alpha = _piece()
     result = enhance(image, alpha, 1.0)
-    assert result[5, 20].mean() > image[5, 20].mean() + 0.03  # blanco en sombra más limpio
+    assert result[5, 20].mean() > image[5, 20].mean() + 0.02  # blanco en sombra más limpio
     orange_before = image[15, 20].max() - image[15, 20].min()
     orange_after = result[15, 20].max() - result[15, 20].min()
     assert orange_after > orange_before
@@ -142,3 +142,20 @@ def test_smooth_layer_lines_keeps_the_relief_of_dark_parts() -> None:
     zone = (slice(300, 1100), slice(300, 1100))
     # Con un umbral fijo el relieve del negro se borraba casi entero; ahora queda la mayor parte.
     assert result[zone].std() > image[zone].std() * 0.7
+
+
+def test_painted_highlights_on_a_dark_color_are_not_taken_as_glare() -> None:
+    """Pincel seco azul claro (canal más claro ~0,5) sobre un azul oscuro: es pintura, no un reflejo."""
+    from app.pipeline.color import soften_glare
+
+    image = np.zeros((200, 200, 3), np.float32)
+    image[:] = (0.10, 0.14, 0.26)
+    image[90:110, 90:110] = (0.30, 0.38, 0.52)
+    alpha = np.ones((200, 200), np.float32)
+    softened = soften_glare(image, alpha, 1.0)
+    assert np.abs(softened[100, 100] - image[100, 100]).max() < 0.02
+
+    # Un reflejo de verdad (luz casi plena sobre el mismo azul) sí baja.
+    image[90:110, 90:110] = (0.80, 0.84, 0.95)
+    softened = soften_glare(image, alpha, 1.0)
+    assert softened[100, 100].mean() < image[100, 100].mean() - 0.1
