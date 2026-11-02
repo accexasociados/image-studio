@@ -16,6 +16,17 @@ class Crop:
     alpha: Alpha
 
 
+def firm_edges(alpha: Alpha, steepness: float = 2.5) -> Alpha:
+    """Contorno más firme: la transición pieza → fondo ocupa menos píxeles, centrada en alfa 0,5.
+
+    Cuando la foto tiene el borde desenfocado (la base negra fuera de foco sobre una mesa oscura), el recorte
+    deja una franja semitransparente de ~20 px que sobre el piso claro se ve como una mancha oscura difusa.
+    El contorno no se mueve (la mitad de la transición queda donde estaba); solo se acorta. La reducción a la
+    salida vuelve a suavizar el borde lo justo para que no se vea serruchado."""
+    firm: Alpha = np.clip((alpha - 0.5) * steepness + 0.5, 0.0, 1.0).astype(np.float32)
+    return firm
+
+
 def decontaminate_edges(image: FloatImage, alpha: Alpha) -> FloatImage:
     """Quita el color del fondo original que queda mezclado en los píxeles del borde.
 

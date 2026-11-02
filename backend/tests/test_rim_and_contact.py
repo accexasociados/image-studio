@@ -62,3 +62,16 @@ def test_a_raised_arm_casts_a_fainter_shadow_than_the_grounded_body() -> None:
     shadow = _cast_shadow(placed, (600, 600), 1.0, "left")
     # Antes el brazo dejaba una mancha suelta tan oscura como la sombra junto a la base.
     assert shadow[:, :250].max() < shadow[:, 250:330].max() * 0.75
+
+
+def test_firm_edges_shortens_a_blurry_outline_without_moving_it() -> None:
+    from app.pipeline.compose import firm_edges
+
+    ramp = np.clip((np.arange(100, dtype=np.float32) - 40) / 20, 0, 1)  # borde desenfocado de 20 px
+    alpha = np.repeat(ramp[None, :], 10, axis=0)
+    firm = firm_edges(alpha)
+    soft_before = ((alpha > 0.05) & (alpha < 0.95)).sum(axis=1)[0]
+    soft_after = ((firm > 0.05) & (firm < 0.95)).sum(axis=1)[0]
+    assert soft_after <= soft_before * 0.45
+    # La mitad de la transición queda en el mismo lugar: la silueta no crece ni se encoge.
+    assert int(np.argmax(firm[0] >= 0.5)) == int(np.argmax(alpha[0] >= 0.5))

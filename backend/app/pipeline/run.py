@@ -26,7 +26,14 @@ from app.contracts import (
 )
 from app.pipeline.catalog import model_path
 from app.pipeline.color import correct_color, enhance, sharpen, soften_glare
-from app.pipeline.compose import Crop, compose_on_canvas, crop_to_piece, decontaminate_edges, piece_bounds
+from app.pipeline.compose import (
+    Crop,
+    compose_on_canvas,
+    crop_to_piece,
+    decontaminate_edges,
+    firm_edges,
+    piece_bounds,
+)
 from app.pipeline.export import encode, output_path, resolve_preset
 from app.pipeline.geometry import forward, plan, restore
 from app.pipeline.layers import smooth_layer_lines
@@ -190,6 +197,8 @@ def _process_real(
         # Se guarda en coordenadas del original: el pincel de la web no depende del recorte.
         mask_path = out_dir / f"{base_name}_mask.png"
         Image.fromarray(to_uint8(restore(alpha, geometry)), "L").save(mask_path)
+        # Después de guardar: la máscara que edita el pincel conserva la transición original.
+        alpha = firm_edges(alpha)
 
     if not (alpha > 0.5).any():
         raise ValueError("No se encontró ninguna pieza en la imagen.")
