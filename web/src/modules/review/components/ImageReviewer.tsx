@@ -8,7 +8,7 @@ import {
   Sparkles,
   X,
 } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   fileUrl,
@@ -51,6 +51,15 @@ export function ImageReviewer({
   onClose: () => void
 }) {
   const image = images[index]
+  // Mientras el visor está abierto, la página de atrás (el lote) no se desplaza: así queda una sola barra.
+  useEffect(() => {
+    const root = document.documentElement
+    const previous = root.style.overflow
+    root.style.overflow = 'hidden'
+    return () => {
+      root.style.overflow = previous
+    }
+  }, [])
   return image ? (
     // `key` reinicia los borradores (ajustes, encuadre) al cambiar de foto.
     <Reviewer
@@ -243,14 +252,17 @@ function Reviewer({
                 role="tab"
                 aria-selected={tab === item}
                 onClick={() => setTab(item)}
-                className={`flex-1 px-3 py-3 text-sm font-semibold ${tab === item ? 'border-b-2 border-indigo-600 text-indigo-600' : 'text-slate-500'}`}
+                className={`flex-auto whitespace-nowrap px-2 py-3 text-sm font-semibold ${tab === item ? 'border-b-2 border-indigo-600 text-indigo-600' : 'text-slate-500'}`}
               >
                 {t(`review.reviewer.tabs.${item}`)}
               </button>
             ))}
           </div>
 
-          <div role="tabpanel" className="min-h-0 flex-1 overflow-auto p-4">
+          <div
+            role="tabpanel"
+            className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 [scrollbar-color:rgb(203_213_225)_transparent] [scrollbar-gutter:stable] [scrollbar-width:thin]"
+          >
             {tab === 'options' && (
               <div className="space-y-4">
                 <p className="text-xs text-slate-500">

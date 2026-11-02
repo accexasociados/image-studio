@@ -152,3 +152,19 @@ it('el visor deja ver la versión de IA y la marca como hecha con IA', () => {
   expect(screen.getByText(/Hecha con IA/)).toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Mejorada con IA' })).toHaveAttribute('aria-pressed', 'true')
 })
+
+it('el visor bloquea el desplazamiento de la página de atrás y lo devuelve al cerrar', () => {
+  mockFetch(() => ({}))
+  const { unmount } = wrap(
+    <ImageReviewer
+      batch={batch}
+      images={[item('i1', 'A')]}
+      index={0}
+      onIndexChange={vi.fn()}
+      onClose={vi.fn()}
+    />,
+  )
+  expect(document.documentElement.style.overflow).toBe('hidden')
+  unmount()
+  expect(document.documentElement.style.overflow).toBe('')
+})
