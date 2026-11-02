@@ -25,7 +25,7 @@ from app.contracts import (
     SceneStyle,
 )
 from app.pipeline.catalog import model_path
-from app.pipeline.color import correct_color, enhance
+from app.pipeline.color import correct_color, enhance, sharpen
 from app.pipeline.compose import Crop, compose_on_canvas, crop_to_piece, decontaminate_edges, piece_bounds
 from app.pipeline.export import encode, output_path, resolve_preset
 from app.pipeline.geometry import forward, plan, restore
@@ -253,6 +253,7 @@ def _process_real(
                 else:
                     strength = _SCENE_SHADOW[shadow_mode] * shadow_params.intensity
                     composed = render_scene(variant_crop, size, fill, scene, strength)
+                composed = sharpen(composed, options.sharpen / 100)
                 path = output_path(out_dir, base_name, preset, spec, suffix)
                 data = encode(composed, spec)
                 path.write_bytes(data)

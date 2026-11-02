@@ -56,3 +56,12 @@ it('muestra el realce de color con su valor por defecto y permite cambiarlo', ()
   fireEvent.change(slider, { target: { value: '0' } })
   expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ enhance: 0 }))
 })
+
+it('muestra el enfoque con su valor por defecto y permite cambiarlo', () => {
+  const onChange = vi.fn()
+  render(withQuery(<ProcessOptionsFields value={FALLBACK_OPTIONS} onChange={onChange} />))
+  const slider = screen.getByRole('slider', { name: /Enfoque/ })
+  expect(slider).toHaveValue('60')
+  fireEvent.change(slider, { target: { value: '30' } })
+  expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ sharpen: 30 }))
+})

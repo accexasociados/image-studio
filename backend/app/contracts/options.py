@@ -78,6 +78,13 @@ class ProcessOptions(BaseModel):
             "Realce de color tipo foto de estudio (niveles, viveza, contraste local). 0 = colores tal cual."
         ),
     )
+    # 60: nitidez cercana a una foto de catálogo sin halos (medido con una foto de celular, Fase 12).
+    sharpen: int = Field(
+        default=60,
+        ge=0,
+        le=100,
+        description="Enfoque final sobre la imagen compuesta. 0 = sin enfoque.",
+    )
     white_balance: bool = True
     generate_both_layer_variants: bool = False
     rotate: Rotation = Field(default=0, description="Giro en grados, en sentido horario, antes de recortar.")

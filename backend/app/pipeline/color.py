@@ -157,3 +157,19 @@ def enhance(
     result = result + (detail * params.local_contrast * strength)[..., None]
     enhanced: FloatImage = np.clip(result, 0.0, 1.0).astype(np.float32)
     return enhanced
+
+
+def sharpen(image: FloatImage, strength: float) -> FloatImage:
+    """Enfoque final (máscara de enfoque) sobre la imagen ya compuesta, a su tamaño de salida.
+
+    Con fuerza 0,6 (el valor por defecto) la nitidez de una foto de celular agrandada queda cerca de la de
+    una foto de catálogo (medido en la Fase 12). El radio crece con el lienzo para que el efecto se vea
+    igual en 1080 px que en 2000 px. Sobre el fondo liso y las sombras suaves casi no actúa."""
+    if strength <= 0:
+        return image
+    radius = 1.2 * max(image.shape[:2]) / 1350
+    blurred = cv2.GaussianBlur(image, (0, 0), max(radius, 0.8))
+    sharpened: FloatImage = np.clip(image + (image - blurred) * (1.35 * strength), 0.0, 1.0).astype(
+        np.float32
+    )
+    return sharpened

@@ -89,6 +89,9 @@ const es = {
     upscale: 'Resolución',
     whiteBalance: 'Corregir balance de blancos',
     enhance: 'Realce de color',
+    sharpen: 'Enfoque',
+    sharpenHelp:
+      'Más alto = bordes y textura más definidos; si ves halos claros alrededor de la pieza, bájalo.',
     enhanceHelp:
       'Más alto = blancos más limpios y colores más vivos, como en una foto de estudio; 0 = colores tal como salieron en la foto.',
     dropFiles: 'Suelta fotos o un ZIP aquí',
@@ -410,6 +413,8 @@ const en: TranslationShape<typeof es> = {
     upscale: 'Resolution',
     whiteBalance: 'Correct white balance',
     enhance: 'Color enhancement',
+    sharpen: 'Sharpening',
+    sharpenHelp: 'Higher = crisper edges and texture; if you see light halos around the piece, lower it.',
     enhanceHelp:
       'Higher = cleaner whites and brighter colors, like a studio photo; 0 = colors exactly as photographed.',
     dropFiles: 'Drop photos or a ZIP here',

@@ -892,6 +892,12 @@ export interface components {
        */
       enhance: number
       /**
+       * Sharpen
+       * @description Enfoque final sobre la imagen compuesta. 0 = sin enfoque.
+       * @default 60
+       */
+      sharpen: number
+      /**
        * White Balance
        * @default true
        */
@@ -999,7 +1005,7 @@ export interface components {
       style: 'white' | 'studio' | 'pedestal' | 'color' | 'photo'
       /**
        * Studio Wall Hex
-       * @default #E4E4E4
+       * @default #ECECEC
        */
       studio_wall_hex: string
       /**

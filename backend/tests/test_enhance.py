@@ -44,3 +44,23 @@ def test_enhance_ignores_the_background() -> None:
     image, alpha = _piece()
     alpha[:] = 0.0
     assert np.array_equal(enhance(image, alpha, 1.0), image)
+
+
+def test_sharpen_zero_is_identity_and_flat_areas_stay_flat() -> None:
+    from app.pipeline.color import sharpen
+
+    flat = np.full((60, 60, 3), 0.95, np.float32)
+    assert np.array_equal(sharpen(flat, 0.0), flat)
+    assert np.allclose(sharpen(flat, 1.0), flat, atol=1e-5)
+
+
+def test_sharpen_increases_edge_contrast() -> None:
+    import cv2
+
+    from app.pipeline.color import sharpen
+
+    image = np.full((60, 60, 3), 0.9, np.float32)
+    image[:, 30:] = 0.1
+    image = cv2.GaussianBlur(image, (0, 0), 1.5)
+    result = sharpen(image, 0.6)
+    assert np.abs(np.diff(result[30, :, 0])).max() > np.abs(np.diff(image[30, :, 0])).max()

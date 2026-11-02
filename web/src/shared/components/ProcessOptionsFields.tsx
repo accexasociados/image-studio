@@ -224,6 +224,20 @@ export function ProcessOptionsFields({
         <span className="mt-1 block text-xs font-normal text-slate-500">{t('batches.enhanceHelp')}</span>
       </label>
 
+      <label className={labelClass}>
+        {t('batches.sharpen')}
+        <input
+          type="range"
+          min="0"
+          max="100"
+          value={value.sharpen ?? 60}
+          onChange={(event) => set('sharpen', Number(event.target.value))}
+          className="mt-2 w-full"
+        />
+        <span className="text-xs text-slate-500">{value.sharpen ?? 60}%</span>
+        <span className="mt-1 block text-xs font-normal text-slate-500">{t('batches.sharpenHelp')}</span>
+      </label>
+
       <div className={grid}>
         <label className={labelClass}>
           {t('batches.upscale')}
