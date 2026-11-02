@@ -23,7 +23,8 @@ if ($Check) {
     exit 0
 }
 
-$logRoot = Join-Path ([System.IO.Path]::GetTempPath()) "image-studio-dev-$PID"
+# Fecha y hora además del PID: en la misma ventana de PowerShell el PID no cambia entre ejecuciones.
+$logRoot = Join-Path ([System.IO.Path]::GetTempPath()) "image-studio-dev-$PID-$(Get-Date -Format 'yyyyMMdd-HHmmss')"
 New-Item -ItemType Directory -Path $logRoot -ErrorAction Stop | Out-Null
 $processes = [System.Collections.Generic.List[object]]::new()
 
