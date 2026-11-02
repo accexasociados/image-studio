@@ -23,6 +23,40 @@ if ($Check) {
     exit 0
 }
 
+function Stop-StaleImageStudio {
+    # Si la ventana anterior se cerró con la X (sin Ctrl+C), API, worker y web quedan vivos con el código
+    # viejo. Dos workers se reparten la cola y el viejo falla con opciones que no conoce: se cierran antes.
+    $venv = (Join-Path $backendRoot ".venv").ToLowerInvariant()
+    $all = @(Get-CimInstance Win32_Process)
+    $alive = @{}
+    foreach ($p in $all) { $alive[[int]$p.ProcessId] = $true }
+    $stale = [System.Collections.Generic.List[object]]::new()
+    foreach ($p in $all) {
+        $line = [string]$p.CommandLine
+        if ($line -notmatch 'app\.queue\.worker|app\.main:app') { continue }
+        $ours = $line.ToLowerInvariant().Contains($venv)
+        # El lanzador del venv abre un python hijo sin la ruta del proyecto: se cierra solo si quedó huérfano.
+        $orphan = -not $alive.ContainsKey([int]$p.ParentProcessId)
+        if ($ours -or $orphan) { $stale.Add($p) }
+    }
+    foreach ($port in @(8090, 5180)) {
+        $listeners = @(Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue)
+        foreach ($listener in $listeners) {
+            $owner = $all | Where-Object { $_.ProcessId -eq $listener.OwningProcess } | Select-Object -First 1
+            if ($null -ne $owner -and $owner.Name -in @("node.exe", "python.exe", "uvicorn.exe")) { $stale.Add($owner) }
+        }
+    }
+    $ids = @($stale | ForEach-Object { [int]$_.ProcessId } | Sort-Object -Unique)
+    if ($ids.Count -eq 0) { return }
+    Write-Host "Cerrando $($ids.Count) proceso(s) de una ejecución anterior de Image Studio..."
+    foreach ($id in $ids) {
+        & taskkill.exe /PID $id /T /F 2>$null | Out-Null
+    }
+    Start-Sleep -Seconds 1
+}
+
+Stop-StaleImageStudio
+
 # Fecha y hora además del PID: en la misma ventana de PowerShell el PID no cambia entre ejecuciones.
 $logRoot = Join-Path ([System.IO.Path]::GetTempPath()) "image-studio-dev-$PID-$(Get-Date -Format 'yyyyMMdd-HHmmss')"
 New-Item -ItemType Directory -Path $logRoot -ErrorAction Stop | Out-Null
