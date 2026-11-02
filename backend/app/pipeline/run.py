@@ -25,7 +25,7 @@ from app.contracts import (
     SceneStyle,
 )
 from app.pipeline.catalog import model_path
-from app.pipeline.color import correct_color, enhance, sharpen
+from app.pipeline.color import correct_color, enhance, sharpen, soften_glare
 from app.pipeline.compose import Crop, compose_on_canvas, crop_to_piece, decontaminate_edges, piece_bounds
 from app.pipeline.export import encode, output_path, resolve_preset
 from app.pipeline.geometry import forward, plan, restore
@@ -39,6 +39,7 @@ from app.pipeline.upscale import UpscaleParams, load_upscaler, upscale
 
 _EXTENSIONS = {"webp": "webp", "jpeg": "jpg", "png": "png"}
 _VARIANT_SUFFIX: dict[LayerLines, str] = {"keep": "", "smooth": "_smooth"}
+_SMOOTH_SHARPEN = 0.6
 # original_hd no tiene lienzo fijo: la pieza ocupa este margen dentro de un lienzo con su proporción.
 _ORIGINAL_HD_FILL = 0.9
 # Con escena, original_hd usa un lienzo 4:5 (la pieza necesita piso debajo).
@@ -221,7 +222,8 @@ def _process_real(
 
     with timer.stage("enhance"):
         # Después de agrandar: el contraste local se calcula sobre el detalle final.
-        crop = Crop(enhance(crop.image, crop.alpha, options.enhance / 100), crop.alpha)
+        softened = soften_glare(crop.image, crop.alpha, options.glare / 100)
+        crop = Crop(enhance(softened, crop.alpha, options.enhance / 100), crop.alpha)
 
     shadow_params = ShadowParams(intensity=options.shadow_intensity / 100.0)
     shadow_mode = resolve_shadow(options.shadow, crop.image, crop.alpha, shadow_params)
@@ -253,7 +255,9 @@ def _process_real(
                 else:
                     strength = _SCENE_SHADOW[shadow_mode] * shadow_params.intensity
                     composed = render_scene(variant_crop, size, fill, scene, strength)
-                composed = sharpen(composed, options.sharpen / 100)
+                # Con las líneas suavizadas el enfoque va más suave: con toda su fuerza las volvía a marcar.
+                sharpen_factor = _SMOOTH_SHARPEN if variant == "smooth" else 1.0
+                composed = sharpen(composed, options.sharpen / 100 * sharpen_factor)
                 path = output_path(out_dir, base_name, preset, spec, suffix)
                 data = encode(composed, spec)
                 path.write_bytes(data)

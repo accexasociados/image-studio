@@ -37,9 +37,10 @@ class ProcessOptions(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     presets: list[Preset] = Field(default_factory=lambda: _DEFAULT_PRESETS.copy(), min_length=1)
-    layer_lines: LayerLines = "keep"
+    # Por defecto se suavizan: en una impresión 3D las líneas de capa se marcan mucho en la foto (Fase 12).
+    layer_lines: LayerLines = "smooth"
     smooth_strength: int = Field(
-        default=35, ge=0, le=100, description="Solo aplica con layer_lines='smooth'."
+        default=80, ge=0, le=100, description="Solo aplica con layer_lines='smooth'."
     )
     shadow: ShadowMode = "auto"
     shadow_intensity: int = Field(
@@ -84,6 +85,16 @@ class ProcessOptions(BaseModel):
         ge=0,
         le=100,
         description="Enfoque final sobre la imagen compuesta. 0 = sin enfoque.",
+    )
+    # 80: el reflejo de la luz sobre el plástico baja sin que la pieza se vea pintada encima (Fase 12).
+    glare: int = Field(
+        default=80,
+        ge=0,
+        le=100,
+        description=(
+            "Reducir brillos: baja la luz que se refleja sobre las superficies de color. El blanco y el "
+            "negro de pintura no se tocan. 0 = brillos tal como salieron en la foto."
+        ),
     )
     white_balance: bool = True
     generate_both_layer_variants: bool = False

@@ -90,6 +90,9 @@ const es = {
     whiteBalance: 'Corregir balance de blancos',
     enhance: 'Realce de color',
     sharpen: 'Enfoque',
+    glare: 'Reducir brillos',
+    glareHelp:
+      'Baja el reflejo de la luz sobre el plástico de color. El blanco y el negro de la pintura no cambian; 0 = brillos tal como salieron en la foto.',
     sharpenHelp:
       'Más alto = bordes y textura más definidos; si ves halos claros alrededor de la pieza, bájalo.',
     enhanceHelp:
@@ -414,6 +417,9 @@ const en: TranslationShape<typeof es> = {
     whiteBalance: 'Correct white balance',
     enhance: 'Color enhancement',
     sharpen: 'Sharpening',
+    glare: 'Reduce glare',
+    glareHelp:
+      'Tones down light reflections on colored plastic. White and black paint stay the same; 0 = glare exactly as photographed.',
     sharpenHelp: 'Higher = crisper edges and texture; if you see light halos around the piece, lower it.',
     enhanceHelp:
       'Higher = cleaner whites and brighter colors, like a studio photo; 0 = colors exactly as photographed.',

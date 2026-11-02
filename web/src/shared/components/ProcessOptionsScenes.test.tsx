@@ -65,3 +65,12 @@ it('muestra el enfoque con su valor por defecto y permite cambiarlo', () => {
   fireEvent.change(slider, { target: { value: '30' } })
   expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ sharpen: 30 }))
 })
+
+it('muestra reducir brillos con su valor por defecto y permite cambiarlo', () => {
+  const onChange = vi.fn()
+  render(withQuery(<ProcessOptionsFields value={FALLBACK_OPTIONS} onChange={onChange} />))
+  const slider = screen.getByRole('slider', { name: /Reducir brillos/ })
+  expect(slider).toHaveValue('80')
+  fireEvent.change(slider, { target: { value: '0' } })
+  expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ glare: 0 }))
+})

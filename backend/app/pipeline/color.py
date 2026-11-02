@@ -208,6 +208,41 @@ def _keep_glints(before: FloatImage, after: FloatImage, params: EnhanceParams) -
     return kept
 
 
+def soften_glare(image: FloatImage, alpha: Alpha, strength: float) -> FloatImage:
+    """Reducir brillos: baja la luz que se refleja sobre una superficie de color.
+
+    El reflejo es luz blanca que se suma por igual a los tres canales encima del color de la pieza. Se mide
+    como lo que la luminancia sobresale sobre el promedio local de la misma superficie y se resta igual en
+    los tres canales, así el color de debajo vuelve a aparecer. Solo actúa donde el píxel conserva color:
+    el blanco de pintura (dientes, patas del Snoopy: croma < 0,03) y el negro no se tocan; un reflejo sobre
+    el morado conserva croma ~0,19 (medido en la Fase 12)."""
+    if strength <= 0:
+        return image
+    piece = (alpha > 0.5).astype(np.float32)
+    if piece.sum() < 100:
+        return image
+    size = max(image.shape[:2])
+    lum = luminance(image)
+    chroma = image.max(axis=-1) - image.min(axis=-1)
+    colored = np.clip((chroma - _GLARE_MIN_CHROMA) / _GLARE_CHROMA_RAMP, 0.0, 1.0)
+    # Los puntitos blancos dentro de un reflejo (muy pequeños) entran por vecindad; un área blanca grande no.
+    near = cv2.GaussianBlur(colored, (0, 0), max(size * 0.004, 1.0)) * 1.5
+    colored = np.maximum(colored, np.clip(near, 0.0, 1.0)) * piece
+    sigma = size * _GLARE_RADIUS
+    surface = cv2.GaussianBlur(lum * colored, (0, 0), sigma) / np.maximum(
+        cv2.GaussianBlur(colored, (0, 0), sigma), 1e-3
+    )
+    excess = np.clip(lum - surface, 0.0, None) * colored
+    softened: FloatImage = np.clip(image - (excess * strength)[..., None], 0.0, 1.0).astype(np.float32)
+    return softened
+
+
+_GLARE_MIN_CHROMA = 0.03
+_GLARE_CHROMA_RAMP = 0.05
+# Entorno con el que se mide la superficie (fracción del lado mayor): más grande que un reflejo amplio.
+_GLARE_RADIUS = 0.03
+
+
 def sharpen(image: FloatImage, strength: float) -> FloatImage:
     """Enfoque final (máscara de enfoque) sobre la imagen ya compuesta, a su tamaño de salida.
 

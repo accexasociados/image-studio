@@ -3,8 +3,8 @@ import type { ProcessOptions } from '@/shared/api/client'
 // Respaldo mientras cargan los ajustes; los valores reales vienen de Ajustes > Procesamiento por defecto.
 export const FALLBACK_OPTIONS: ProcessOptions = {
   presets: ['storefront', 'instagram_feed'],
-  layer_lines: 'keep',
-  smooth_strength: 35,
+  layer_lines: 'smooth',
+  smooth_strength: 80,
   shadow: 'auto',
   shadow_intensity: 100,
   fill_ratio: null,
@@ -14,6 +14,7 @@ export const FALLBACK_OPTIONS: ProcessOptions = {
   background_id: null,
   enhance: 80,
   sharpen: 60,
+  glare: 80,
   white_balance: true,
   generate_both_layer_variants: false,
   rotate: 0,

@@ -837,14 +837,14 @@ export interface components {
       presets?: ('storefront' | 'instagram_feed' | 'instagram_square' | 'original_hd')[]
       /**
        * Layer Lines
-       * @default keep
+       * @default smooth
        * @enum {string}
        */
       layer_lines: 'keep' | 'smooth'
       /**
        * Smooth Strength
        * @description Solo aplica con layer_lines='smooth'.
-       * @default 35
+       * @default 80
        */
       smooth_strength: number
       /**
@@ -897,6 +897,12 @@ export interface components {
        * @default 60
        */
       sharpen: number
+      /**
+       * Glare
+       * @description Reducir brillos: baja la luz que se refleja sobre las superficies de color. El blanco y el negro de pintura no se tocan. 0 = brillos tal como salieron en la foto.
+       * @default 80
+       */
+      glare: number
       /**
        * White Balance
        * @default true

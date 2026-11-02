@@ -96,3 +96,35 @@ def test_exposure_does_not_brighten_a_piece_without_white_when_the_photo_is_well
     result = correct_color(image, alpha, white_balance=False)
     # Antes la parte más clara de la pieza se llevaba a 0,94 (ganancia 1,35); ahora manda el fondo.
     assert result.exposure_gain < 1.1
+
+
+def test_soften_glare_lowers_a_reflection_on_color_but_not_white_paint() -> None:
+    from app.pipeline.color import soften_glare
+
+    image = np.full((400, 400, 3), (0.35, 0.2, 0.6), np.float32)  # plástico morado
+    image[180:220, 180:220] = (0.75, 0.65, 0.95)  # reflejo: luz blanca encima del morado
+    image[300:340, 60:200] = 0.92  # dientes: blanco de pintura
+    alpha = np.ones((400, 400), np.float32)
+    result = soften_glare(image, alpha, 0.8)
+    lum = np.array([0.2126, 0.7152, 0.0722], np.float32)
+    assert (result[200, 200] @ lum) < (image[200, 200] @ lum) - 0.05
+    # El color de debajo vuelve: el reflejo queda más saturado (más morado), no gris.
+    assert np.ptp(result[200, 200]) >= np.ptp(image[200, 200]) - 1e-6
+    np.testing.assert_allclose(result[320, 130], image[320, 130], atol=0.02)
+    np.testing.assert_allclose(result[60, 60], image[60, 60], atol=0.02)
+
+
+def test_smooth_layer_lines_keeps_painted_outlines() -> None:
+    from app.pipeline.layers import smooth_layer_lines
+
+    size = 1400  # tamaño de una pieza en la salida de tienda
+    rows = np.arange(size, dtype=np.float32)[:, None]
+    lines = 0.03 * np.sin(rows * 2 * np.pi / 6)  # líneas de capa cada 6 px
+    image = np.repeat((0.4 + lines)[..., None], size, axis=1).repeat(3, axis=2).astype(np.float32)
+    image[:, 900:906] = 0.02  # contorno pintado en negro
+    alpha = np.ones((size, size), np.float32)
+    result = smooth_layer_lines(image, alpha, 80)
+    flat = (slice(300, 1100), slice(100, 700))
+    assert result[flat].std() < image[flat].std() * 0.45
+    # El contorno sigue negro y nítido.
+    assert result[700, 903].mean() < 0.08

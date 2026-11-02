@@ -22,6 +22,7 @@ const batch: Batch = {
     upscale: 2,
     enhance: 80,
     sharpen: 60,
+    glare: 80,
     white_balance: true,
     generate_both_layer_variants: true,
     rotate: 0,

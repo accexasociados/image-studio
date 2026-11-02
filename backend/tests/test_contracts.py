@@ -7,7 +7,9 @@ from app.contracts import AppSettings, ImageUpdate, ProcessOptions
 def test_process_options_defaults() -> None:
     options = ProcessOptions()
     assert options.presets == ["storefront", "instagram_feed"]
-    assert options.layer_lines == "keep"
+    assert options.layer_lines == "smooth"
+    assert options.smooth_strength == 80
+    assert options.glare == 80
     assert options.shadow == "auto"
     assert options.upscale == 2
 

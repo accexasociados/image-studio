@@ -75,7 +75,9 @@ def _archive_name(
         candidate = image.sku or image.product_name or original_stem
     base = _safe_name(candidate, fallback=image.id)
     variant = _safe_name(output.variant, fallback="variant")
-    suffix = f"_{variant}" if output.variant != "keep" and image.selected_variant is None else ""
+    # El sufijo solo distingue las dos variantes cuando van juntas; con una sola, el nombre queda limpio
+    # (desde la Fase 12 el suavizado es la variante por defecto y todos los archivos salían con "_smooth").
+    suffix = f"_{variant}" if output.variant != "keep" and output_count > 1 else ""
     return f"{base}{suffix}.{extension}"
 
 

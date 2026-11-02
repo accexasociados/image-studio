@@ -73,7 +73,8 @@ def test_selected_variant_is_the_only_one_exported_and_keeps_the_plain_name() ->
 def test_approving_a_missing_variant_is_rejected() -> None:
     with TestClient(create_app()) as client:
         _batch_id, [image_id] = _batch(client)
-        response = client.post(f"/api/v1/images/{image_id}/approve", json={"variant": "smooth"})
+        # Por defecto solo se genera la variante suavizada: pedir la otra es pedir una que no existe.
+        response = client.post(f"/api/v1/images/{image_id}/approve", json={"variant": "keep"})
 
     assert response.status_code == 422
 
