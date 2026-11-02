@@ -134,3 +134,21 @@ it('el visor muestra el motivo cuando la IA no pudo mejorar la foto', () => {
     'Motivo de la IA: La cuenta del servicio de IA no tiene saldo',
   )
 })
+
+it('el visor deja ver la versión de IA y la marca como hecha con IA', () => {
+  mockFetch(() => ({}))
+  const base = item('i1', 'A')
+  const withAi: ImageItem = {
+    ...base,
+    outputs: [
+      ...(base.outputs ?? []),
+      { preset: 'storefront', path: 'i1_ai.webp', width: 2000, height: 2000, bytes: 1, variant: 'ai' },
+    ],
+  }
+  wrap(<ImageReviewer batch={batch} images={[withAi]} index={0} onIndexChange={vi.fn()} onClose={vi.fn()} />)
+
+  expect(screen.queryByText(/Hecha con IA/)).not.toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button', { name: 'Mejorada con IA' }))
+  expect(screen.getByText(/Hecha con IA/)).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Mejorada con IA' })).toHaveAttribute('aria-pressed', 'true')
+})

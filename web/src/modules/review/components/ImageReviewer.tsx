@@ -1,7 +1,23 @@
-import { AlertTriangle, Brush, CheckCircle2, ChevronLeft, ChevronRight, RotateCcw, X } from 'lucide-react'
+import {
+  AlertTriangle,
+  Brush,
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  RotateCcw,
+  Sparkles,
+  X,
+} from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { fileUrl, type Batch, type ImageItem, type Preset, type ProcessOptions } from '@/shared/api/client'
+import {
+  fileUrl,
+  type Batch,
+  type ImageItem,
+  type OutputVariant,
+  type Preset,
+  type ProcessOptions,
+} from '@/shared/api/client'
 import { ProcessOptionsFields } from '@/shared/components/ProcessOptionsFields'
 import { FALLBACK_OPTIONS } from '@/shared/components/processOptions'
 import { useImageActions } from '../hooks/useImageActions'
@@ -74,8 +90,9 @@ function Reviewer({
   const [draft, setDraft] = useState<ProcessOptions>(effective)
   const [chosenPreset, setPreset] = useState<Preset>()
   const [maskOpen, setMaskOpen] = useState(false)
+  const [shownVariant, setShownVariant] = useState<OutputVariant>()
   const preset = chosenPreset ?? outputPresets(image)[0]
-  const output = pickOutput(image, preset)
+  const output = pickOutput(image, preset, shownVariant)
   const variants = preset ? outputVariants(image, preset) : []
   const canApprove = APPROVABLE.includes(image.status)
   const canReprocess = REPROCESSABLE.includes(image.status)
@@ -159,6 +176,28 @@ function Reviewer({
                 </button>
               ))}
             </div>
+          )}
+          {variants.length > 1 && (
+            <div className="flex flex-wrap gap-2" role="group" aria-label={t('review.reviewer.shownVariant')}>
+              {variants.map((item) => (
+                <button
+                  key={item}
+                  type="button"
+                  aria-pressed={item === (output?.variant ?? 'keep')}
+                  onClick={() => setShownVariant(item)}
+                  className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold ${item === (output?.variant ?? 'keep') ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900' : 'bg-white text-slate-600 dark:bg-slate-800 dark:text-slate-300'}`}
+                >
+                  {item === 'ai' && <Sparkles size={13} aria-hidden />}
+                  {t(`review.variant.${item}`)}
+                </button>
+              ))}
+            </div>
+          )}
+          {output?.variant === 'ai' && (
+            <p className="inline-flex w-fit items-center gap-1 rounded-full bg-violet-100 px-2.5 py-1 text-xs font-semibold text-violet-800 dark:bg-violet-950 dark:text-violet-200">
+              <Sparkles size={13} aria-hidden />
+              {t('review.reviewer.aiShown')}
+            </p>
           )}
           <CompareView
             before={fileUrl(image.original_path, 1280)}

@@ -203,6 +203,8 @@ const es = {
       processing: 'Procesando… el resultado aparecerá aquí.',
       failed: 'Falló el proceso: {{message}}',
       aiError: 'Motivo de la IA: {{message}}',
+      shownVariant: 'Versión que se muestra',
+      aiShown: 'Hecha con IA: compárala con la versión normal antes de aprobar',
       shortcuts: 'Atajos: A aprobar · R reprocesar · ← → navegar · Esc cerrar',
     },
     variant: {
@@ -553,6 +555,8 @@ const en: TranslationShape<typeof es> = {
       processing: 'Processing… the result will show up here.',
       failed: 'Processing failed: {{message}}',
       aiError: 'AI reason: {{message}}',
+      shownVariant: 'Version shown',
+      aiShown: 'Made with AI: compare it with the regular version before approving',
       shortcuts: 'Shortcuts: A approve · R reprocess · ← → navigate · Esc close',
     },
     variant: {
