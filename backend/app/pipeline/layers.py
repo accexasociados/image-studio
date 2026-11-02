@@ -13,6 +13,9 @@ from app.pipeline.types import Alpha, FloatImage, luminance
 _DETAIL_SIGMA = 0.0035
 # Detalle menor que esto (luminancia) cuenta como línea de capa; un contorno pintado es mucho mayor.
 _CORING_THRESHOLD = 0.1
+# Luminancia desde la que se usa el umbral completo; por debajo baja en proporción, hasta este mínimo.
+_THRESHOLD_FULL_AT = 0.45
+_THRESHOLD_MIN_RATIO = 0.12
 # Fracción de la textura que queda aun con fuerza 100, para que no parezca plástico.
 _RESIDUAL = 0.2
 
@@ -25,7 +28,10 @@ def smooth_layer_lines(image: FloatImage, alpha: Alpha, strength: int) -> FloatI
     sigma = max(max(image.shape[:2]) * _DETAIL_SIGMA, 1.2)
     base = cv2.GaussianBlur(lum, (0, 0), sigma)
     detail = lum - base
-    keep = np.clip(np.abs(detail) / _CORING_THRESHOLD, 0.0, 1.0) ** 2
+    # Umbral relativo a la luz de la zona: en el negro (humo, bases) todo el relieve tiene poco contraste
+    # absoluto, y con un umbral fijo se borraba entero (la textura del humo del Gengar bajaba de 30 a 10).
+    threshold = _CORING_THRESHOLD * np.clip(base / _THRESHOLD_FULL_AT, _THRESHOLD_MIN_RATIO, 1.0)
+    keep = np.clip(np.abs(detail) / threshold, 0.0, 1.0) ** 2
     factor = _RESIDUAL + (1.0 - _RESIDUAL) * keep
     new_lum = base + detail * (1.0 - amount + amount * factor)
     # Solo dentro de la pieza y sin llegar a la silueta, para no ablandar el contorno.

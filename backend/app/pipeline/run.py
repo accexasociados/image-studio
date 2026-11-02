@@ -41,12 +41,25 @@ from app.pipeline.quality import review_reasons
 from app.pipeline.scene import BackgroundPhoto, SceneSpec, brand_colors, render_scene
 from app.pipeline.segment import SegmentationParams, load_birefnet, segment
 from app.pipeline.shadow import ResolvedShadow, ShadowParams, resolve_shadow
-from app.pipeline.types import Alpha, FloatImage, to_float, to_uint8
+from app.pipeline.types import Alpha, FloatImage, luminance, to_float, to_uint8
 from app.pipeline.upscale import UpscaleParams, load_upscaler, upscale
 
 _EXTENSIONS = {"webp": "webp", "jpeg": "jpg", "png": "png"}
 _VARIANT_SUFFIX: dict[LayerLines, str] = {"keep": "", "smooth": "_smooth"}
 _SMOOTH_SHARPEN = 0.6
+
+
+def _sharpen_smoothed(image: FloatImage, strength: float) -> FloatImage:
+    """Enfoque para la variante suavizada: suave en lo claro y de color (con toda su fuerza volvía a marcar
+    las líneas de capa) y completo en lo oscuro, donde las líneas casi no se ven y el relieve del humo o de
+    una base negra sí necesita el enfoque (con el suave su textura bajaba de 30 a 18)."""
+    soft = sharpen(image, strength * _SMOOTH_SHARPEN)
+    full = sharpen(image, strength)
+    weight = np.clip((luminance(image) - 0.12) / 0.2, 0.0, 1.0)[..., None]
+    mixed: FloatImage = (full * (1.0 - weight) + soft * weight).astype(np.float32)
+    return mixed
+
+
 # original_hd no tiene lienzo fijo: la pieza ocupa este margen dentro de un lienzo con su proporción.
 _ORIGINAL_HD_FILL = 0.9
 # Con escena, original_hd usa un lienzo 4:5 (la pieza necesita piso debajo).
@@ -264,9 +277,10 @@ def _process_real(
                 else:
                     strength = _SCENE_SHADOW[shadow_mode] * shadow_params.intensity
                     composed = render_scene(variant_crop, size, fill, scene, strength)
-                # Con las líneas suavizadas el enfoque va más suave: con toda su fuerza las volvía a marcar.
-                sharpen_factor = _SMOOTH_SHARPEN if variant == "smooth" else 1.0
-                composed = sharpen(composed, options.sharpen / 100 * sharpen_factor)
+                if variant == "smooth":
+                    composed = _sharpen_smoothed(composed, options.sharpen / 100)
+                else:
+                    composed = sharpen(composed, options.sharpen / 100)
                 path = output_path(out_dir, base_name, preset, spec, suffix)
                 data = encode(composed, spec)
                 path.write_bytes(data)

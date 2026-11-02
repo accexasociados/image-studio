@@ -128,3 +128,17 @@ def test_smooth_layer_lines_keeps_painted_outlines() -> None:
     assert result[flat].std() < image[flat].std() * 0.45
     # El contorno sigue negro y nítido.
     assert result[700, 903].mean() < 0.08
+
+
+def test_smooth_layer_lines_keeps_the_relief_of_dark_parts() -> None:
+    from app.pipeline.layers import smooth_layer_lines
+
+    size = 1400
+    rows = np.arange(size, dtype=np.float32)[:, None]
+    relief = 0.035 * np.sin(rows * 2 * np.pi / 14)  # pliegues de un humo negro: poco contraste absoluto
+    image = np.repeat((0.08 + relief)[..., None], size, axis=1).repeat(3, axis=2).astype(np.float32)
+    alpha = np.ones((size, size), np.float32)
+    result = smooth_layer_lines(image, alpha, 80)
+    zone = (slice(300, 1100), slice(300, 1100))
+    # Con un umbral fijo el relieve del negro se borraba casi entero; ahora queda la mayor parte.
+    assert result[zone].std() > image[zone].std() * 0.7
