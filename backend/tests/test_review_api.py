@@ -228,3 +228,22 @@ def test_only_hand_edited_masks_are_reused_when_reprocessing() -> None:
     assert [override is not None for override in spy.overrides] == [False, False, True, True, False]
     assert edited.json()["mask_edited"] is True
     assert discarded.json()["mask_edited"] is False
+
+
+def test_image_lists_only_outputs_of_the_latest_process() -> None:
+    """Al pasar de dos variantes a una, la otra (de un proceso anterior) no debe seguir apareciendo."""
+    with TestClient(create_app()) as client:
+        _batch_id, [image_id] = _batch(client, generate_both_layer_variants=True)
+        first = client.get(f"/api/v1/images/{image_id}").json()
+        assert {output["variant"] for output in first["outputs"]} == {"keep", "smooth"}
+
+        client.patch(
+            f"/api/v1/images/{image_id}",
+            json={"options_override": {"presets": ["storefront"], "layer_lines": "smooth"}},
+        )
+        client.post(f"/api/v1/images/{image_id}/reprocess")
+        _run_all()
+        latest = client.get(f"/api/v1/images/{image_id}").json()
+
+    assert {output["variant"] for output in latest["outputs"]} == {"smooth"}
+    assert all("/v2/" in output["path"] for output in latest["outputs"])

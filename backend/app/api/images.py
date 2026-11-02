@@ -25,7 +25,7 @@ from app.contracts import (
     OutputFile,
     ProcessOptions,
 )
-from app.db.models import BatchRow, ImageRow, OutputRow
+from app.db.models import BatchRow, ImageRow
 from app.db.session import get_session
 from app.db.settings_store import load_settings
 from app.queue import get_job_queue
@@ -53,12 +53,10 @@ class _MetadataRow:
 
 
 def _image_response(row: ImageRow) -> ImageItem:
-    latest: dict[tuple[str, str], OutputRow] = {}
-    for output in row.outputs:
-        key = (output.preset, output.variant)
-        current = latest.get(key)
-        if current is None or output.version > current.version:
-            latest[key] = output
+    # Solo las salidas del último proceso (igual que la descarga). Tomar la última de cada formato y
+    # variante mezclaba versiones: al pasar a una sola variante seguía apareciendo la otra, ya vieja.
+    latest_version = max((output.version for output in row.outputs), default=0)
+    latest = [output for output in row.outputs if output.version == latest_version]
     return ImageItem(
         id=row.id,
         batch_id=row.batch_id,
@@ -72,7 +70,7 @@ def _image_response(row: ImageRow) -> ImageItem:
         ),
         status=cast(ImageStatus, row.status),
         review_reasons=row.review_reasons,
-        outputs=[OutputFile.model_validate(output) for output in latest.values()],
+        outputs=[OutputFile.model_validate(output) for output in latest],
         error=row.error,
         mask_path=row.mask_path,
         selected_variant=cast(LayerLines | None, row.selected_variant),
