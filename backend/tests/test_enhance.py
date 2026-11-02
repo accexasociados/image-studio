@@ -64,3 +64,23 @@ def test_sharpen_increases_edge_contrast() -> None:
     image = cv2.GaussianBlur(image, (0, 0), 1.5)
     result = sharpen(image, 0.6)
     assert np.abs(np.diff(result[30, :, 0])).max() > np.abs(np.diff(image[30, :, 0])).max()
+
+
+def test_enhance_does_not_brighten_existing_glints() -> None:
+    from app.pipeline.color import EnhanceParams, enhance
+
+    image = np.full((600, 600, 3), (0.35, 0.2, 0.6), np.float32)  # plástico morado
+    image[:, :60] = 0.04  # base negra
+    image[:, 540:] = 0.85  # parte blanca
+    image[298:303, 298:303] = (0.7, 0.6, 0.9)  # reflejo de la luz
+    alpha = np.ones((600, 600), np.float32)
+
+    def glint(result: np.ndarray) -> float:
+        lum = result @ np.array([0.2126, 0.7152, 0.0722], np.float32)
+        return float(lum[300, 300] - lum[200, 200])
+
+    kept = enhance(image, alpha, 1.0)
+    unchecked = enhance(image, alpha, 1.0, EnhanceParams(glint_threshold=1e9))
+    # Sin el límite el realce sube el reflejo; con él queda como en la foto (un poco de margen por la curva).
+    assert glint(unchecked) > glint(image) * 1.15
+    assert glint(kept) < glint(image) * 1.08

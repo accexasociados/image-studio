@@ -125,6 +125,11 @@ class EnhanceParams:
     vibrance: float = 0.45
     # Peso del detalle de luminancia (máscara de enfoque con radio del 1 % del lado mayor).
     local_contrast: float = 0.35
+    # Reflejos: entorno con el que se miden (fracción del lado mayor), cuánto pueden crecer (1 = igual que
+    # en la foto) y desde qué exceso de luminancia un píxel cuenta como reflejo.
+    glint_radius: float = 0.01
+    glint_gain: float = 1.0
+    glint_threshold: float = 0.05
 
 
 def enhance(
@@ -165,8 +170,29 @@ def enhance(
     fine = cv2.GaussianBlur(base, (0, 0), max(size * 0.003, 1.0))
     detail = fine - cv2.GaussianBlur(base, (0, 0), size * 0.015)
     result = result + (detail * params.local_contrast * strength)[..., None]
+    result = _keep_glints(image, np.clip(result, 0.0, 1.0), params)
     enhanced: FloatImage = np.clip(result, 0.0, 1.0).astype(np.float32)
     return enhanced
+
+
+def _glint(lum: np.ndarray, sigma: float) -> np.ndarray:
+    """Cuánto sobresale cada píxel claro sobre su entorno: los reflejos de la luz en el plástico."""
+    excess: np.ndarray = np.clip(lum - cv2.GaussianBlur(lum, (0, 0), sigma), 0.0, None)
+    return excess
+
+
+def _keep_glints(before: FloatImage, after: FloatImage, params: EnhanceParams) -> FloatImage:
+    """Los reflejos quedan con la intensidad que tenían en la foto. La curva, el contraste local y la
+    exposición los subían más del 40 % y la pieza parecía brillante donde en la foto no lo era (Gengar,
+    calabaza del Snoopy). Solo se recorta lo que el realce agregó por encima del reflejo original."""
+    sigma = max(max(before.shape[:2]) * params.glint_radius, 1.0)
+    glint_before = _glint(luminance(before), sigma)
+    glint_after = _glint(luminance(after), sigma)
+    added = np.clip(glint_after - glint_before * params.glint_gain, 0.0, None)
+    # Solo donde la foto ya tenía un reflejo; el resto del detalle (bordes, líneas de capa) no se toca.
+    weight = np.clip(glint_before / params.glint_threshold, 0.0, 1.0)
+    kept: FloatImage = (after - (added * weight)[..., None]).astype(np.float32)
+    return kept
 
 
 def sharpen(image: FloatImage, strength: float) -> FloatImage:
@@ -179,7 +205,15 @@ def sharpen(image: FloatImage, strength: float) -> FloatImage:
         return image
     radius = 1.2 * max(image.shape[:2]) / 1350
     blurred = cv2.GaussianBlur(image, (0, 0), max(radius, 0.8))
-    sharpened: FloatImage = np.clip(image + (image - blurred) * (1.35 * strength), 0.0, 1.0).astype(
+    detail = image - blurred
+    # El lado claro del detalle pesa la mitad: los bordes ganan definición por el lado oscuro y los
+    # reflejos no se encienden (con el mismo peso el enfoque los subía otro 13 %).
+    detail = np.where(detail > 0, detail * _SHARPEN_BRIGHT_SIDE, detail)
+    sharpened: FloatImage = np.clip(image + detail * (_SHARPEN_AMOUNT * strength), 0.0, 1.0).astype(
         np.float32
     )
     return sharpened
+
+
+_SHARPEN_BRIGHT_SIDE = 0.5
+_SHARPEN_AMOUNT = 2.2
