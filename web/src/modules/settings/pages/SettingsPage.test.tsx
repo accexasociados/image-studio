@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, vi } from 'vitest'
 import { SettingsPage } from './SettingsPage'
 
@@ -108,4 +108,46 @@ it('Formatos de salida conserva sus campos y agrega la escena debajo', async () 
   expect(screen.getByLabelText('Fondo')).toHaveValue('studio')
   expect(screen.getByLabelText(/Reflejo en el piso/)).toHaveValue('14')
   expect(screen.getByText('Biblioteca de fondos')).toBeInTheDocument()
+})
+
+it('la sección IA elige el servicio y no reenvía una clave sin tocar', async () => {
+  const ai = {
+    provider: 'none',
+    fal_api_key: { configured: true },
+    fal_model: 'fal-ai/flux-pro/kontext',
+    openai_api_key: { configured: false },
+    openai_model: 'gpt-image-1',
+    openai_quality: 'medium',
+    extra_prompt: '',
+    timeout_seconds: 120,
+  }
+  const fetchMock = vi.fn((url: string, init?: RequestInit) =>
+    Promise.resolve(
+      new Response(url.endsWith('/settings') || init?.method === 'PUT' ? JSON.stringify({ ai }) : '[]'),
+    ),
+  )
+  vi.stubGlobal('fetch', fetchMock)
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  render(
+    <QueryClientProvider client={client}>
+      <SettingsPage onClose={() => undefined} />
+    </QueryClientProvider>,
+  )
+  ;(await screen.findByRole('button', { name: 'IA' })).click()
+
+  const provider = await screen.findByLabelText('Servicio de IA')
+  expect(screen.getByRole('option', { name: 'Flux Kontext (fal.ai)' })).toBeInTheDocument()
+  expect(screen.getByLabelText('Clave de fal.ai (Flux Kontext)')).toHaveAttribute(
+    'placeholder',
+    'Configurado · escribe para reemplazar',
+  )
+  fireEvent.change(provider, { target: { value: 'fal_flux_kontext' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+
+  await waitFor(() => expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'PUT')).toBe(true))
+  const put = fetchMock.mock.calls.find(([, init]) => init?.method === 'PUT')
+  const body = JSON.parse(String(put?.[1]?.body)) as Record<string, unknown>
+  expect(put?.[0]).toContain('/settings/ai')
+  expect(body.provider).toBe('fal_flux_kontext')
+  expect(body).not.toHaveProperty('fal_api_key')
 })

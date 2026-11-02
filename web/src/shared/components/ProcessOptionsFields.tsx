@@ -252,6 +252,18 @@ export function ProcessOptionsFields({
         <span className="mt-1 block text-xs font-normal text-slate-500">{t('batches.glareHelp')}</span>
       </label>
 
+      <label className="block text-sm">
+        <span className="flex items-center gap-2 font-medium text-slate-700 dark:text-slate-200">
+          <input
+            type="checkbox"
+            checked={value.ai_enhance ?? false}
+            onChange={(event) => set('ai_enhance', event.target.checked)}
+          />
+          {t('batches.aiEnhance')}
+        </span>
+        <span className="mt-1 block text-xs font-normal text-slate-500">{t('batches.aiEnhanceHelp')}</span>
+      </label>
+
       <div className={grid}>
         <label className={labelClass}>
           {t('batches.upscale')}

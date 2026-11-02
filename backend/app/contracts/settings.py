@@ -89,6 +89,26 @@ class ImporterSettings(_Section):
     max_images_per_import: int = Field(default=300, ge=1, le=2000)
 
 
+AiProvider = Literal["none", "fal_flux_kontext", "openai"]
+
+
+class AiSettings(_Section):
+    """Fase 13: servicio en la nube que rehace la foto cuando se marca "Mejorar con IA" (cobra por imagen)."""
+
+    provider: AiProvider = "none"
+    fal_api_key: SecretStr | None = None
+    # Flux Kontext servido por fal.ai; ".../kontext/max" sigue más fiel la instrucción y cuesta el doble.
+    fal_model: str = Field(
+        default="fal-ai/flux-pro/kontext", min_length=3, max_length=100, pattern=r"^[\w./-]+$"
+    )
+    openai_api_key: SecretStr | None = None
+    openai_model: str = Field(default="gpt-image-1", min_length=3, max_length=60, pattern=r"^[\w.-]+$")
+    openai_quality: Literal["low", "medium", "high"] = "medium"
+    # Se agrega a la instrucción fija (foto de producto realista, misma pieza, nada animado).
+    extra_prompt: str = Field(default="", max_length=500)
+    timeout_seconds: int = Field(default=120, ge=10, le=600)
+
+
 class QualitySettings(_Section):
     min_object_area: float = Field(default=0.05, ge=0, le=1)
     max_object_area: float = Field(default=0.95, ge=0, le=1)
@@ -127,6 +147,7 @@ class AppSettings(_Section):
     importers: ImporterSettings = Field(default_factory=ImporterSettings)
     quality: QualitySettings = Field(default_factory=QualitySettings)
     pipeline: PipelineSettings = Field(default_factory=PipelineSettings)
+    ai: AiSettings = Field(default_factory=AiSettings)
 
 
 class SecretConfigured(_Section):
@@ -151,6 +172,17 @@ class ImporterSettingsPublic(_Section):
     max_images_per_import: int
 
 
+class AiSettingsPublic(_Section):
+    provider: AiProvider
+    fal_api_key: SecretConfigured
+    fal_model: str
+    openai_api_key: SecretConfigured
+    openai_model: str
+    openai_quality: Literal["low", "medium", "high"]
+    extra_prompt: str
+    timeout_seconds: int
+
+
 class AppSettingsPublic(_Section):
     """Vista de API: conserva toda la configuración sin revelar secretos."""
 
@@ -163,6 +195,7 @@ class AppSettingsPublic(_Section):
     importers: ImporterSettingsPublic
     quality: QualitySettings
     pipeline: PipelineSettings
+    ai: AiSettingsPublic
 
 
 class TelegramTestResult(_Section):
@@ -190,10 +223,13 @@ SettingsSection = Literal[
     "importers",
     "quality",
     "pipeline",
+    "ai",
 ]
 
 # Rutas "seccion.campo" de los secretos: se cifran en la BD y se enmascaran en la API.
 SECRET_FIELDS: tuple[tuple[SettingsSection, str], ...] = (
     ("telegram", "bot_token"),
     ("importers", "google_drive_api_key"),
+    ("ai", "fal_api_key"),
+    ("ai", "openai_api_key"),
 )

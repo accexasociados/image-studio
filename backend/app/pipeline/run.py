@@ -5,6 +5,7 @@ parámetro en `settings`.
 Modo `stub` (PIPELINE_MODE=stub): pega la foto sobre el lienzo de cada formato sin IA, para que la
 API y la web avancen sin GPU."""
 
+import logging
 import time
 from collections.abc import Iterator
 from contextlib import contextmanager
@@ -19,11 +20,13 @@ from app.contracts import (
     AppSettings,
     LayerLines,
     OutputFile,
+    OutputVariant,
     Preset,
     ProcessOptions,
     ProcessResult,
     SceneStyle,
 )
+from app.pipeline.ai_enhance import AiEnhanceError, enhance_with_ai, is_configured
 from app.pipeline.catalog import model_path
 from app.pipeline.color import correct_color, enhance, sharpen, soften_glare
 from app.pipeline.compose import (
@@ -47,6 +50,8 @@ from app.pipeline.upscale import UpscaleParams, load_upscaler, upscale
 _EXTENSIONS = {"webp": "webp", "jpeg": "jpg", "png": "png"}
 _VARIANT_SUFFIX: dict[LayerLines, str] = {"keep": "", "smooth": "_smooth"}
 _SMOOTH_SHARPEN = 0.6
+_AI_SUFFIX = "_ai"
+logger = logging.getLogger(__name__)
 
 
 def _sharpen_smoothed(image: FloatImage, strength: float) -> FloatImage:
@@ -255,6 +260,8 @@ def _process_real(
         ["keep", "smooth"] if options.generate_both_layer_variants else [options.layer_lines]
     )
     outputs: list[OutputFile] = []
+    # Foto final de la variante principal por formato: la que se manda a la IA si la foto lo pide.
+    primary: dict[Preset, FloatImage] = {}
 
     for variant in variants:
         with timer.stage(f"layers_{variant}"):
@@ -281,6 +288,8 @@ def _process_real(
                     composed = _sharpen_smoothed(composed, options.sharpen / 100)
                 else:
                     composed = sharpen(composed, options.sharpen / 100)
+                if variant == variants[0]:
+                    primary[preset] = composed
                 path = output_path(out_dir, base_name, preset, spec, suffix)
                 data = encode(composed, spec)
                 path.write_bytes(data)
@@ -295,10 +304,49 @@ def _process_real(
                     )
                 )
 
+    if options.ai_enhance:
+        outputs.extend(_ai_outputs(primary, options, settings, out_dir, base_name, reasons, timer))
+
     timer.timings["total"] = round(sum(timer.timings.values()), 1)
     return ProcessResult(
         outputs=outputs, mask_path=str(mask_path), review_reasons=reasons, timings_ms=timer.timings
     )
+
+
+def _ai_outputs(
+    primary: dict[Preset, FloatImage],
+    options: ProcessOptions,
+    settings: AppSettings,
+    out_dir: Path,
+    base_name: str,
+    reasons: list[str],
+    timer: _Timer,
+) -> list[OutputFile]:
+    """Variante "ai" de cada formato. Si el servicio falla, la foto queda con las variantes normales y un
+    motivo de revisión: nunca se pierde el trabajo del estudio por un error de la nube."""
+    if not is_configured(settings.ai):
+        reasons.append("ai_not_configured")
+        return []
+    outputs: list[OutputFile] = []
+    for preset, composed in primary.items():
+        spec = resolve_preset(preset, settings.export)
+        with timer.stage(f"ai_{preset}"):
+            try:
+                improved = enhance_with_ai(composed, settings.ai)
+            except AiEnhanceError as error:
+                logger.warning("Mejorar con IA falló para %s (%s): %s", base_name, preset, error)
+                reasons.append("ai_failed")
+                return outputs
+        path = output_path(out_dir, base_name, preset, spec, _AI_SUFFIX)
+        data = encode(improved, spec)
+        path.write_bytes(data)
+        height, width = improved.shape[:2]
+        outputs.append(
+            OutputFile(
+                preset=preset, path=str(path), width=width, height=height, bytes=len(data), variant="ai"
+            )
+        )
+    return outputs
 
 
 def _process_stub(
@@ -325,6 +373,13 @@ def _process_stub(
         for variant in variants
         for preset in options.presets
     ]
+    if options.ai_enhance:
+        # Simulación sin red: más contraste, para que la web distinga la variante de IA.
+        enhanced = ImageOps.autocontrast(source, cutoff=2)
+        outputs.extend(
+            _render_preset(enhanced, preset, options, out_dir, base_name + _AI_SUFFIX, "ai")
+            for preset in options.presets
+        )
     return ProcessResult(outputs=outputs, timings_ms={"total": (time.perf_counter() - started) * 1000})
 
 
@@ -334,7 +389,7 @@ def _render_preset(
     options: ProcessOptions,
     out_dir: Path,
     base_name: str,
-    variant: LayerLines,
+    variant: OutputVariant,
 ) -> OutputFile:
     spec = PRESETS[preset]
     fill = options.fill_ratio or spec.default_fill_ratio

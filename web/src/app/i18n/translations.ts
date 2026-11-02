@@ -90,6 +90,9 @@ const es = {
     whiteBalance: 'Corregir balance de blancos',
     enhance: 'Realce de color',
     sharpen: 'Enfoque',
+    aiEnhance: 'Mejorar con IA (en la nube)',
+    aiEnhanceHelp:
+      'Entrega además una versión rehecha por la IA de Ajustes > IA: foto de producto realista, nunca animada. Se cobra por imagen y puede cambiar detalles de la pieza; la versión normal siempre queda.',
     glare: 'Reducir brillos',
     glareHelp:
       'Baja el reflejo de la luz sobre el plástico de color. El blanco y el negro de la pintura no cambian; 0 = brillos tal como salieron en la foto.',
@@ -176,6 +179,8 @@ const es = {
       multiple_objects: 'Hay más de un objeto',
       uncertain_edges: 'Bordes dudosos en el recorte',
       low_resolution: 'Resolución baja para el formato',
+      ai_failed: 'La IA no pudo mejorar la foto (revisa la clave o vuelve a intentar)',
+      ai_not_configured: 'Mejorar con IA no está configurado en Ajustes > IA',
     },
     reviewer: {
       title: 'Revisión de {{name}}',
@@ -202,6 +207,7 @@ const es = {
     variant: {
       keep: 'Líneas de capa conservadas',
       smooth: 'Líneas de capa suavizadas',
+      ai: 'Mejorada con IA',
       choose: 'Aprobar con esta',
       chosen: 'Elegida',
       onlyOne:
@@ -272,6 +278,14 @@ const es = {
     downloadCommand: 'Descarga con: python -m scripts.download_models --upscale all',
     notConfigured: 'No configurado',
     testTelegram: 'Probar Telegram',
+    aiHelp:
+      'Solo se usa en las fotos con “Mejorar con IA” marcado. Cada imagen se cobra en tu cuenta del servicio (unos USD 0,04 por formato) y la foto normal del estudio siempre queda.',
+    aiProviders: {
+      none: 'Ninguno',
+      fal_flux_kontext: 'Flux Kontext (fal.ai)',
+      openai: 'OpenAI',
+    },
+    aiQuality: { low: 'Baja (más barata)', medium: 'Media', high: 'Alta (más cara)' },
     testingTelegram: 'Probando…',
     telegramOk: 'Telegram respondió correctamente.',
     telegramError: 'No se pudo probar Telegram.',
@@ -285,6 +299,7 @@ const es = {
       importers: 'Importadores',
       quality: 'Calidad',
       pipeline: 'Modelos',
+      ai: 'IA',
     },
     fields: {
       language: 'Idioma',
@@ -321,6 +336,14 @@ const es = {
       tile_overlap: 'Solapamiento',
       half_precision: 'Media precisión',
       detail_reinjection: 'Reinyección de detalle',
+      provider: 'Servicio de IA',
+      fal_api_key: 'Clave de fal.ai (Flux Kontext)',
+      fal_model: 'Modelo de fal.ai',
+      openai_api_key: 'Clave de OpenAI',
+      openai_model: 'Modelo de OpenAI',
+      openai_quality: 'Calidad de OpenAI',
+      extra_prompt: 'Instrucción adicional para la IA',
+      timeout_seconds: 'Tiempo máximo de espera (segundos)',
       layer_lines: 'Líneas de capa',
       smooth_strength: 'Fuerza de suavizado',
       shadow: 'Sombra',
@@ -417,6 +440,9 @@ const en: TranslationShape<typeof es> = {
     whiteBalance: 'Correct white balance',
     enhance: 'Color enhancement',
     sharpen: 'Sharpening',
+    aiEnhance: 'Improve with AI (cloud)',
+    aiEnhanceHelp:
+      'Also delivers a version redone by the AI set in Settings > AI: a realistic product photo, never animated. It is charged per image and may change details of the piece; the regular version is always kept.',
     glare: 'Reduce glare',
     glareHelp:
       'Tones down light reflections on colored plastic. White and black paint stay the same; 0 = glare exactly as photographed.',
@@ -502,6 +528,8 @@ const en: TranslationShape<typeof es> = {
       multiple_objects: 'There is more than one object',
       uncertain_edges: 'Uncertain edges in the cutout',
       low_resolution: 'Low resolution for the format',
+      ai_failed: 'The AI could not improve the photo (check the key or try again)',
+      ai_not_configured: 'Improve with AI is not set up in Settings > AI',
     },
     reviewer: {
       title: 'Reviewing {{name}}',
@@ -528,6 +556,7 @@ const en: TranslationShape<typeof es> = {
     variant: {
       keep: 'Layer lines kept',
       smooth: 'Layer lines smoothed',
+      ai: 'Improved with AI',
       choose: 'Approve with this one',
       chosen: 'Chosen',
       onlyOne:
@@ -598,6 +627,14 @@ const en: TranslationShape<typeof es> = {
     downloadCommand: 'Download with: python -m scripts.download_models --upscale all',
     notConfigured: 'Not configured',
     testTelegram: 'Test Telegram',
+    aiHelp:
+      'Only used on photos with “Improve with AI” checked. Each image is charged to your account with the service (about USD 0.04 per format) and the regular studio photo is always kept.',
+    aiProviders: {
+      none: 'None',
+      fal_flux_kontext: 'Flux Kontext (fal.ai)',
+      openai: 'OpenAI',
+    },
+    aiQuality: { low: 'Low (cheaper)', medium: 'Medium', high: 'High (more expensive)' },
     testingTelegram: 'Testing…',
     telegramOk: 'Telegram responded successfully.',
     telegramError: 'Telegram test failed.',
@@ -611,6 +648,7 @@ const en: TranslationShape<typeof es> = {
       importers: 'Importers',
       quality: 'Quality',
       pipeline: 'Models',
+      ai: 'AI',
     },
     fields: {
       language: 'Language',
@@ -647,6 +685,14 @@ const en: TranslationShape<typeof es> = {
       tile_overlap: 'Tile overlap',
       half_precision: 'Half precision',
       detail_reinjection: 'Detail reinjection',
+      provider: 'AI service',
+      fal_api_key: 'fal.ai key (Flux Kontext)',
+      fal_model: 'fal.ai model',
+      openai_api_key: 'OpenAI key',
+      openai_model: 'OpenAI model',
+      openai_quality: 'OpenAI quality',
+      extra_prompt: 'Extra instruction for the AI',
+      timeout_seconds: 'Maximum wait time (seconds)',
       layer_lines: 'Layer lines',
       smooth_strength: 'Smooth strength',
       shadow: 'Shadow',

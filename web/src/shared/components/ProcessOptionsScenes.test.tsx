@@ -74,3 +74,12 @@ it('muestra reducir brillos con su valor por defecto y permite cambiarlo', () =>
   fireEvent.change(slider, { target: { value: '0' } })
   expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ glare: 0 }))
 })
+
+it('mejorar con IA viene apagado y solo se activa si se marca', () => {
+  const onChange = vi.fn()
+  render(withQuery(<ProcessOptionsFields value={FALLBACK_OPTIONS} onChange={onChange} />))
+  const checkbox = screen.getByRole('checkbox', { name: /Mejorar con IA/ })
+  expect(checkbox).not.toBeChecked()
+  fireEvent.click(checkbox)
+  expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ ai_enhance: true }))
+})

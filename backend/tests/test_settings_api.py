@@ -31,6 +31,7 @@ def test_settings_api_covers_sections_and_never_reveals_secrets() -> None:
         "importers",
         "quality",
         "pipeline",
+        "ai",
     }
     assert updated.status_code == 200
     assert updated.json()["telegram"]["bot_token"] == {"configured": True}

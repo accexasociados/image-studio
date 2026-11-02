@@ -4,6 +4,8 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 Preset = Literal["storefront", "instagram_feed", "instagram_square", "original_hd"]
 LayerLines = Literal["keep", "smooth"]
+# Variantes de salida: las dos de líneas de capa y la versión rehecha por una IA en la nube (Fase 13).
+OutputVariant = Literal["keep", "smooth", "ai"]
 ShadowMode = Literal["none", "soft", "strong", "auto"]
 UpscaleFactor = Literal[1, 2, 4]
 Rotation = Literal[0, 90, 180, 270]
@@ -98,6 +100,14 @@ class ProcessOptions(BaseModel):
     )
     white_balance: bool = True
     generate_both_layer_variants: bool = False
+    # Fase 13: además de la foto normal, una versión rehecha por la IA de Ajustes > IA (cuesta por imagen).
+    ai_enhance: bool = Field(
+        default=False,
+        description=(
+            "Mejorar con IA: entrega además una variante 'ai' rehecha por el servicio de Ajustes > IA "
+            "(foto de producto realista, sin estilo animado). Se cobra por imagen y puede cambiar detalles."
+        ),
+    )
     rotate: Rotation = Field(default=0, description="Giro en grados, en sentido horario, antes de recortar.")
     crop: CropBox | None = Field(default=None, description="Recorte previo; None = foto completa.")
 

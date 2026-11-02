@@ -21,8 +21,8 @@ from app.contracts import (
     ImageSource,
     ImageStatus,
     ImageUpdate,
-    LayerLines,
     OutputFile,
+    OutputVariant,
     ProcessOptions,
 )
 from app.db.models import BatchRow, ImageRow
@@ -73,7 +73,7 @@ def _image_response(row: ImageRow) -> ImageItem:
         outputs=[OutputFile.model_validate(output) for output in latest],
         error=row.error,
         mask_path=row.mask_path,
-        selected_variant=cast(LayerLines | None, row.selected_variant),
+        selected_variant=cast(OutputVariant | None, row.selected_variant),
         mask_edited=row.mask_edited,
     )
 
@@ -464,7 +464,7 @@ def update_image(image_id: str, payload: ImageUpdate, session: SessionDep) -> Im
     return _image_response(row)
 
 
-def _approve(row: ImageRow, variant: LayerLines | None) -> None:
+def _approve(row: ImageRow, variant: OutputVariant | None) -> None:
     if variant is not None and not any(output.variant == variant for output in row.outputs):
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
@@ -514,7 +514,7 @@ def approve_images(batch_id: str, payload: BulkImagesRequest, session: SessionDe
     rows = _batch_images(session, batch_id, payload.image_ids)
     for row in rows:
         if row.status in _APPROVABLE:
-            _approve(row, cast(LayerLines | None, row.selected_variant))
+            _approve(row, cast(OutputVariant | None, row.selected_variant))
     session.commit()
     return [_image_response(row) for row in rows]
 

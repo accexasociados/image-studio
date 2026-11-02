@@ -16,6 +16,8 @@ from app.contracts import (
 )
 from app.contracts.options import ProcessOptions
 from app.contracts.settings import (
+    AiSettings,
+    AiSettingsPublic,
     ExportSettings,
     GeneralSettings,
     HotFolderSettings,
@@ -45,6 +47,7 @@ _SECTION_MODELS: dict[SettingsSection, type[BaseModel]] = {
     "importers": ImporterSettings,
     "quality": QualitySettings,
     "pipeline": PipelineSettings,
+    "ai": AiSettings,
 }
 SettingsPayload: TypeAlias = (
     GeneralSettings
@@ -56,6 +59,7 @@ SettingsPayload: TypeAlias = (
     | ImporterSettings
     | QualitySettings
     | PipelineSettings
+    | AiSettings
 )
 
 
@@ -80,6 +84,11 @@ def _public_settings(settings: AppSettings) -> AppSettingsPublic:
         ),
         quality=settings.quality,
         pipeline=settings.pipeline,
+        ai=AiSettingsPublic(
+            **settings.ai.model_dump(mode="python", exclude={"fal_api_key", "openai_api_key"}),
+            fal_api_key=SecretConfigured(configured=settings.ai.fal_api_key is not None),
+            openai_api_key=SecretConfigured(configured=settings.ai.openai_api_key is not None),
+        ),
     )
 
 

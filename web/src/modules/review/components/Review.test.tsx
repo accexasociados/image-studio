@@ -25,6 +25,7 @@ const batch: Batch = {
     glare: 80,
     white_balance: true,
     generate_both_layer_variants: true,
+    ai_enhance: false,
     rotate: 0,
     crop: null,
   },

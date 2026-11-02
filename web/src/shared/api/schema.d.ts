@@ -435,6 +435,71 @@ export type webhooks = Record<string, never>
 export interface components {
   schemas: {
     /**
+     * AiSettings
+     * @description Fase 13: servicio en la nube que rehace la foto cuando se marca "Mejorar con IA" (cobra por imagen).
+     */
+    AiSettings: {
+      /**
+       * Provider
+       * @default none
+       * @enum {string}
+       */
+      provider: 'none' | 'fal_flux_kontext' | 'openai'
+      /** Fal Api Key */
+      fal_api_key?: string | null
+      /**
+       * Fal Model
+       * @default fal-ai/flux-pro/kontext
+       */
+      fal_model: string
+      /** Openai Api Key */
+      openai_api_key?: string | null
+      /**
+       * Openai Model
+       * @default gpt-image-1
+       */
+      openai_model: string
+      /**
+       * Openai Quality
+       * @default medium
+       * @enum {string}
+       */
+      openai_quality: 'low' | 'medium' | 'high'
+      /**
+       * Extra Prompt
+       * @default
+       */
+      extra_prompt: string
+      /**
+       * Timeout Seconds
+       * @default 120
+       */
+      timeout_seconds: number
+    }
+    /** AiSettingsPublic */
+    AiSettingsPublic: {
+      /**
+       * Provider
+       * @enum {string}
+       */
+      provider: 'none' | 'fal_flux_kontext' | 'openai'
+      fal_api_key: components['schemas']['SecretConfigured']
+      /** Fal Model */
+      fal_model: string
+      openai_api_key: components['schemas']['SecretConfigured']
+      /** Openai Model */
+      openai_model: string
+      /**
+       * Openai Quality
+       * @enum {string}
+       */
+      openai_quality: 'low' | 'medium' | 'high'
+      /** Extra Prompt */
+      extra_prompt: string
+      /** Timeout Seconds */
+      timeout_seconds: number
+    }
+    /**
      * AppSettingsPublic
      * @description Vista de API: conserva toda la configuración sin revelar secretos.
      */
@@ -448,14 +513,15 @@ export interface components {
       importers: components['schemas']['ImporterSettingsPublic']
       quality: components['schemas']['QualitySettings']
       pipeline: components['schemas']['PipelineSettings']
+      ai: components['schemas']['AiSettingsPublic']
     }
     /** ApproveRequest */
     ApproveRequest: {
       /**
        * Variant
-       * @description Variante a exportar cuando la imagen tiene las dos (keep y smooth).
+       * @description Variante a exportar cuando la imagen tiene varias (keep, smooth, ai).
        */
-      variant?: ('keep' | 'smooth') | null
+      variant?: ('keep' | 'smooth' | 'ai') | null
     }
     /** Batch */
     Batch: {
@@ -687,7 +753,7 @@ export interface components {
        * Selected Variant
        * @description Variante elegida al aprobar; la descarga exporta solo esa.
        */
-      selected_variant?: ('keep' | 'smooth') | null
+      selected_variant?: ('keep' | 'smooth' | 'ai') | null
       /**
        * Mask Edited
        * @description La máscara es una corrección a mano y se reutiliza al reprocesar.
@@ -764,7 +830,7 @@ export interface components {
        * @default keep
        * @enum {string}
        */
-      variant: 'keep' | 'smooth'
+      variant: 'keep' | 'smooth' | 'ai'
     }
     /** PipelineSettings */
     PipelineSettings: {
@@ -913,6 +979,12 @@ export interface components {
        * @default false
        */
       generate_both_layer_variants: boolean
+      /**
+       * Ai Enhance
+       * @description Mejorar con IA: entrega además una variante 'ai' rehecha por el servicio de Ajustes > IA (foto de producto realista, sin estilo animado). Se cobra por imagen y puede cambiar detalles.
+       * @default false
+       */
+      ai_enhance: boolean
       /**
        * Rotate
        * @description Giro en grados, en sentido horario, antes de recortar.
@@ -1908,6 +1980,7 @@ export interface operations {
           | 'importers'
           | 'quality'
           | 'pipeline'
+          | 'ai'
       }
       cookie?: never
     }
@@ -1923,6 +1996,7 @@ export interface operations {
           | components['schemas']['ImporterSettings']
           | components['schemas']['QualitySettings']
           | components['schemas']['PipelineSettings']
+          | components['schemas']['AiSettings']
       }
     }
     responses: {

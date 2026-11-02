@@ -5,7 +5,7 @@ import {
   apiPost,
   apiUpload,
   type ImageItem,
-  type LayerLines,
+  type OutputVariant,
   type ProcessOptions,
 } from '@/shared/api/client'
 import { batchImagesKey } from './useBatchImages'
@@ -23,7 +23,7 @@ export function useImageActions(batchId: string) {
   }
 
   const approve = useMutation({
-    mutationFn: ({ id, variant }: { id: string; variant?: LayerLines }) =>
+    mutationFn: ({ id, variant }: { id: string; variant?: OutputVariant }) =>
       apiPost<ImageItem>(`/images/${id}/approve`, variant ? { variant } : null),
     onSuccess: (image) => replace([image]),
   })

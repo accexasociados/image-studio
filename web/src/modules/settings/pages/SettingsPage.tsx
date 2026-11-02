@@ -24,11 +24,25 @@ const SECTIONS = [
   'importers',
   'quality',
   'pipeline',
+  'ai',
 ] as const
 type Section = (typeof SECTIONS)[number]
 type Values = Record<string, unknown>
 // Campos de Proceso con control propio (PipelineFields); el resto usa SettingField.
 const PIPELINE_CUSTOM_FIELDS = ['upscale_model', 'detail_reinjection']
+// Campos de IA con selector propio (AiFields).
+const AI_CUSTOM_FIELDS = ['provider', 'openai_quality']
+const AI_PROVIDERS = ['none', 'fal_flux_kontext', 'openai'] as const
+const AI_QUALITIES = ['low', 'medium', 'high'] as const
+
+/** Una clave sin tocar llega como { configured }: no se reenvía, así el servidor conserva la guardada. */
+function withoutUntouchedSecrets(values: Values): Values {
+  return Object.fromEntries(
+    Object.entries(values).filter(
+      ([, value]) => !(typeof value === 'object' && value !== null && 'configured' in value),
+    ),
+  )
+}
 
 export function SettingsPage({ onClose }: { onClose: () => void }) {
   const { t } = useTranslation()
@@ -48,7 +62,7 @@ export function SettingsPage({ onClose }: { onClose: () => void }) {
   const draft = Object.keys(values).length > 0 ? values : (current ?? {})
   const update = (key: string, value: unknown) => setValues((old) => ({ ...old, [key]: value }))
   const save = async () => {
-    const response = await apiPut<AppSettingsPublic>(`/settings/${section}`, draft)
+    const response = await apiPut<AppSettingsPublic>(`/settings/${section}`, withoutUntouchedSecrets(draft))
     setMessage(t('settings.saved'))
     await refetch()
     setValues(response[section] as unknown as Values)
@@ -110,10 +124,12 @@ export function SettingsPage({ onClose }: { onClose: () => void }) {
                 {section === 'pipeline' && (
                   <PipelineFields value={draft} models={upscaleModels.data ?? []} onChange={update} t={t} />
                 )}
+                {section === 'ai' && <AiFields value={draft} onChange={update} t={t} />}
                 {Object.entries(draft)
                   .filter(
                     ([key]) =>
                       (section !== 'pipeline' || !PIPELINE_CUSTOM_FIELDS.includes(key)) &&
+                      (section !== 'ai' || !AI_CUSTOM_FIELDS.includes(key)) &&
                       !(section === 'export' && key === 'scene'),
                   )
                   .map(([key, value]) => (
@@ -211,6 +227,50 @@ function PipelineFields({
         <span className="text-xs text-slate-500">
           {Math.round(Number(value.detail_reinjection ?? 0.5) * 100)}%
         </span>
+      </label>
+    </>
+  )
+}
+
+function AiFields({
+  value,
+  onChange,
+  t,
+}: {
+  value: Values
+  onChange: (key: string, value: unknown) => void
+  t: (key: string) => string
+}) {
+  return (
+    <>
+      <p className="text-sm text-slate-500 sm:col-span-2 dark:text-slate-400">{t('settings.aiHelp')}</p>
+      <label className="text-sm font-medium text-slate-700 dark:text-slate-200">
+        {t('settings.fields.provider')}
+        <select
+          value={String(value.provider ?? 'none')}
+          onChange={(event) => onChange('provider', event.target.value)}
+          className="mt-1.5 w-full rounded-lg border border-slate-300 bg-transparent px-3 py-2 dark:border-slate-700"
+        >
+          {AI_PROVIDERS.map((provider) => (
+            <option key={provider} value={provider}>
+              {t(`settings.aiProviders.${provider}`)}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="text-sm font-medium text-slate-700 dark:text-slate-200">
+        {t('settings.fields.openai_quality')}
+        <select
+          value={String(value.openai_quality ?? 'medium')}
+          onChange={(event) => onChange('openai_quality', event.target.value)}
+          className="mt-1.5 w-full rounded-lg border border-slate-300 bg-transparent px-3 py-2 dark:border-slate-700"
+        >
+          {AI_QUALITIES.map((quality) => (
+            <option key={quality} value={quality}>
+              {t(`settings.aiQuality.${quality}`)}
+            </option>
+          ))}
+        </select>
       </label>
     </>
   )

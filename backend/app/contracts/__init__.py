@@ -28,6 +28,7 @@ from app.contracts.models import (
 from app.contracts.options import (
     CropBox,
     LayerLines,
+    OutputVariant,
     Preset,
     ProcessOptions,
     Rotation,
@@ -74,6 +75,7 @@ __all__ = [
     "LayerLines",
     "OutputFile",
     "OutputFormat",
+    "OutputVariant",
     "Preset",
     "PresetSpec",
     "ProcessOptions",

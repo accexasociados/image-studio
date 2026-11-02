@@ -1,4 +1,4 @@
-import type { ImageItem, LayerLines, OutputFile, Preset } from '@/shared/api/client'
+import type { ImageItem, OutputFile, OutputVariant, Preset } from '@/shared/api/client'
 
 const PRESET_ORDER: Preset[] = ['storefront', 'instagram_feed', 'instagram_square', 'original_hd']
 
@@ -7,18 +7,18 @@ export function outputPresets(image: ImageItem): Preset[] {
   return PRESET_ORDER.filter((preset) => present.has(preset))
 }
 
-export function outputVariants(image: ImageItem, preset: Preset): LayerLines[] {
+export function outputVariants(image: ImageItem, preset: Preset): OutputVariant[] {
   const variants = new Set(
     image.outputs?.filter((output) => output.preset === preset).map((output) => output.variant ?? 'keep'),
   )
-  return (['keep', 'smooth'] as LayerLines[]).filter((variant) => variants.has(variant))
+  return (['keep', 'smooth', 'ai'] as OutputVariant[]).filter((variant) => variants.has(variant))
 }
 
 /** Salida a mostrar: el preset pedido (o el primero) y la variante elegida (o la primera). */
 export function pickOutput(
   image: ImageItem,
   preset?: Preset,
-  variant?: LayerLines | null,
+  variant?: OutputVariant | null,
 ): OutputFile | undefined {
   const chosenPreset = preset && outputPresets(image).includes(preset) ? preset : outputPresets(image)[0]
   const candidates = image.outputs?.filter((output) => output.preset === chosenPreset) ?? []

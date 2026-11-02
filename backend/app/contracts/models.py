@@ -3,7 +3,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.contracts.options import LayerLines, Preset, ProcessOptions
+from app.contracts.options import OutputVariant, Preset, ProcessOptions
 
 BatchStatus = Literal["draft", "queued", "processing", "done", "failed", "cancelled"]
 ImageSource = Literal["upload", "google_photos", "google_drive", "url", "telegram", "hot_folder"]
@@ -30,7 +30,7 @@ class OutputFile(_ReadModel):
     width: int
     height: int
     bytes: int
-    variant: LayerLines = "keep"
+    variant: OutputVariant = "keep"
 
 
 class Batch(_ReadModel):
@@ -95,7 +95,7 @@ class ImageItem(_ReadModel):
     outputs: list[OutputFile] = Field(default_factory=list)
     error: str | None = None
     mask_path: str | None = None
-    selected_variant: LayerLines | None = Field(
+    selected_variant: OutputVariant | None = Field(
         default=None, description="Variante elegida al aprobar; la descarga exporta solo esa."
     )
     mask_edited: bool = Field(
@@ -114,8 +114,8 @@ class ImageUpdate(BaseModel):
 class ApproveRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    variant: LayerLines | None = Field(
-        default=None, description="Variante a exportar cuando la imagen tiene las dos (keep y smooth)."
+    variant: OutputVariant | None = Field(
+        default=None, description="Variante a exportar cuando la imagen tiene varias (keep, smooth, ai)."
     )
 
 
