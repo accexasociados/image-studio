@@ -35,7 +35,10 @@ _CAST_BLUR = 0.03
 _CAST_OPACITY = 0.17
 # Oclusión de contacto por delante de la base: la foto de referencia casi no tiene (≈ 2 %); la base se
 # apoya con la sombra pegada a sus lados y detrás.
-_CONTACT_CORE = 0.35
+_CONTACT_CORE = 0.2
+# Fin de la transición pared → piso (fracción del alto) y oscurecimiento de los bordes de la pared.
+_STUDIO_BLEND_END = 0.6
+_STUDIO_WALL_VIGNETTE = 0.06
 
 
 @dataclass(frozen=True)
@@ -155,11 +158,11 @@ def _contact_shadow(placed: _Placed, canvas_size: tuple[int, int], strength: flo
     core = cv2.GaussianBlur(core, (0, 0), max(footprint * 0.015, 1.5)).astype(np.float32)
     # Penumbra amplia, sobre todo detrás y a los lados de la base (casi nada por delante).
     soft = np.zeros_like(result)
-    soft_center = (center[0], round(center[1] - footprint * 0.14))
+    soft_center = (center[0], round(center[1] - footprint * 0.16))
     cv2.ellipse(
-        soft, soft_center, (max(int(footprint * 0.62), 2), max(int(footprint * 0.12), 2)), 0, 0, 360, 1.0, -1
+        soft, soft_center, (max(int(footprint * 0.62), 2), max(int(footprint * 0.1), 2)), 0, 0, 360, 1.0, -1
     )
-    soft = cv2.GaussianBlur(soft, (0, 0), max(footprint * 0.06, 3.0)).astype(np.float32)
+    soft = cv2.GaussianBlur(soft, (0, 0), max(footprint * 0.045, 3.0)).astype(np.float32)
     return np.clip((core * _CONTACT_CORE + soft * 0.25) * strength, 0, 1).astype(np.float32)
 
 
@@ -185,11 +188,13 @@ def _sweep(
     floor: np.ndarray,
     horizon: float,
     blend: tuple[float, float] | None = None,
+    wall_vignette: float | None = None,
 ) -> FloatImage:
     """Fondo continuo de estudio: la pared se curva hacia el piso sin línea visible.
 
     `blend` = (inicio, fin) de la transición en fracciones del alto;
-    por defecto, ±0,18 alrededor de `horizon`."""
+    por defecto, ±0,18 alrededor de `horizon`. Con `wall_vignette`, el oscurecimiento de los bordes
+    se aplica solo a la pared (el piso queda blanco parejo, como en una foto de catálogo)."""
     width, height = canvas_size
     start, end = blend or (horizon - 0.18, horizon + 0.18)
     y = np.linspace(0, 1, height, dtype=np.float32)[:, None, None]
@@ -197,7 +202,10 @@ def _sweep(
     t = t * t * (3 - 2 * t)
     background = wall * (1 - t) + floor * t
     x = np.linspace(-1, 1, width, dtype=np.float32)[None, :, None]
-    vignette = 1 - 0.035 * x * x - 0.03 * (1 - y)
+    if wall_vignette is None:
+        vignette = 1 - 0.035 * x * x - 0.03 * (1 - y)
+    else:
+        vignette = 1 - (1 - t) * (wall_vignette * x * x + 0.02)
     # broadcast_to devuelve una vista de solo lectura: se copia porque luego se oscurece in situ.
     return np.array(np.broadcast_to(background * vignette, (height, width, 3)), np.float32)
 
@@ -221,7 +229,12 @@ def _cast_shadow(placed: _Placed, canvas_size: tuple[int, int], strength: float,
     shadow = cv2.warpAffine(placed.alpha, matrix, (width, height), flags=cv2.INTER_LINEAR)
     piece_h = placed.bottom - placed.top + 1
     shadow = cv2.GaussianBlur(shadow, (0, 0), max(piece_h * _CAST_BLUR, 3.0)).astype(np.float32)
-    return np.clip(shadow * _CAST_OPACITY * strength, 0, 1).astype(np.float32)
+    # La sombra cae detrás de la pieza: por delante de la base se desvanece enseguida (el desenfoque la
+    # derramaba hacia el frente y la base parecía flotar sobre una mancha).
+    rows = np.arange(height, dtype=np.float32)[:, None]
+    fade = np.exp(-np.clip(rows - placed.bottom, 0, None) / max(height * 0.008, 1.0))
+    cast: Alpha = np.clip(shadow * fade * _CAST_OPACITY * strength, 0, 1).astype(np.float32)
+    return cast
 
 
 def _studio(
@@ -241,7 +254,10 @@ def _studio(
         _rgb(spec.wall),
         _rgb(spec.floor),
         horizon=base_y / height,
-        blend=(0.0, base_y / height - 0.12),
+        # Medido en la foto de referencia: gris solo en la franja de arriba, casi blanco (0,96) a media
+        # altura y blanco puro (0,99) en el piso.
+        blend=(0.0, _STUDIO_BLEND_END),
+        wall_vignette=_STUDIO_WALL_VIGNETTE,
     )
     shadows = _contact_shadow(placed, canvas_size, shadow_strength) + _cast_shadow(
         placed, canvas_size, shadow_strength, spec.shadow_side

@@ -46,7 +46,8 @@ def test_studio_rests_piece_on_floor_with_contact_shadow() -> None:
     # Justo al lado de la base la sombra oscurece el piso; sin sombra no.
     _rows, columns = np.nonzero((with_shadow[..., 0] > 0.8) & (with_shadow[..., 2] < 0.2))
     beside = (bottom - 1, int(columns.max()) + 6)
-    assert with_shadow[beside].mean() < without_shadow[beside].mean() - 0.05
+    # Suave, como en la foto de referencia: la base se apoya sin una mancha marcada.
+    assert with_shadow[beside].mean() < without_shadow[beside].mean() - 0.02
     # Arriba, lejos de la pieza, la pared queda casi blanca.
     assert with_shadow[5, 5].mean() > 0.9
 
@@ -160,9 +161,10 @@ def test_pipeline_uses_scene_from_options_and_4x5_hd(tmp_path: Path, real_mode: 
     hd = result.outputs[0]
     assert hd.width * 5 == hd.height * 4
     with Image.open(hd.path) as rendered:
-        corner = np.asarray(rendered.convert("RGB"))[-5, -5]
-    # El piso del estudio no es blanco puro.
-    assert corner.max() < 250
+        pixels = np.asarray(rendered.convert("RGB"))
+    # Estudio: pared gris arriba y piso casi blanco (no es el blanco liso de "white").
+    assert pixels[5, 5].max() < 240
+    assert pixels[-5, -5].min() > 245
 
 
 def test_pipeline_photo_scene_needs_a_background(tmp_path: Path, real_mode: None) -> None:

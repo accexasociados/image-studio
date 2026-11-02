@@ -56,7 +56,7 @@ class SceneSettings(_Section):
 
     style: SceneStyle = "studio"
     # Fase 12: gris claro arriba que se aclara hasta un piso casi blanco, como una foto de catálogo.
-    studio_wall_hex: str = Field(default="#E4E4E4", pattern=_HEX)
+    studio_wall_hex: str = Field(default="#ECECEC", pattern=_HEX)
     studio_floor_hex: str = Field(default="#FDFDFD", pattern=_HEX)
     brand_hex: str = Field(default="#C9D9EA", pattern=_HEX)
     pedestal_hex: str = Field(default="#E4DFD6", pattern=_HEX)
