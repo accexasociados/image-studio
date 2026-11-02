@@ -148,9 +148,12 @@ def enhance(
     boost = params.vibrance * strength * (1.0 - np.clip(saturation, 0.0, 1.0)) * dark_weight
     result = lum + (result - lum) * (1.0 + boost)
 
-    sigma = max(image.shape[:2]) * 0.01
+    # Banda media de detalle: realza el volumen de la pieza pero deja fuera lo más fino (ruido del JPEG
+    # y la textura que inventa el modelo al agrandar), que con una máscara de enfoque normal se veía rayado.
+    size = max(image.shape[:2])
     base = luminance(np.clip(result, 0.0, 1.0))
-    detail = base - cv2.GaussianBlur(base, (0, 0), sigma)
+    fine = cv2.GaussianBlur(base, (0, 0), max(size * 0.003, 1.0))
+    detail = fine - cv2.GaussianBlur(base, (0, 0), size * 0.015)
     result = result + (detail * params.local_contrast * strength)[..., None]
     enhanced: FloatImage = np.clip(result, 0.0, 1.0).astype(np.float32)
     return enhanced

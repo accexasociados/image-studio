@@ -30,7 +30,32 @@ def decontaminate_edges(image: FloatImage, alpha: Alpha) -> FloatImage:
     a = alpha[..., None]
     foreground = (image - (1.0 - a) * background) / np.maximum(a, 0.1)
     partial = ((alpha > 0.02) & (alpha < 0.98))[..., None]
-    return np.where(partial, np.clip(foreground, 0.0, 1.0), image).astype(np.float32)
+    cleaned = np.where(partial, np.clip(foreground, 0.0, 1.0), image).astype(np.float32)
+    return _neutralize_rim(cleaned, alpha)
+
+
+def _neutralize_rim(image: FloatImage, alpha: Alpha, strength: float = 0.85) -> FloatImage:
+    """En un anillo fino del contorno, toma el color (no el brillo) de la pieza vecina.
+
+    El reflejo del fondo (p. ej. una tela de colores) tiñe también píxeles con alfa casi 1, donde la
+    fórmula de arriba no actúa: el borde de una base negra quedaba turquesa."""
+    radius = max(round(max(image.shape[:2]) * 0.004), 2)
+    inside = (alpha > 0.02).astype(np.uint8)
+    distance = cv2.distanceTransform(inside, cv2.DIST_L2, 3)
+    rim = (alpha > 0.02) & (distance <= radius)
+    if not rim.any():
+        return image
+    core = ((alpha > 0.98) & ~rim).astype(np.float32)
+    sigma = radius * 2.0
+    weight = cv2.GaussianBlur(core, (0, 0), sigma)[..., None]
+    neighbor = cv2.GaussianBlur(image * core[..., None], (0, 0), sigma) / np.maximum(weight, 1e-4)
+    has_neighbor = (weight > 0.05) & rim[..., None]
+    weights = np.array([0.2126, 0.7152, 0.0722], np.float32)
+    lum = (image @ weights)[..., None]
+    neighbor_lum = (neighbor @ weights)[..., None]
+    recolored = np.clip(lum + (neighbor - neighbor_lum), 0.0, 1.0)
+    mixed = image * (1 - strength) + recolored * strength
+    return np.where(has_neighbor, mixed, image).astype(np.float32)
 
 
 def crop_to_piece(image: FloatImage, alpha: Alpha, padding_ratio: float = 0.02) -> Crop:

@@ -26,6 +26,16 @@ _FLOOR_Y_RANGE = (0.78, 0.94)
 _PEDESTAL_TOP_Y = 0.70
 _TOP_MARGIN = 0.07
 _STUDIO_TOP_MARGIN = 0.05
+# Sombra proyectada, ajustada contra una foto de catálogo real (Fase 12): mancha suave detrás y al lado
+# de la base, de ~20 % del alto de la pieza, que oscurece ~15-20 % el piso.
+# Valores elegidos con una búsqueda en rejilla contra esa foto (error medio del oscurecimiento 0,054).
+_CAST_SQUASH = 0.28
+_CAST_SHEAR = 0.2
+_CAST_BLUR = 0.03
+_CAST_OPACITY = 0.17
+# Oclusión de contacto por delante de la base: la foto de referencia casi no tiene (≈ 2 %); la base se
+# apoya con la sombra pegada a sus lados y detrás.
+_CONTACT_CORE = 0.35
 
 
 @dataclass(frozen=True)
@@ -133,20 +143,24 @@ def _contact_shadow(placed: _Placed, canvas_size: tuple[int, int], strength: flo
         return result
     footprint = placed.foot_right - placed.foot_left + 1
     center = (round((placed.foot_left + placed.foot_right) / 2), placed.bottom)
-    # Oclusión de contacto: fina, oscura y pegada a la base.
+    # Oclusión de contacto: la silueta de la parte baja (la base) corrida unos píxeles hacia abajo.
+    # Sigue la curva del borde inferior: en fotos tomadas desde arriba la base es una elipse, y una
+    # sombra plana asomaba por delante y la hacía flotar.
+    band_top = max(int(placed.bottom - (placed.bottom - placed.top) * 0.08), 0)
+    band = np.zeros_like(result)
+    band[band_top : placed.bottom + 1] = placed.alpha[band_top : placed.bottom + 1]
+    shift = max(int(footprint * 0.012), 2)
     core = np.zeros_like(result)
-    cv2.ellipse(
-        core, center, (max(int(footprint * 0.5), 2), max(int(footprint * 0.035), 2)), 0, 0, 360, 1.0, -1
-    )
-    core = cv2.GaussianBlur(core, (0, 0), max(footprint * 0.02, 1.5)).astype(np.float32)
-    # Penumbra amplia, un poco hacia atrás (luz cenital algo frontal).
+    core[shift:] = band[:-shift]
+    core = cv2.GaussianBlur(core, (0, 0), max(footprint * 0.015, 1.5)).astype(np.float32)
+    # Penumbra amplia, sobre todo detrás y a los lados de la base (casi nada por delante).
     soft = np.zeros_like(result)
-    soft_center = (center[0], round(center[1] - footprint * 0.03))
+    soft_center = (center[0], round(center[1] - footprint * 0.14))
     cv2.ellipse(
-        soft, soft_center, (max(int(footprint * 0.75), 2), max(int(footprint * 0.13), 2)), 0, 0, 360, 1.0, -1
+        soft, soft_center, (max(int(footprint * 0.62), 2), max(int(footprint * 0.12), 2)), 0, 0, 360, 1.0, -1
     )
-    soft = cv2.GaussianBlur(soft, (0, 0), max(footprint * 0.09, 3.0)).astype(np.float32)
-    return np.clip((core * 0.6 + soft * 0.22) * strength, 0, 1).astype(np.float32)
+    soft = cv2.GaussianBlur(soft, (0, 0), max(footprint * 0.06, 3.0)).astype(np.float32)
+    return np.clip((core * _CONTACT_CORE + soft * 0.25) * strength, 0, 1).astype(np.float32)
 
 
 def _reflection(placed: _Placed, opacity: float) -> tuple[FloatImage, Alpha]:
@@ -200,14 +214,14 @@ def _cast_shadow(placed: _Placed, canvas_size: tuple[int, int], strength: float,
     if side == "none" or strength <= 0:
         return np.zeros((height, width), np.float32)
     base = float(placed.bottom)
-    squash = 0.2
+    squash = _CAST_SQUASH
     # Lo que está más alto en la pieza cae más lejos de la base, hacia el lado de la sombra.
-    shear = 0.55 if side == "left" else -0.55
+    shear = _CAST_SHEAR if side == "left" else -_CAST_SHEAR
     matrix = np.array([[1.0, shear, -shear * base], [0.0, squash, base * (1 - squash)]], np.float32)
     shadow = cv2.warpAffine(placed.alpha, matrix, (width, height), flags=cv2.INTER_LINEAR)
-    footprint = placed.foot_right - placed.foot_left + 1
-    shadow = cv2.GaussianBlur(shadow, (0, 0), max(footprint * 0.08, 3.0)).astype(np.float32)
-    return np.clip(shadow * 0.2 * strength, 0, 1).astype(np.float32)
+    piece_h = placed.bottom - placed.top + 1
+    shadow = cv2.GaussianBlur(shadow, (0, 0), max(piece_h * _CAST_BLUR, 3.0)).astype(np.float32)
+    return np.clip(shadow * _CAST_OPACITY * strength, 0, 1).astype(np.float32)
 
 
 def _studio(

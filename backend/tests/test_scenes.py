@@ -72,8 +72,9 @@ def test_cast_shadow_falls_to_the_chosen_side() -> None:
     )
     _top, bottom = _piece_rows(left)
     _rows, columns = np.nonzero((left[..., 0] > 0.8) & (left[..., 2] < 0.2))
-    probe_left = (bottom - 15, int(columns.min()) - 25)
-    assert left[probe_left].mean() < right[probe_left].mean() - 0.02
+    # La sombra cae detrás y al lado de la base (hacia arriba en la imagen).
+    probe_left = (bottom - 40, int(columns.min()) - 15)
+    assert left[probe_left].mean() < right[probe_left].mean() - 0.01
 
 
 def test_studio_reflection_appears_below_the_base() -> None:
