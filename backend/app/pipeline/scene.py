@@ -17,11 +17,15 @@ from app.pipeline.compose import Crop, piece_bounds
 from app.pipeline.types import Alpha, FloatImage
 
 SceneKind = Literal["studio", "pedestal", "color", "photo"]
+# Hacia dónde cae la sombra proyectada (luz del lado contrario); "none" = solo sombra de contacto.
+ShadowSide = Literal["left", "right", "none"]
 
-# Altura de la base de la pieza en el lienzo y margen libre arriba (fracciones del alto).
-_FLOOR_Y = 0.80
+# Estudio y color: la base baja cuanto más grande es la pieza, entre estos límites (fracciones del alto),
+# para que una pieza al 85-90 % quepa con poco piso (como en una foto de catálogo).
+_FLOOR_Y_RANGE = (0.78, 0.94)
 _PEDESTAL_TOP_Y = 0.70
 _TOP_MARGIN = 0.07
+_STUDIO_TOP_MARGIN = 0.05
 
 
 @dataclass(frozen=True)
@@ -41,6 +45,7 @@ class SceneSpec:
     # Opacidad del reflejo en el piso (0 a 1); solo estudio y color.
     reflection: float = 0.14
     background: BackgroundPhoto | None = None
+    shadow_side: ShadowSide = "left"
 
 
 @dataclass(frozen=True)
@@ -160,11 +165,21 @@ def _reflection(placed: _Placed, opacity: float) -> tuple[FloatImage, Alpha]:
     )
 
 
-def _sweep(canvas_size: tuple[int, int], wall: np.ndarray, floor: np.ndarray, horizon: float) -> FloatImage:
-    """Fondo continuo de estudio: la pared se curva hacia el piso sin línea visible."""
+def _sweep(
+    canvas_size: tuple[int, int],
+    wall: np.ndarray,
+    floor: np.ndarray,
+    horizon: float,
+    blend: tuple[float, float] | None = None,
+) -> FloatImage:
+    """Fondo continuo de estudio: la pared se curva hacia el piso sin línea visible.
+
+    `blend` = (inicio, fin) de la transición en fracciones del alto;
+    por defecto, ±0,18 alrededor de `horizon`."""
     width, height = canvas_size
+    start, end = blend or (horizon - 0.18, horizon + 0.18)
     y = np.linspace(0, 1, height, dtype=np.float32)[:, None, None]
-    t = np.clip((y - (horizon - 0.18)) / 0.36, 0, 1)
+    t = np.clip((y - start) / max(end - start, 1e-3), 0, 1)
     t = t * t * (3 - 2 * t)
     background = wall * (1 - t) + floor * t
     x = np.linspace(-1, 1, width, dtype=np.float32)[None, :, None]
@@ -179,15 +194,45 @@ def _over(background: np.ndarray, image: np.ndarray, alpha: np.ndarray) -> Float
     return result
 
 
+def _cast_shadow(placed: _Placed, canvas_size: tuple[int, int], strength: float, side: ShadowSide) -> Alpha:
+    """Sombra proyectada en el piso: la silueta aplastada e inclinada hacia `side`, muy difusa."""
+    width, height = canvas_size
+    if side == "none" or strength <= 0:
+        return np.zeros((height, width), np.float32)
+    base = float(placed.bottom)
+    squash = 0.2
+    # Lo que está más alto en la pieza cae más lejos de la base, hacia el lado de la sombra.
+    shear = 0.55 if side == "left" else -0.55
+    matrix = np.array([[1.0, shear, -shear * base], [0.0, squash, base * (1 - squash)]], np.float32)
+    shadow = cv2.warpAffine(placed.alpha, matrix, (width, height), flags=cv2.INTER_LINEAR)
+    footprint = placed.foot_right - placed.foot_left + 1
+    shadow = cv2.GaussianBlur(shadow, (0, 0), max(footprint * 0.08, 3.0)).astype(np.float32)
+    return np.clip(shadow * 0.2 * strength, 0, 1).astype(np.float32)
+
+
 def _studio(
     crop: Crop, canvas_size: tuple[int, int], fill_ratio: float, spec: SceneSpec, shadow_strength: float
 ) -> FloatImage:
     width, height = canvas_size
-    base_y = height * _FLOOR_Y
-    scale = _scale_for(crop, canvas_size, fill_ratio, base_y - height * _TOP_MARGIN)
+    low, high = _FLOOR_Y_RANGE
+    scale = _scale_for(crop, canvas_size, fill_ratio, height * (high - _STUDIO_TOP_MARGIN))
+    top, bottom, _left, _right = piece_bounds(crop.alpha)
+    piece_h = (bottom - top) * scale
+    # Centrada en vertical con un poco de piso debajo; nunca más arriba ni más abajo de los límites.
+    base_y = float(np.clip(height * 0.53 + piece_h / 2, height * low, height * high))
     placed = _place(crop, canvas_size, scale, (width / 2, base_y))
-    background = _sweep(canvas_size, _rgb(spec.wall), _rgb(spec.floor), horizon=_FLOOR_Y)
-    background *= 1 - _contact_shadow(placed, canvas_size, shadow_strength)[..., None]
+    # La pared gris arriba se aclara hasta el piso antes de llegar a la base (sin línea de horizonte).
+    background = _sweep(
+        canvas_size,
+        _rgb(spec.wall),
+        _rgb(spec.floor),
+        horizon=base_y / height,
+        blend=(0.0, base_y / height - 0.12),
+    )
+    shadows = _contact_shadow(placed, canvas_size, shadow_strength) + _cast_shadow(
+        placed, canvas_size, shadow_strength, spec.shadow_side
+    )
+    background *= 1 - np.clip(shadows, 0, 1)[..., None]
     reflection_image, reflection_alpha = _reflection(placed, spec.reflection)
     background = _over(background, reflection_image, reflection_alpha)
     return np.clip(_over(background, placed.image, placed.alpha), 0, 1)

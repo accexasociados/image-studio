@@ -31,7 +31,8 @@ Fecha de creación: **2026-10-26**.
 | 8 | Validación con lote real de 100 fotos y ajuste fino | Claude + usuario | F1–F6 | Pendiente |
 | 9 | Nube (opción C): Docker, Redis, S3, autenticación e integración con el ecommerce | Codex (9.1–9.7) + Claude (9.8) | F8 | Pendiente |
 | 10 | Mejora de resolución: modelo elegible y fidelidad por foto | Claude (10.1–10.4) + Codex (10.5–10.7) | F1, F6 | Hecha (en `main`) |
-| 11 | Escenas: la pieza apoyada en estudio, pedestal, color de marca o foto de fondo | Claude (11.1–11.5) + Codex (11.6–11.9) | F10 | Hecha (revisada, rama `review/F11-web`) |
+| 11 | Escenas: la pieza apoyada en estudio, pedestal, color de marca o foto de fondo | Claude (11.1–11.5) + Codex (11.6–11.9) | F10 | Hecha (en `main`) |
+| 12 | Aspecto de foto de estudio: realce de color, encuadre grande y sombra proyectada | Claude | F11 | Hecha (rama `feat/F12-target-look`) |
 
 Las fases 1, 2 y 3 pueden avanzar **en paralelo**: la Fase 0 ya dejó los contratos, la configuración y el proceso en modo `stub`.
 
@@ -486,6 +487,27 @@ Límite conocido: si la pieza se fotografió inclinada, la escena no lo corrige 
 
 **Criterio de salida:** desde la web se elige el estilo (y la foto de fondo con su punto de apoyo), y las fotos salen apoyadas, sin efecto de flotar, en todos los formatos.
 
+## Fase 12 — Aspecto de foto de estudio (Claude)
+
+Objetivo (2026-11-01): el usuario mandó una foto de celular (Snoopy sobre una calabaza, con tela de flores) y la foto que espera (catálogo: piso blanco, gris solo arriba, sombra suave hacia un lado, colores vivos, pieza grande). Medido sobre los píxeles, el estudio de la Fase 11 quedaba lejos en cuatro cosas:
+
+| | Objetivo | Fase 11 | Fase 12 (realce 80) |
+|---|---|---|---|
+| Alto de la pieza (Instagram 4:5) | 86 % | 73 % | ≈ 84 % |
+| Naranja de la calabaza | (0,90; 0,28; 0,11), saturación 0,79 | (0,76; 0,26; 0,15), 0,62 | más claro y saturado, cerca del objetivo |
+| Fondo | gris arriba (0,89), piso blanco | piso gris cálido (0,91) + reflejo | gris arriba, piso casi blanco, sin reflejo |
+| Sombra | suave, proyectada hacia un lado | elipse centrada | contacto + proyectada (izquierda por defecto) |
+
+Lo que no se arregla en el render: en la foto objetivo la cámara está a la altura de la pieza; en la del celular, desde arriba (se ve la tapa de la base).
+
+- [x] F12.1 `enhance` en `app/pipeline/color.py`: niveles medidos dentro de la pieza, curva de medios tonos (gamma 0,8 a fuerza 1), viveza que se apaga en los oscuros casi neutros (si no, aviva el tinte del reflejo de la tela) y contraste local. Se aplica después de agrandar. `ProcessOptions.enhance` (0–100, por defecto 80; 0 = colores tal cual).
+- [x] F12.2 Estudio y color: la base baja según el tamaño de la pieza (entre 78 % y 94 % del alto) y la pared gris se aclara hasta el piso antes de llegar a la base. Instagram 4:5 y cuadrado pasan de 0,75 a 0,85 de llenado.
+- [x] F12.3 Sombra proyectada (silueta aplastada e inclinada, muy difusa): `SceneSettings.shadow_side` (`left` | `right` | `none`, por defecto `left`).
+- [x] F12.4 Valores por defecto del estudio: pared `#E4E4E4`, piso `#FDFDFD`, reflejo 0. Ojo: si los Ajustes de exportación ya se guardaron antes, conservan los colores viejos (cambiarlos en Ajustes > Formatos de salida).
+- [x] F12.5 Web: deslizador "Realce de color" en `ProcessOptionsFields` y selector "Sombra proyectada" en la escena (español e inglés). Tests: 126 del backend y 20 de la web; prueba en el navegador.
+
+**Criterio de salida:** la foto de celular de referencia sale con el aspecto de la foto de catálogo (salvo el ángulo de cámara).
+
 ---
 
 ## Qué necesitamos del usuario y cuándo
@@ -522,3 +544,4 @@ _(Fecha · agente · cambio · motivo. El otro agente marca "revisado".)_
 - 2026-10-27 · claude · Fase 10 (rama `feat/F10-upscale-models`): `PipelineSettings.upscale_model` pasa a `"realesrgan_x2plus" | "nmkd_siax" | "lanczos"` con `nmkd_siax` por defecto, y `detail_reinjection` por defecto pasa de 0,6 a 0,5. Nuevos: `ProcessOptions.upscale_fidelity: int | None` (0–100), `UpscaleModelInfo` y `GET /settings/upscale-models`. `schema.d.ts` ya regenerado en la rama. **Codex:** F10.5–F10.7. Revisado por codex: [x]
 - 2026-10-27 · codex · `Job.payload` expone el payload persistido de la cola para que el worker procese importaciones; los fallos de un trabajo `import` marcan el lote como `failed` y publican `batch.finished`. Motivo: corrección F4.7 de importaciones bloqueadas. Revisado por codex: [x]
 - 2026-10-27 · claude · Fase 11 (rama `feat/F11-scenes`): nuevos `SceneStyle` (`white|studio|pedestal|color|photo`), `ProcessOptions.scene` y `ProcessOptions.background_id` (ambos `null` = Ajustes), `ExportSettings.scene: SceneSettings` (estilo por defecto `studio`), `SceneBackground`, `SceneBackgroundUpdate` y `GET/POST /backgrounds`, `PATCH/DELETE /backgrounds/{id}` (tabla `backgrounds`, migración 0004). El fondo por defecto deja de ser blanco puro: para volver al de antes, `export.scene.style = "white"`. `schema.d.ts` ya regenerado. **Codex:** F11.6–F11.9. Revisado por codex: [x]
+- 2026-11-01 · claude · Fase 12 (rama `feat/F12-target-look`): nuevos `ProcessOptions.enhance: int` (0–100, por defecto 80) y `SceneSettings.shadow_side` (`left|right|none`, por defecto `left`). Cambian valores por defecto: `studio_wall_hex` `#E4E4E4`, `studio_floor_hex` `#FDFDFD`, `reflection` 0 y el llenado de `instagram_feed` / `instagram_square` de 0,75 a 0,85. `schema.d.ts` regenerado y web incluida. Revisado por codex: [ ]

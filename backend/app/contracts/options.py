@@ -69,6 +69,15 @@ class ProcessOptions(BaseModel):
         max_length=32,
         description="Foto de fondo con scene='photo'. None = la de Ajustes > Exportación.",
     )
+    # 80: lo más cercano a una foto de estudio sin exagerar (comparado con una foto de referencia, Fase 12).
+    enhance: int = Field(
+        default=80,
+        ge=0,
+        le=100,
+        description=(
+            "Realce de color tipo foto de estudio (niveles, viveza, contraste local). 0 = colores tal cual."
+        ),
+    )
     white_balance: bool = True
     generate_both_layer_variants: bool = False
     rotate: Rotation = Field(default=0, description="Giro en grados, en sentido horario, antes de recortar.")

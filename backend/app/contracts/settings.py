@@ -55,11 +55,15 @@ class SceneSettings(_Section):
     """Fondo con el que se componen todos los formatos (Fase 11). Cada lote o foto puede cambiar el estilo."""
 
     style: SceneStyle = "studio"
-    studio_wall_hex: str = Field(default="#FFFFFF", pattern=_HEX)
-    studio_floor_hex: str = Field(default="#ECEAE6", pattern=_HEX)
+    # Fase 12: gris claro arriba que se aclara hasta un piso casi blanco, como una foto de catálogo.
+    studio_wall_hex: str = Field(default="#E4E4E4", pattern=_HEX)
+    studio_floor_hex: str = Field(default="#FDFDFD", pattern=_HEX)
     brand_hex: str = Field(default="#C9D9EA", pattern=_HEX)
     pedestal_hex: str = Field(default="#E4DFD6", pattern=_HEX)
-    reflection: int = Field(default=14, ge=0, le=60, description="Opacidad del reflejo en el piso (%).")
+    reflection: int = Field(default=0, ge=0, le=60, description="Opacidad del reflejo en el piso (%).")
+    shadow_side: Literal["left", "right", "none"] = Field(
+        default="left", description="Hacia dónde cae la sombra proyectada en estudio y color."
+    )
     default_background_id: str | None = Field(default=None, max_length=32)
 
 

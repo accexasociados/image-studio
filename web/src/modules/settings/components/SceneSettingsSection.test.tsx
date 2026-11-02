@@ -13,6 +13,7 @@ const SCENE: SceneSettings = {
   brand_hex: '#C9D9EA',
   pedestal_hex: '#E4DFD6',
   reflection: 14,
+  shadow_side: 'left',
   default_background_id: null,
 }
 
@@ -109,4 +110,12 @@ it('al borrar el fondo predeterminado lo quita del borrador', async () => {
   await waitFor(() => expect(remove).toHaveBeenCalledWith('/backgrounds/bg-1'))
   expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ default_background_id: null }))
   expect(await screen.findByText('Todavía no hay fondos.')).toBeInTheDocument()
+})
+
+it('permite elegir hacia dónde cae la sombra proyectada', async () => {
+  render(withQuery(<Harness initial={SCENE} />))
+  const select = await screen.findByLabelText('Sombra proyectada')
+  expect(select).toHaveValue('left')
+  fireEvent.change(select, { target: { value: 'none' } })
+  expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ shadow_side: 'none' }))
 })

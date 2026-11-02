@@ -886,6 +886,12 @@ export interface components {
        */
       background_id?: string | null
       /**
+       * Enhance
+       * @description Realce de color tipo foto de estudio (niveles, viveza, contraste local). 0 = colores tal cual.
+       * @default 80
+       */
+      enhance: number
+      /**
        * White Balance
        * @default true
        */
@@ -993,12 +999,12 @@ export interface components {
       style: 'white' | 'studio' | 'pedestal' | 'color' | 'photo'
       /**
        * Studio Wall Hex
-       * @default #FFFFFF
+       * @default #E4E4E4
        */
       studio_wall_hex: string
       /**
        * Studio Floor Hex
-       * @default #ECEAE6
+       * @default #FDFDFD
        */
       studio_floor_hex: string
       /**
@@ -1014,9 +1020,16 @@ export interface components {
       /**
        * Reflection
        * @description Opacidad del reflejo en el piso (%).
-       * @default 14
+       * @default 0
        */
       reflection: number
+      /**
+       * Shadow Side
+       * @description Hacia dónde cae la sombra proyectada en estudio y color.
+       * @default left
+       * @enum {string}
+       */
+      shadow_side: 'left' | 'right' | 'none'
       /** Default Background Id */
       default_background_id?: string | null
     }

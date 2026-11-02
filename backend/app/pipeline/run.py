@@ -25,7 +25,7 @@ from app.contracts import (
     SceneStyle,
 )
 from app.pipeline.catalog import model_path
-from app.pipeline.color import correct_color
+from app.pipeline.color import correct_color, enhance
 from app.pipeline.compose import Crop, compose_on_canvas, crop_to_piece, decontaminate_edges, piece_bounds
 from app.pipeline.export import encode, output_path, resolve_preset
 from app.pipeline.geometry import forward, plan, restore
@@ -146,6 +146,7 @@ def _scene_spec(
         pedestal=_hex_to_rgb(scene.pedestal_hex),
         reflection=scene.reflection / 100.0,
         background=background,
+        shadow_side=scene.shadow_side,
     )
 
 
@@ -217,6 +218,10 @@ def _process_real(
         )
         up_image, up_alpha = upscale(crop.image, crop.alpha, factor, upscaler, device, params)
         crop = Crop(up_image, up_alpha)
+
+    with timer.stage("enhance"):
+        # Después de agrandar: el contraste local se calcula sobre el detalle final.
+        crop = Crop(enhance(crop.image, crop.alpha, options.enhance / 100), crop.alpha)
 
     shadow_params = ShadowParams(intensity=options.shadow_intensity / 100.0)
     shadow_mode = resolve_shadow(options.shadow, crop.image, crop.alpha, shadow_params)

@@ -210,6 +210,20 @@ export function ProcessOptionsFields({
         </label>
       </div>
 
+      <label className={labelClass}>
+        {t('batches.enhance')}
+        <input
+          type="range"
+          min="0"
+          max="100"
+          value={value.enhance ?? 80}
+          onChange={(event) => set('enhance', Number(event.target.value))}
+          className="mt-2 w-full"
+        />
+        <span className="text-xs text-slate-500">{value.enhance ?? 80}%</span>
+        <span className="mt-1 block text-xs font-normal text-slate-500">{t('batches.enhanceHelp')}</span>
+      </label>
+
       <div className={grid}>
         <label className={labelClass}>
           {t('batches.upscale')}

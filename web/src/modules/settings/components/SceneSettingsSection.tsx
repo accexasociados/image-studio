@@ -14,6 +14,8 @@ import {
 const SCENE_STYLES: SceneStyle[] = ['white', 'studio', 'pedestal', 'color', 'photo']
 const backgroundsKey = ['backgrounds'] as const
 
+const SHADOW_SIDES = ['left', 'right', 'none'] as const
+
 const COLOR_FIELDS = [
   ['studio_wall_hex', 'studioWall'],
   ['studio_floor_hex', 'studioFloor'],
@@ -113,6 +115,20 @@ export function SceneSettingsSection({
             className="mt-3 w-full"
           />
           <span className="text-xs text-slate-500">{value.reflection}%</span>
+        </label>
+        <label className={labelClass}>
+          {t('scenes.shadowSide')}
+          <select
+            value={value.shadow_side ?? 'left'}
+            onChange={(event) => update('shadow_side', event.target.value as SceneSettings['shadow_side'])}
+            className={fieldClass}
+          >
+            {SHADOW_SIDES.map((side) => (
+              <option key={side} value={side}>
+                {t(`scenes.shadowSides.${side}`)}
+              </option>
+            ))}
+          </select>
         </label>
         {COLOR_FIELDS.map(([key, label]) => (
           <label key={key} className={labelClass}>

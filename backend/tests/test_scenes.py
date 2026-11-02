@@ -40,14 +40,40 @@ def test_studio_rests_piece_on_floor_with_contact_shadow() -> None:
     without_shadow = render_scene(_crop(), (W, H), 0.8, spec, shadow_strength=0.0)
 
     top, bottom = _piece_rows(with_shadow)
-    assert abs(bottom - H * 0.80) <= 2
-    assert top >= H * 0.06
+    # Centrada con algo de piso debajo: base = 53 % del alto + media pieza (400 px de alto aquí).
+    assert abs(bottom - (H * 0.53 + 200)) <= 3
+    assert top >= H * 0.04
     # Justo al lado de la base la sombra oscurece el piso; sin sombra no.
     _rows, columns = np.nonzero((with_shadow[..., 0] > 0.8) & (with_shadow[..., 2] < 0.2))
     beside = (bottom - 1, int(columns.max()) + 6)
     assert with_shadow[beside].mean() < without_shadow[beside].mean() - 0.05
     # Arriba, lejos de la pieza, la pared queda casi blanca.
     assert with_shadow[5, 5].mean() > 0.9
+
+
+def test_studio_floor_moves_with_piece_size() -> None:
+    spec = SceneSpec(kind="studio", reflection=0.0, shadow_side="none")
+    small = render_scene(_crop(), (W, H), 0.5, spec, shadow_strength=0.0)
+    large = render_scene(_crop(), (W, H), 0.95, spec, shadow_strength=0.0)
+    _small_top, small_bottom = _piece_rows(small)
+    large_top, large_bottom = _piece_rows(large)
+    assert small_bottom >= H * 0.78 - 2
+    assert large_bottom <= H * 0.94 + 2
+    # Una pieza grande puede ocupar casi 90 % del alto (antes el tope era 73 %).
+    assert (large_bottom - large_top) / H > 0.85
+
+
+def test_cast_shadow_falls_to_the_chosen_side() -> None:
+    left = render_scene(
+        _crop(), (W, H), 0.6, SceneSpec(kind="studio", reflection=0.0, shadow_side="left"), 1.0
+    )
+    right = render_scene(
+        _crop(), (W, H), 0.6, SceneSpec(kind="studio", reflection=0.0, shadow_side="right"), 1.0
+    )
+    _top, bottom = _piece_rows(left)
+    _rows, columns = np.nonzero((left[..., 0] > 0.8) & (left[..., 2] < 0.2))
+    probe_left = (bottom - 15, int(columns.min()) - 25)
+    assert left[probe_left].mean() < right[probe_left].mean() - 0.02
 
 
 def test_studio_reflection_appears_below_the_base() -> None:

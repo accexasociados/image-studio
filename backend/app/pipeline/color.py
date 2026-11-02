@@ -103,3 +103,54 @@ def correct_color(
         exposure_gain=exposure_gain,
         white_balance_applied=gains is not None,
     )
+
+
+@dataclass(frozen=True)
+class EnhanceParams:
+    """Realce tipo foto de producto (Fase 12). Con fuerza 1 la pieza queda como en una foto de estudio:
+    blancos limpios, negros firmes, colores vivos y algo de contraste local. Con 0 no se toca."""
+
+    black_percentile: float = 1.0
+    black_target: float = 0.03
+    white_percentile: float = 99.5
+    white_target: float = 0.97
+    max_white_gain: float = 1.15
+    # Curva de tonos: con fuerza 1, gamma 0,8 aclara los medios tonos (blancos en sombra, colores) sin
+    # tocar el negro ni el blanco puros. Es lo que más acerca una foto de celular a una de estudio.
+    midtone_gamma: float = 0.8
+    # Aumento de saturación que crece en los colores apagados y casi no toca los ya saturados.
+    vibrance: float = 0.45
+    # Peso del detalle de luminancia (máscara de enfoque con radio del 1 % del lado mayor).
+    local_contrast: float = 0.35
+
+
+def enhance(
+    image: FloatImage, alpha: Alpha, strength: float, params: EnhanceParams | None = None
+) -> FloatImage:
+    """Niveles, viveza y contraste local medidos solo dentro de la pieza (`alpha > 0.5`)."""
+    params = params or EnhanceParams()
+    piece = alpha > 0.5
+    if strength <= 0 or piece.sum() < 100:
+        return image
+    lum = luminance(image)
+    low = float(np.percentile(lum[piece], params.black_percentile))
+    high = float(np.percentile(lum[piece], params.white_percentile))
+    target_low = low - max(low - params.black_target, 0.0) * strength
+    target_high = high + max(min(params.white_target, high * params.max_white_gain) - high, 0.0) * strength
+    result = (image - low) * ((target_high - target_low) / max(high - low, 1e-3)) + target_low
+    gamma = 1.0 - (1.0 - params.midtone_gamma) * strength
+    result = np.power(np.clip(result, 0.0, 1.0), gamma)
+
+    lum = luminance(np.clip(result, 0.0, 1.0))[..., None]
+    saturation = result.max(axis=-1, keepdims=True) - result.min(axis=-1, keepdims=True)
+    # En los oscuros casi neutros (negros con un reflejo de color) la viveza solo aviva el tinte: se apaga.
+    dark_weight = np.clip((lum - 0.12) / 0.25, 0.0, 1.0)
+    boost = params.vibrance * strength * (1.0 - np.clip(saturation, 0.0, 1.0)) * dark_weight
+    result = lum + (result - lum) * (1.0 + boost)
+
+    sigma = max(image.shape[:2]) * 0.01
+    base = luminance(np.clip(result, 0.0, 1.0))
+    detail = base - cv2.GaussianBlur(base, (0, 0), sigma)
+    result = result + (detail * params.local_contrast * strength)[..., None]
+    enhanced: FloatImage = np.clip(result, 0.0, 1.0).astype(np.float32)
+    return enhanced

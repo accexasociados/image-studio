@@ -47,3 +47,12 @@ it('permite elegir el fondo y una foto de la biblioteca por lote o foto', async 
     expect.objectContaining({ scene: 'photo', background_id: 'bg-1' }),
   )
 })
+
+it('muestra el realce de color con su valor por defecto y permite cambiarlo', () => {
+  const onChange = vi.fn()
+  render(withQuery(<ProcessOptionsFields value={FALLBACK_OPTIONS} onChange={onChange} />))
+  const slider = screen.getByRole('slider', { name: /Realce de color/ })
+  expect(slider).toHaveValue('80')
+  fireEvent.change(slider, { target: { value: '0' } })
+  expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ enhance: 0 }))
+})

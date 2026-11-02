@@ -20,6 +20,7 @@ const batch: Batch = {
     shadow_intensity: 100,
     fill_ratio: null,
     upscale: 2,
+    enhance: 80,
     white_balance: true,
     generate_both_layer_variants: true,
     rotate: 0,

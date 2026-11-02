@@ -23,7 +23,8 @@ class PresetSpec:
 
 PRESETS: dict[Preset, PresetSpec] = {
     "storefront": PresetSpec(2000, 2000, "webp", 90, 0.82, max_bytes=5 * 1024 * 1024),
-    "instagram_feed": PresetSpec(1080, 1350, "jpeg", 92, 0.75),
-    "instagram_square": PresetSpec(1080, 1080, "jpeg", 92, 0.75),
+    # 0,85: la pieza llena el formato como en una foto de catálogo (Fase 12; antes 0,75).
+    "instagram_feed": PresetSpec(1080, 1350, "jpeg", 92, 0.85),
+    "instagram_square": PresetSpec(1080, 1080, "jpeg", 92, 0.85),
     "original_hd": PresetSpec(None, None, "png", 100, 0.9, long_side=3000),
 }
