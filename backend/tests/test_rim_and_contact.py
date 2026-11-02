@@ -35,3 +35,30 @@ def test_contact_shadow_does_not_spill_in_front_of_the_base() -> None:
     bottom = int(np.flatnonzero(orange.any(1))[-1])
     # 12 px por delante de la base el piso casi no se oscurece (antes quedaba una franja que la hacía flotar).
     assert flat[bottom + 12, 200].mean() - lit[bottom + 12, 200].mean() < 0.05
+
+
+def test_enhance_keeps_the_piece_shadows_dark() -> None:
+    from app.pipeline.color import enhance
+
+    image = np.zeros((100, 100, 3), np.float32)
+    image[:, :50] = 0.08  # humo negro / lado en sombra
+    image[:, 50:] = 0.5
+    image[0, 0] = 0.0
+    image[0, 99] = 0.97
+    alpha = np.ones((100, 100), np.float32)
+    result = enhance(image, alpha, 1.0)
+    # Las sombras no se aclaran (antes la curva las dejaba en 0,06) y los medios tonos sí.
+    assert result[50, 20].mean() < 0.045
+    assert result[50, 80].mean() > 0.53
+
+
+def test_a_raised_arm_casts_a_fainter_shadow_than_the_grounded_body() -> None:
+    from app.pipeline.scene import _cast_shadow, _Placed
+
+    alpha = np.zeros((600, 600), np.float32)
+    alpha[100:500, 280:320] = 1.0  # cuerpo apoyado en el piso (fila 499)
+    alpha[120:160, 80:280] = 1.0  # brazo alto hacia la izquierda
+    placed = _Placed(np.zeros((600, 600, 3), np.float32), alpha, 100, 499, 280, 320)
+    shadow = _cast_shadow(placed, (600, 600), 1.0, "left")
+    # Antes el brazo dejaba una mancha suelta tan oscura como la sombra junto a la base.
+    assert shadow[:, :250].max() < shadow[:, 250:330].max() * 0.75

@@ -118,6 +118,9 @@ class EnhanceParams:
     # Curva de tonos: con fuerza 1, gamma 0,8 aclara los medios tonos (blancos en sombra, colores) sin
     # tocar el negro ni el blanco puros. Es lo que más acerca una foto de celular a una de estudio.
     midtone_gamma: float = 0.8
+    # Por debajo de `shadow_floor` la curva no actúa; entre los dos límites entra de forma gradual.
+    shadow_floor: float = 0.06
+    shadow_ceiling: float = 0.4
     # Aumento de saturación que crece en los colores apagados y casi no toca los ya saturados.
     vibrance: float = 0.45
     # Peso del detalle de luminancia (máscara de enfoque con radio del 1 % del lado mayor).
@@ -139,7 +142,14 @@ def enhance(
     target_high = high + max(min(params.white_target, high * params.max_white_gain) - high, 0.0) * strength
     result = (image - low) * ((target_high - target_low) / max(high - low, 1e-3)) + target_low
     gamma = 1.0 - (1.0 - params.midtone_gamma) * strength
-    result = np.power(np.clip(result, 0.0, 1.0), gamma)
+    result = np.clip(result, 0.0, 1.0)
+    # La curva solo aclara de los medios tonos hacia arriba: las sombras propias de la pieza (el lado en
+    # sombra, un negro de base) conservan su valor y la pieza no pierde volumen ni el negro se vuelve gris.
+    lifted = np.power(result, gamma)
+    shade = luminance(result)[..., None]
+    keep = np.clip((shade - params.shadow_floor) / (params.shadow_ceiling - params.shadow_floor), 0.0, 1.0)
+    keep = keep * keep * (3.0 - 2.0 * keep)
+    result = result + (lifted - result) * keep
 
     lum = luminance(np.clip(result, 0.0, 1.0))[..., None]
     saturation = result.max(axis=-1, keepdims=True) - result.min(axis=-1, keepdims=True)

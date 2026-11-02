@@ -33,6 +33,9 @@ _CAST_SQUASH = 0.28
 _CAST_SHEAR = 0.2
 _CAST_BLUR = 0.03
 _CAST_OPACITY = 0.17
+# Lo más alto de la pieza: sombra con este peso y este múltiplo del desenfoque.
+_CAST_FAR_WEIGHT = 0.6
+_CAST_FAR_BLUR = 3.0
 # Oclusión de contacto por delante de la base: la foto de referencia casi no tiene (≈ 2 %); la base se
 # apoya con la sombra pegada a sus lados y detrás.
 _CONTACT_CORE = 0.2
@@ -226,12 +229,22 @@ def _cast_shadow(placed: _Placed, canvas_size: tuple[int, int], strength: float,
     # Lo que está más alto en la pieza cae más lejos de la base, hacia el lado de la sombra.
     shear = _CAST_SHEAR if side == "left" else -_CAST_SHEAR
     matrix = np.array([[1.0, shear, -shear * base], [0.0, squash, base * (1 - squash)]], np.float32)
-    shadow = cv2.warpAffine(placed.alpha, matrix, (width, height), flags=cv2.INTER_LINEAR)
     piece_h = placed.bottom - placed.top + 1
-    shadow = cv2.GaussianBlur(shadow, (0, 0), max(piece_h * _CAST_BLUR, 3.0)).astype(np.float32)
+    # Lo alto de la pieza está lejos del piso: su sombra llega más difusa y más tenue. Sin esto un brazo o
+    # una saliente dejaba una mancha suelta sobre el piso, separada de la sombra de la base.
+    rows = np.arange(height, dtype=np.float32)[:, None]
+    height_frac = np.clip((base - rows) / max(piece_h, 1), 0.0, 1.0)
+    near = placed.alpha * (1.0 - height_frac)
+    far = placed.alpha * height_frac * _CAST_FAR_WEIGHT
+    blur = max(piece_h * _CAST_BLUR, 3.0)
+    shadow = cv2.GaussianBlur(
+        cv2.warpAffine(near, matrix, (width, height), flags=cv2.INTER_LINEAR), (0, 0), blur
+    ) + cv2.GaussianBlur(
+        cv2.warpAffine(far, matrix, (width, height), flags=cv2.INTER_LINEAR), (0, 0), blur * _CAST_FAR_BLUR
+    )
+    shadow = shadow.astype(np.float32)
     # La sombra cae detrás de la pieza: por delante de la base se desvanece enseguida (el desenfoque la
     # derramaba hacia el frente y la base parecía flotar sobre una mancha).
-    rows = np.arange(height, dtype=np.float32)[:, None]
     fade = np.exp(-np.clip(rows - placed.bottom, 0, None) / max(height * 0.008, 1.0))
     cast: Alpha = np.clip(shadow * fade * _CAST_OPACITY * strength, 0, 1).astype(np.float32)
     return cast
