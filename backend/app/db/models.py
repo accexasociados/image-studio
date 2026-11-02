@@ -49,6 +49,7 @@ class ImageRow(Base):
     selected_variant: Mapped[str | None] = mapped_column(String(10))
     # True cuando `mask_path` es una corrección a mano: solo entonces se reutiliza al reprocesar.
     mask_edited: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())
+    auto_adjustments: Mapped[dict[str, Any] | None] = mapped_column(JSON)
     position: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 

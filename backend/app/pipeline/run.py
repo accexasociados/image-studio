@@ -27,6 +27,7 @@ from app.contracts import (
     SceneStyle,
 )
 from app.pipeline.ai_enhance import AiEnhanceError, enhance_with_ai, is_configured
+from app.pipeline.auto import decide
 from app.pipeline.catalog import model_path
 from app.pipeline.color import correct_color, enhance, sharpen, soften_glare
 from app.pipeline.compose import (
@@ -227,6 +228,11 @@ def _process_real(
         raw_crop = crop_to_piece(image, alpha, padding_ratio=0.04)
         color = correct_color(image, alpha, white_balance=options.white_balance, apply_to=raw_crop.image)
         crop = Crop(decontaminate_edges(color.image, raw_crop.alpha), raw_crop.alpha)
+        # Ajuste automático: cada foto recibe la nitidez, el realce y la reducción de brillos que necesita.
+        auto = decide(crop.image, crop.alpha, color.exposure_gain) if options.auto_adjust else None
+    sharpen_strength = (auto.sharpen if auto else options.sharpen) / 100
+    enhance_strength = (auto.enhance if auto else options.enhance) / 100
+    glare_strength = (auto.glare if auto else options.glare) / 100
 
     needed = _needed_scale(crop, options.presets, settings, options)
     reasons = review_reasons(alpha, components, settings.quality, needed_upscale=needed)
@@ -249,8 +255,8 @@ def _process_real(
 
     with timer.stage("enhance"):
         # Después de agrandar: el contraste local se calcula sobre el detalle final.
-        softened = soften_glare(crop.image, crop.alpha, options.glare / 100)
-        crop = Crop(enhance(softened, crop.alpha, options.enhance / 100), crop.alpha)
+        softened = soften_glare(crop.image, crop.alpha, glare_strength)
+        crop = Crop(enhance(softened, crop.alpha, enhance_strength), crop.alpha)
 
     shadow_params = ShadowParams(intensity=options.shadow_intensity / 100.0)
     shadow_mode = resolve_shadow(options.shadow, crop.image, crop.alpha, shadow_params)
@@ -285,9 +291,9 @@ def _process_real(
                     strength = _SCENE_SHADOW[shadow_mode] * shadow_params.intensity
                     composed = render_scene(variant_crop, size, fill, scene, strength)
                 if variant == "smooth":
-                    composed = _sharpen_smoothed(composed, options.sharpen / 100)
+                    composed = _sharpen_smoothed(composed, sharpen_strength)
                 else:
-                    composed = sharpen(composed, options.sharpen / 100)
+                    composed = sharpen(composed, sharpen_strength)
                 if variant == variants[0]:
                     primary[preset] = composed
                 path = output_path(out_dir, base_name, preset, spec, suffix)
@@ -316,6 +322,7 @@ def _process_real(
         review_reasons=reasons,
         timings_ms=timer.timings,
         ai_error=ai_error,
+        auto_adjustments=auto,
     )
 
 

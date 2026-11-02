@@ -17,6 +17,7 @@ export const FALLBACK_OPTIONS: ProcessOptions = {
   glare: 80,
   white_balance: true,
   generate_both_layer_variants: false,
+  auto_adjust: true,
   ai_enhance: false,
   rotate: 0,
   crop: null,

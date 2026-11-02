@@ -398,6 +398,9 @@ class Worker:
             image.status = "review" if result.review_reasons else "done"
             # Solo queda un mensaje si "Mejorar con IA" falló; la foto igual sale con su versión normal.
             image.error = result.ai_error
+            image.auto_adjustments = (
+                result.auto_adjustments.model_dump() if result.auto_adjustments is not None else None
+            )
             session.flush()
             _refresh_batch_status(session, batch)
             session.commit()

@@ -16,6 +16,7 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.contracts import (
     ApproveRequest,
+    AutoAdjustments,
     BulkImagesRequest,
     ImageItem,
     ImageSource,
@@ -75,6 +76,9 @@ def _image_response(row: ImageRow) -> ImageItem:
         mask_path=row.mask_path,
         selected_variant=cast(OutputVariant | None, row.selected_variant),
         mask_edited=row.mask_edited,
+        auto_adjustments=(
+            AutoAdjustments.model_validate(row.auto_adjustments) if row.auto_adjustments else None
+        ),
     )
 
 

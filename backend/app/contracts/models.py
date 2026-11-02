@@ -81,6 +81,15 @@ class SceneBackgroundUpdate(BaseModel):
     piece_height: float | None = Field(default=None, ge=0.2, le=0.9)
 
 
+class AutoAdjustments(BaseModel):
+    """Lo que decidió el ajuste automático para una foto (0-100), y cuánto se aclaró (%)."""
+
+    sharpen: int = Field(ge=0, le=100, description="Nitidez aplicada.")
+    enhance: int = Field(ge=0, le=100, description="Realce de color aplicado.")
+    glare: int = Field(ge=0, le=100, description="Reducción de brillos aplicada.")
+    light: int = Field(description="Cuánto se aclaró la foto por la exposición (porcentaje; 0 = igual).")
+
+
 class ImageItem(_ReadModel):
     id: str
     batch_id: str
@@ -100,6 +109,9 @@ class ImageItem(_ReadModel):
     )
     mask_edited: bool = Field(
         default=False, description="La máscara es una corrección a mano y se reutiliza al reprocesar."
+    )
+    auto_adjustments: AutoAdjustments | None = Field(
+        default=None, description="Fuerzas que eligió el ajuste automático en el último proceso."
     )
 
 
@@ -158,6 +170,7 @@ class ProcessResult(BaseModel):
     timings_ms: dict[str, float] = Field(default_factory=dict)
     # Motivo que dio el servicio cuando "Mejorar con IA" falló (la foto queda con su versión normal).
     ai_error: str | None = None
+    auto_adjustments: AutoAdjustments | None = None
 
 
 class GpuInfo(BaseModel):

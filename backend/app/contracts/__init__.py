@@ -3,6 +3,7 @@ Cambiarlos exige una nota en "Registro de cambios de contrato" de PLAN_EJECUCION
 
 from app.contracts.models import (
     ApproveRequest,
+    AutoAdjustments,
     Batch,
     BatchCounts,
     BatchCreate,
@@ -54,6 +55,7 @@ __all__ = [
     "AppSettings",
     "AppSettingsPublic",
     "ApproveRequest",
+    "AutoAdjustments",
     "Batch",
     "BatchCounts",
     "BatchCreate",

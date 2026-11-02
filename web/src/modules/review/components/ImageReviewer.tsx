@@ -228,6 +228,16 @@ function Reviewer({
               {t('review.reviewer.aiError', { message: image.error })}
             </p>
           )}
+          {image.auto_adjustments && (
+            <p className="text-xs text-slate-500">
+              {t('review.reviewer.autoApplied', {
+                sharpen: image.auto_adjustments.sharpen,
+                enhance: image.auto_adjustments.enhance,
+                glare: image.auto_adjustments.glare,
+                light: `${image.auto_adjustments.light > 0 ? '+' : ''}${image.auto_adjustments.light}`,
+              })}
+            </p>
+          )}
           {image.review_reasons && image.review_reasons.length > 0 && (
             <ul className="flex flex-wrap gap-2 text-xs text-amber-800 dark:text-amber-300">
               {image.review_reasons.map((reason) => (

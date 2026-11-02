@@ -90,6 +90,9 @@ const es = {
     whiteBalance: 'Corregir balance de blancos',
     enhance: 'Realce de color',
     sharpen: 'Enfoque',
+    autoAdjust: 'Ajuste automático según la foto',
+    autoAdjustHelp:
+      'Mide la nitidez, los tonos y los brillos de cada foto y elige cuánto enfocar, realzar y quitar brillos. La luz se ajusta siempre según el fondo. Desmárcalo para usar tus propios valores.',
     aiEnhance: 'Mejorar con IA (en la nube)',
     aiEnhanceHelp:
       'Entrega además una versión rehecha por la IA de Ajustes > IA: foto de producto realista, nunca animada. Se cobra por imagen y puede cambiar detalles de la pieza; la versión normal siempre queda.',
@@ -205,6 +208,8 @@ const es = {
       aiError: 'Motivo de la IA: {{message}}',
       shownVariant: 'Versión que se muestra',
       aiShown: 'Hecha con IA: compárala con la versión normal antes de aprobar',
+      autoApplied:
+        'Ajuste automático para esta foto: nitidez {{sharpen}} %, realce {{enhance}} %, reducir brillos {{glare}} %, luz {{light}} %',
       shortcuts: 'Atajos: A aprobar · R reprocesar · ← → navegar · Esc cerrar',
     },
     variant: {
@@ -443,6 +448,9 @@ const en: TranslationShape<typeof es> = {
     whiteBalance: 'Correct white balance',
     enhance: 'Color enhancement',
     sharpen: 'Sharpening',
+    autoAdjust: 'Automatic adjustment per photo',
+    autoAdjustHelp:
+      'Measures each photo’s sharpness, tones and glare and picks how much to sharpen, enhance and reduce glare. Light is always adjusted from the background. Uncheck it to use your own values.',
     aiEnhance: 'Improve with AI (cloud)',
     aiEnhanceHelp:
       'Also delivers a version redone by the AI set in Settings > AI: a realistic product photo, never animated. It is charged per image and may change details of the piece; the regular version is always kept.',
@@ -557,6 +565,8 @@ const en: TranslationShape<typeof es> = {
       aiError: 'AI reason: {{message}}',
       shownVariant: 'Version shown',
       aiShown: 'Made with AI: compare it with the regular version before approving',
+      autoApplied:
+        'Automatic adjustment for this photo: sharpness {{sharpen}}%, enhancement {{enhance}}%, glare reduction {{glare}}%, light {{light}}%',
       shortcuts: 'Shortcuts: A approve · R reprocess · ← → navigate · Esc close',
     },
     variant: {

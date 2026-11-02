@@ -83,3 +83,18 @@ it('mejorar con IA viene apagado y solo se activa si se marca', () => {
   fireEvent.click(checkbox)
   expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ ai_enhance: true }))
 })
+
+it('con el ajuste automático los controles de realce, nitidez y brillos quedan bloqueados', () => {
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('[]')))
+  function Form() {
+    const [value, setValue] = useState(FALLBACK_OPTIONS)
+    return <ProcessOptionsFields value={value} onChange={setValue} />
+  }
+  render(withQuery(<Form />))
+
+  const auto = screen.getByLabelText(/Ajuste automático según la foto/)
+  expect(auto).toBeChecked()
+  expect(screen.getByLabelText(/Realce de color/)).toBeDisabled()
+  fireEvent.click(auto)
+  expect(screen.getByLabelText(/Realce de color/)).toBeEnabled()
+})

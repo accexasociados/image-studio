@@ -523,6 +523,32 @@ export interface components {
        */
       variant?: ('keep' | 'smooth' | 'ai') | null
     }
+    /**
+     * AutoAdjustments
+     * @description Lo que decidió el ajuste automático para una foto (0-100), y cuánto se aclaró (%).
+     */
+    AutoAdjustments: {
+      /**
+       * Sharpen
+       * @description Nitidez aplicada.
+       */
+      sharpen: number
+      /**
+       * Enhance
+       * @description Realce de color aplicado.
+       */
+      enhance: number
+      /**
+       * Glare
+       * @description Reducción de brillos aplicada.
+       */
+      glare: number
+      /**
+       * Light
+       * @description Cuánto se aclaró la foto por la exposición (porcentaje; 0 = igual).
+       */
+      light: number
+    }
     /** Batch */
     Batch: {
       /** Id */
@@ -760,6 +786,8 @@ export interface components {
        * @default false
        */
       mask_edited: boolean
+      /** @description Fuerzas que eligió el ajuste automático en el último proceso. */
+      auto_adjustments?: components['schemas']['AutoAdjustments'] | null
     }
     /** ImageUpdate */
     ImageUpdate: {
@@ -951,6 +979,12 @@ export interface components {
        * @description Foto de fondo con scene='photo'. None = la de Ajustes > Exportación.
        */
       background_id?: string | null
+      /**
+       * Auto Adjust
+       * @description Ajuste automático según la foto: mide la nitidez, el rango de tonos y los brillos de la pieza y elige la fuerza de enfoque, realce y reducción de brillos. Con False se usan los valores de enhance, sharpen y glare.
+       * @default true
+       */
+      auto_adjust: boolean
       /**
        * Enhance
        * @description Realce de color tipo foto de estudio (niveles, viveza, contraste local). 0 = colores tal cual.

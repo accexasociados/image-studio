@@ -72,6 +72,14 @@ class ProcessOptions(BaseModel):
         max_length=32,
         description="Foto de fondo con scene='photo'. None = la de Ajustes > Exportación.",
     )
+    auto_adjust: bool = Field(
+        default=True,
+        description=(
+            "Ajuste automático según la foto: mide la nitidez, el rango de tonos y los brillos de la pieza "
+            "y elige la fuerza de enfoque, realce y reducción de brillos. Con False se usan los valores de "
+            "enhance, sharpen y glare."
+        ),
+    )
     # 80: lo más cercano a una foto de estudio sin exagerar (comparado con una foto de referencia, Fase 12).
     enhance: int = Field(
         default=80,

@@ -210,47 +210,61 @@ export function ProcessOptionsFields({
         </label>
       </div>
 
-      <label className={labelClass}>
-        {t('batches.enhance')}
-        <input
-          type="range"
-          min="0"
-          max="100"
-          value={value.enhance ?? 80}
-          onChange={(event) => set('enhance', Number(event.target.value))}
-          className="mt-2 w-full"
-        />
-        <span className="text-xs text-slate-500">{value.enhance ?? 80}%</span>
-        <span className="mt-1 block text-xs font-normal text-slate-500">{t('batches.enhanceHelp')}</span>
+      <label className="block text-sm">
+        <span className="flex items-center gap-2 font-medium text-slate-700 dark:text-slate-200">
+          <input
+            type="checkbox"
+            checked={value.auto_adjust ?? true}
+            onChange={(event) => set('auto_adjust', event.target.checked)}
+          />
+          {t('batches.autoAdjust')}
+        </span>
+        <span className="mt-1 block text-xs font-normal text-slate-500">{t('batches.autoAdjustHelp')}</span>
       </label>
 
-      <label className={labelClass}>
-        {t('batches.sharpen')}
-        <input
-          type="range"
-          min="0"
-          max="100"
-          value={value.sharpen ?? 60}
-          onChange={(event) => set('sharpen', Number(event.target.value))}
-          className="mt-2 w-full"
-        />
-        <span className="text-xs text-slate-500">{value.sharpen ?? 60}%</span>
-        <span className="mt-1 block text-xs font-normal text-slate-500">{t('batches.sharpenHelp')}</span>
-      </label>
+      <fieldset disabled={value.auto_adjust ?? true} className="space-y-4 disabled:opacity-50">
+        <label className={labelClass}>
+          {t('batches.enhance')}
+          <input
+            type="range"
+            min="0"
+            max="100"
+            value={value.enhance ?? 80}
+            onChange={(event) => set('enhance', Number(event.target.value))}
+            className="mt-2 w-full"
+          />
+          <span className="text-xs text-slate-500">{value.enhance ?? 80}%</span>
+          <span className="mt-1 block text-xs font-normal text-slate-500">{t('batches.enhanceHelp')}</span>
+        </label>
 
-      <label className={labelClass}>
-        {t('batches.glare')}
-        <input
-          type="range"
-          min="0"
-          max="100"
-          value={value.glare ?? 80}
-          onChange={(event) => set('glare', Number(event.target.value))}
-          className="mt-2 w-full"
-        />
-        <span className="text-xs text-slate-500">{value.glare ?? 80}%</span>
-        <span className="mt-1 block text-xs font-normal text-slate-500">{t('batches.glareHelp')}</span>
-      </label>
+        <label className={labelClass}>
+          {t('batches.sharpen')}
+          <input
+            type="range"
+            min="0"
+            max="100"
+            value={value.sharpen ?? 60}
+            onChange={(event) => set('sharpen', Number(event.target.value))}
+            className="mt-2 w-full"
+          />
+          <span className="text-xs text-slate-500">{value.sharpen ?? 60}%</span>
+          <span className="mt-1 block text-xs font-normal text-slate-500">{t('batches.sharpenHelp')}</span>
+        </label>
+
+        <label className={labelClass}>
+          {t('batches.glare')}
+          <input
+            type="range"
+            min="0"
+            max="100"
+            value={value.glare ?? 80}
+            onChange={(event) => set('glare', Number(event.target.value))}
+            className="mt-2 w-full"
+          />
+          <span className="text-xs text-slate-500">{value.glare ?? 80}%</span>
+          <span className="mt-1 block text-xs font-normal text-slate-500">{t('batches.glareHelp')}</span>
+        </label>
+      </fieldset>
 
       <label className="block text-sm">
         <span className="flex items-center gap-2 font-medium text-slate-700 dark:text-slate-200">
