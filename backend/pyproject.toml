@@ -36,6 +36,12 @@ ml = [
   "einops>=0.8",
   "spandrel>=0.4",
 ]
+# F14: IA generativa local (SDXL + ControlNet Tile) para redibujar el detalle que falta. Opcional:
+# pip install -e ".[ml,local-ai]" y luego python -m scripts.download_models --local-ai
+local-ai = [
+  "diffusers>=0.32",
+  "accelerate>=1.2",
+]
 dev = [
   "pytest>=8.3",
   "ruff>=0.8",

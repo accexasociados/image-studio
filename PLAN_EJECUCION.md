@@ -33,6 +33,7 @@ Fecha de creación: **2026-10-26**.
 | 10 | Mejora de resolución: modelo elegible y fidelidad por foto | Claude (10.1–10.4) + Codex (10.5–10.7) | F1, F6 | Hecha (en `main`) |
 | 11 | Escenas: la pieza apoyada en estudio, pedestal, color de marca o foto de fondo | Claude (11.1–11.5) + Codex (11.6–11.9) | F10 | Hecha (en `main`) |
 | 12 | Aspecto de foto de estudio: realce de color, encuadre grande y sombra proyectada | Claude | F11 | Hecha (rama `feat/F12-target-look`) |
+| 14 | IA generativa local (SDXL + ControlNet Tile) para llegar al nivel de ChatGPT sin pagar por foto | Claude (14.1, 14.4+) + Codex (14.2–14.3) | F12, F13 | Prueba en curso |
 
 Las fases 1, 2 y 3 pueden avanzar **en paralelo**: la Fase 0 ya dejó los contratos, la configuración y el proceso en modo `stub`.
 
@@ -519,6 +520,31 @@ Lo que no se arregla en el render: en la foto objetivo la cámara está a la alt
 - [x] F13.1 Mejorar con IA (opcional, por foto). `ProcessOptions.ai_enhance` (por defecto apagado) manda la foto final de cada formato a un servicio en la nube y entrega una variante más, "ai", junto a la normal: en la revisión se elige cuál aprobar. Servicios en Ajustes > IA (`AiSettings`): Flux Kontext en fal.ai (`fal-ai/flux-pro/kontext`) y OpenAI (`gpt-image-1` con `input_fidelity=high`); claves cifradas como las de Telegram. Instrucción fija: misma pieza (forma, colores, detalles, tamaño y posición), luz de estudio difusa, fotografía real y nunca render, caricatura ni animación; Ajustes > IA puede agregar texto. Si el servicio falla o no está configurado, la foto conserva sus variantes normales y queda para revisar (`ai_failed`, `ai_not_configured`). Desde F13.2 el visor muestra el motivo que dio el servicio (sin saldo, clave inválida, modelo retirado...) y OpenAI usa `gpt-image-2` (`gpt-image-1` se retiró el 2026-10-23). Sin probar aún contra los servicios reales (las pruebas simulan sus respuestas). En local no es viable: FLUX.1 Kontext [dev] pide ~24 GB de memoria de video (6 GB en la GTX 1660, que además no admite bf16) y su licencia no permite uso comercial.
 
 **Criterio de salida:** la foto de celular de referencia sale con el aspecto de la foto de catálogo (salvo el ángulo de cámara).
+
+---
+
+## Fase 14 — IA generativa local: redibujar el detalle que falta (Claude + Codex)
+
+**Por qué:** el usuario comparó el estudio con ChatGPT sobre la misma foto del Arthas (2026-11-02). El acabado estudio (F12.16) iguala la luz y el color, pero la foto original está desenfocada y ChatGPT **redibuja** el detalle (filos, pincel seco, base limpia). Eso solo lo hace una IA generativa. OpenAI cuesta por foto; esta fase prueba hacerlo **en local**, aunque tarde, en la GTX 1660 (6 GB de memoria de video, 31 GB de RAM).
+
+**Cómo:** Stable Diffusion XL redibuja la foto con `strength` bajo (0,3–0,6) y ControlNet Tile la obliga a respetar forma y colores. Todo con licencia comercial: SDXL base (CreativeML Open RAIL++-M), VAE fp16-fix (MIT), `xinsir/controlnet-tile-sdxl-1.0` (Apache-2.0). Descartados: Flux Kontext dev y SUPIR (licencia no comercial) y Flux en general (no cabe).
+
+**Reparto:** Claude escribe el código liviano; Codex hace lo pesado (instalar, bajar ~9,6 GB y correr la prueba en la GPU, que tarda).
+
+- [x] F14.1 Script de prueba `backend/scripts/spike_local_ai.py` (no toca el estudio ni la base de datos), opción `--local-ai` en `scripts/download_models.py` (revisión fijada en `models/manifest.json`, solo pesos fp16) y extra `local-ai` en `pyproject.toml` (`diffusers`, `accelerate`). — (claude)
+- [ ] F14.2 **(codex)** Instalar y descargar, desde `image-studio/backend` con el `.venv` del estudio:
+  1. `pip install -e ".[ml,local-ai]"` (no reinstalar torch: ya está con CUDA 12.6).
+  2. `python -m scripts.download_models --local-ai` (~9,6 GB a `models/sdxl`, `models/sdxl_vae`, `models/controlnet_tile`). Nada de `models/` va a git.
+  3. Comprobar que el estudio sigue arrancando y que `pytest` pasa igual que antes.
+- [ ] F14.3 **(codex)** Correr la prueba con las fotos de `samples/f14/` (ignorada por git) y anotar el resultado en *Notas y bloqueos*:
+  1. `python -m scripts.spike_local_ai --input ../samples/f14/arthas_original.jpg --out ../samples/f14/run_original --reference ../samples/f14/arthas_chatgpt.png`
+  2. `python -m scripts.spike_local_ai --input ../samples/f14/arthas_estudio.webp --out ../samples/f14/run_estudio --reference ../samples/f14/arthas_chatgpt.png`
+  3. Si sale sin memoria: repetir con `--offload sequential`. Si avisa de imagen negra: `--dtype fp32 --offload sequential`. Anotar qué combinación funcionó.
+  4. En la nota: tiempo de carga y por imagen, memoria de video máxima (de `informe.json`) y la ruta de cada `comparacion.jpg`. No hace falta juzgar la calidad: eso es F14.4.
+- [ ] F14.4 Evaluar con el usuario: comparar con ChatGPT, elegir `strength` y si conviene partir de la foto original o de la salida del estudio; ajustar instrucción y peso del ControlNet. Si no convence, la fase se cierra aquí. — (claude)
+- [ ] F14.5 Si convence: integrarlo como variante "IA local" (igual que la salida ✨ de F13: opcional por foto, la versión normal siempre queda), proveedor `local_sdxl` en Ajustes > IA, en la cola con un solo trabajo de GPU a la vez y aviso del tiempo estimado. Contrato nuevo con nota en el registro. — (claude + codex)
+
+**Criterio de salida:** el usuario decide con la comparación lado a lado (estudio + IA local vs. ChatGPT) si la IA local entra al estudio.
 
 ---
 
