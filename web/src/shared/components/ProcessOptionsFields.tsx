@@ -264,6 +264,20 @@ export function ProcessOptionsFields({
           <span className="text-xs text-slate-500">{value.glare ?? 80}%</span>
           <span className="mt-1 block text-xs font-normal text-slate-500">{t('batches.glareHelp')}</span>
         </label>
+
+        <label className={labelClass}>
+          {t('batches.finish')}
+          <input
+            type="range"
+            min="0"
+            max="100"
+            value={value.finish ?? 50}
+            onChange={(event) => set('finish', Number(event.target.value))}
+            className="mt-2 w-full"
+          />
+          <span className="text-xs text-slate-500">{value.finish ?? 50}%</span>
+          <span className="mt-1 block text-xs font-normal text-slate-500">{t('batches.finishHelp')}</span>
+        </label>
       </fieldset>
 
       <label className="block text-sm">

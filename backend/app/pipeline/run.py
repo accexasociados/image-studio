@@ -39,6 +39,7 @@ from app.pipeline.compose import (
     piece_bounds,
 )
 from app.pipeline.export import encode, output_path, resolve_preset
+from app.pipeline.finish import studio_finish
 from app.pipeline.geometry import forward, plan, restore
 from app.pipeline.layers import smooth_layer_lines
 from app.pipeline.quality import review_reasons
@@ -233,6 +234,7 @@ def _process_real(
     sharpen_strength = (auto.sharpen if auto else options.sharpen) / 100
     enhance_strength = (auto.enhance if auto else options.enhance) / 100
     glare_strength = (auto.glare if auto else options.glare) / 100
+    finish_strength = (auto.finish if auto else options.finish) / 100
 
     needed = _needed_scale(crop, options.presets, settings, options)
     reasons = review_reasons(alpha, components, settings.quality, needed_upscale=needed)
@@ -256,7 +258,10 @@ def _process_real(
     with timer.stage("enhance"):
         # Después de agrandar: el contraste local se calcula sobre el detalle final.
         softened = soften_glare(crop.image, crop.alpha, glare_strength)
-        crop = Crop(enhance(softened, crop.alpha, enhance_strength), crop.alpha)
+        enhanced = enhance(softened, crop.alpha, enhance_strength)
+        # Con brillos fuertes las luces no se estiran: el reflejo crecería en vez del pincel seco.
+        finished = studio_finish(enhanced, crop.alpha, finish_strength, highlights=1.0 - glare_strength)
+        crop = Crop(finished, crop.alpha)
 
     shadow_params = ShadowParams(intensity=options.shadow_intensity / 100.0)
     shadow_mode = resolve_shadow(options.shadow, crop.image, crop.alpha, shadow_params)

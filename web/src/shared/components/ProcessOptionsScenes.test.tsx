@@ -75,6 +75,15 @@ it('muestra reducir brillos con su valor por defecto y permite cambiarlo', () =>
   expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ glare: 0 }))
 })
 
+it('muestra el acabado estudio con su valor por defecto y permite cambiarlo', () => {
+  const onChange = vi.fn()
+  render(withQuery(<ProcessOptionsFields value={FALLBACK_OPTIONS} onChange={onChange} />))
+  const slider = screen.getByRole('slider', { name: /Acabado estudio/ })
+  expect(slider).toHaveValue('50')
+  fireEvent.change(slider, { target: { value: '100' } })
+  expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ finish: 100 }))
+})
+
 it('mejorar con IA viene apagado y solo se activa si se marca', () => {
   const onChange = vi.fn()
   render(withQuery(<ProcessOptionsFields value={FALLBACK_OPTIONS} onChange={onChange} />))
@@ -95,6 +104,7 @@ it('con el ajuste automático los controles de realce, nitidez y brillos quedan 
   const auto = screen.getByLabelText(/Ajuste automático según la foto/)
   expect(auto).toBeChecked()
   expect(screen.getByLabelText(/Realce de color/)).toBeDisabled()
+  expect(screen.getByLabelText(/Acabado estudio/)).toBeDisabled()
   fireEvent.click(auto)
   expect(screen.getByLabelText(/Realce de color/)).toBeEnabled()
 })

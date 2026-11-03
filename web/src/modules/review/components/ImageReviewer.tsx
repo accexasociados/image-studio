@@ -234,6 +234,7 @@ function Reviewer({
                 sharpen: image.auto_adjustments.sharpen,
                 enhance: image.auto_adjustments.enhance,
                 glare: image.auto_adjustments.glare,
+                finish: image.auto_adjustments.finish ?? 0,
                 light: `${image.auto_adjustments.light > 0 ? '+' : ''}${image.auto_adjustments.light}`,
               })}
             </p>

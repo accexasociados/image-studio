@@ -87,6 +87,8 @@ class AutoAdjustments(BaseModel):
     sharpen: int = Field(ge=0, le=100, description="Nitidez aplicada.")
     enhance: int = Field(ge=0, le=100, description="Realce de color aplicado.")
     glare: int = Field(ge=0, le=100, description="Reducción de brillos aplicada.")
+    # Default 0: las fotos procesadas antes del acabado estudio (F12.16) no lo tienen guardado.
+    finish: int = Field(default=0, ge=0, le=100, description="Acabado estudio aplicado.")
     light: int = Field(description="Cuánto se aclaró la foto por la exposición (porcentaje; 0 = igual).")
 
 

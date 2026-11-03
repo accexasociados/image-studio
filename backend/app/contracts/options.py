@@ -106,6 +106,16 @@ class ProcessOptions(BaseModel):
             "negro de pintura no se tocan. 0 = brillos tal como salieron en la foto."
         ),
     )
+    # F12.16: retoque tipo catálogo calibrado contra la versión de ChatGPT del Arthas, sin IA generativa.
+    finish: int = Field(
+        default=50,
+        ge=0,
+        le=100,
+        description=(
+            "Acabado estudio: curva de tonos con luces que resaltan, claridad en el relieve y metales más "
+            "cálidos. 0 = sin acabado. Con auto_adjust lo decide cada foto."
+        ),
+    )
     white_balance: bool = True
     generate_both_layer_variants: bool = False
     # Fase 13: además de la foto normal, una versión rehecha por la IA de Ajustes > IA (cuesta por imagen).

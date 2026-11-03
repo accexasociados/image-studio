@@ -38,6 +38,12 @@ class AutoParams:
     glare_none: float = 1.0
     glare_strong: float = 13.0
     glare_max: int = 85
+    # Rango de tonos -> acabado estudio (F12.16): la foto plana y pintada (Arthas) lo recibe completo;
+    # una de colores lisos ya contrastada (Gengar, Snoopy) apenas, porque la claridad marca las capas.
+    finish_flat: float = 0.6
+    finish_full: float = 0.95
+    finish_at_flat: int = 100
+    finish_at_full: int = 20
 
 
 @dataclass(frozen=True)
@@ -103,6 +109,7 @@ def decide(
     return AutoAdjustments(
         sharpen=_ramp(measures.sharpness, p.soft, p.crisp, p.sharpen_soft, p.sharpen_crisp),
         enhance=_ramp(measures.tonal_range, p.flat, p.full, p.enhance_flat, p.enhance_full),
-        glare=_ramp(measures.glare, params.glare_none, params.glare_strong, 0, params.glare_max),
+        glare=_ramp(measures.glare, p.glare_none, p.glare_strong, 0, p.glare_max),
         light=round((exposure_gain - 1.0) * 100),
+        finish=_ramp(measures.tonal_range, p.finish_flat, p.finish_full, p.finish_at_flat, p.finish_at_full),
     )

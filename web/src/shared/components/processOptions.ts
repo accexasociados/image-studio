@@ -15,6 +15,7 @@ export const FALLBACK_OPTIONS: ProcessOptions = {
   enhance: 80,
   sharpen: 60,
   glare: 80,
+  finish: 50,
   white_balance: true,
   generate_both_layer_variants: false,
   auto_adjust: true,

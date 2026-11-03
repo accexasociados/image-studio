@@ -544,6 +544,12 @@ export interface components {
        */
       glare: number
       /**
+       * Finish
+       * @description Acabado estudio aplicado.
+       * @default 0
+       */
+      finish: number
+      /**
        * Light
        * @description Cuánto se aclaró la foto por la exposición (porcentaje; 0 = igual).
        */
@@ -1003,6 +1009,12 @@ export interface components {
        * @default 80
        */
       glare: number
+      /**
+       * Finish
+       * @description Acabado estudio: curva de tonos con luces que resaltan, claridad en el relieve y metales más cálidos. 0 = sin acabado. Con auto_adjust lo decide cada foto.
+       * @default 50
+       */
+      finish: number
       /**
        * White Balance
        * @default true

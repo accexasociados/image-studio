@@ -92,11 +92,14 @@ const es = {
     sharpen: 'Enfoque',
     autoAdjust: 'Ajuste automático según la foto',
     autoAdjustHelp:
-      'Mide la nitidez, los tonos y los brillos de cada foto y elige cuánto enfocar, realzar y quitar brillos. La luz se ajusta siempre según el fondo. Desmárcalo para usar tus propios valores.',
+      'Mide la nitidez, los tonos y los brillos de cada foto y elige cuánto enfocar, realzar, quitar brillos y dar acabado de estudio. La luz se ajusta siempre según el fondo. Desmárcalo para usar tus propios valores.',
     aiEnhance: 'Mejorar con IA (en la nube)',
     aiEnhanceHelp:
       'Entrega además una versión rehecha por la IA de Ajustes > IA: foto de producto realista, nunca animada. Se cobra por imagen y puede cambiar detalles de la pieza; la versión normal siempre queda.',
     glare: 'Reducir brillos',
+    finish: 'Acabado estudio',
+    finishHelp:
+      'Retoque tipo catálogo: luces del pincel seco que resaltan, relieve más marcado y metales más cálidos. En piezas de un solo color también marca las líneas de capa; 0 = sin acabado.',
     glareHelp:
       'Baja el reflejo de la luz sobre el plástico de color. El blanco y el negro de la pintura no cambian; 0 = brillos tal como salieron en la foto.',
     sharpenHelp:
@@ -209,7 +212,7 @@ const es = {
       shownVariant: 'Versión que se muestra',
       aiShown: 'Hecha con IA: compárala con la versión normal antes de aprobar',
       autoApplied:
-        'Ajuste automático para esta foto: nitidez {{sharpen}} %, realce {{enhance}} %, reducir brillos {{glare}} %, luz {{light}} %',
+        'Ajuste automático para esta foto: nitidez {{sharpen}} %, realce {{enhance}} %, reducir brillos {{glare}} %, acabado {{finish}} %, luz {{light}} %',
       shortcuts: 'Atajos: A aprobar · R reprocesar · ← → navegar · Esc cerrar',
     },
     variant: {
@@ -450,11 +453,14 @@ const en: TranslationShape<typeof es> = {
     sharpen: 'Sharpening',
     autoAdjust: 'Automatic adjustment per photo',
     autoAdjustHelp:
-      'Measures each photo’s sharpness, tones and glare and picks how much to sharpen, enhance and reduce glare. Light is always adjusted from the background. Uncheck it to use your own values.',
+      'Measures each photo’s sharpness, tones and glare and picks how much to sharpen, enhance, reduce glare and apply the studio finish. Light is always adjusted from the background. Uncheck it to use your own values.',
     aiEnhance: 'Improve with AI (cloud)',
     aiEnhanceHelp:
       'Also delivers a version redone by the AI set in Settings > AI: a realistic product photo, never animated. It is charged per image and may change details of the piece; the regular version is always kept.',
     glare: 'Reduce glare',
+    finish: 'Studio finish',
+    finishHelp:
+      'Catalog-style retouch: drybrush highlights that pop, stronger relief and warmer metals. On single-color pieces it also brings out layer lines; 0 = no finish.',
     glareHelp:
       'Tones down light reflections on colored plastic. White and black paint stay the same; 0 = glare exactly as photographed.',
     sharpenHelp: 'Higher = crisper edges and texture; if you see light halos around the piece, lower it.',
@@ -566,7 +572,7 @@ const en: TranslationShape<typeof es> = {
       shownVariant: 'Version shown',
       aiShown: 'Made with AI: compare it with the regular version before approving',
       autoApplied:
-        'Automatic adjustment for this photo: sharpness {{sharpen}}%, enhancement {{enhance}}%, glare reduction {{glare}}%, light {{light}}%',
+        'Automatic adjustment for this photo: sharpness {{sharpen}}%, enhancement {{enhance}}%, glare reduction {{glare}}%, finish {{finish}}%, light {{light}}%',
       shortcuts: 'Shortcuts: A approve · R reprocess · ← → navigate · Esc close',
     },
     variant: {

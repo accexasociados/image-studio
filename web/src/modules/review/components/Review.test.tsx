@@ -23,6 +23,7 @@ const batch: Batch = {
     enhance: 80,
     sharpen: 60,
     glare: 80,
+    finish: 50,
     white_balance: true,
     generate_both_layer_variants: true,
     auto_adjust: true,
@@ -174,14 +175,14 @@ it('el visor muestra lo que eligió el ajuste automático para la foto', () => {
   mockFetch(() => ({}))
   const adjusted: ImageItem = {
     ...item('i1', 'A'),
-    auto_adjustments: { sharpen: 90, enhance: 85, glare: 0, light: 17 },
+    auto_adjustments: { sharpen: 90, enhance: 85, glare: 0, finish: 100, light: 17 },
   }
   wrap(
     <ImageReviewer batch={batch} images={[adjusted]} index={0} onIndexChange={vi.fn()} onClose={vi.fn()} />,
   )
   expect(
     screen.getByText(
-      'Ajuste automático para esta foto: nitidez 90 %, realce 85 %, reducir brillos 0 %, luz +17 %',
+      'Ajuste automático para esta foto: nitidez 90 %, realce 85 %, reducir brillos 0 %, acabado 100 %, luz +17 %',
     ),
   ).toBeInTheDocument()
 })
